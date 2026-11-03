@@ -24,16 +24,3 @@ jobs:
         with:
           name: dracos-core
           path: build/libs/*.jar
-      - name: Debug - permission API names
-        if: always()
-        run: |
-          J=""
-          for j in $(find ~/.gradle/caches/fabric-loom .gradle -name "*.jar" 2>/dev/null); do
-            if unzip -l "$j" 2>/dev/null | grep -q "net/minecraft/server/command/ServerCommandSource.class"; then J="$j"; break; fi
-          done
-          echo "JAR=$J"
-          javap -cp "$J" net.minecraft.server.command.ServerCommandSource | grep -i -E "perm|level|op" || true
-          echo ---CM
-          javap -cp "$J" net.minecraft.server.command.CommandManager | grep -i -E "perm|level|check|require" || true
-          echo ---PERM
-          unzip -l "$J" | grep -i -E "command/permission|/permission/" | head -30 || true

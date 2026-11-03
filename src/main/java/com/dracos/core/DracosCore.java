@@ -41,7 +41,7 @@ public class DracosCore implements ModInitializer {
 
             // /dracos give <hrac> <vec>   (len OP)
             dispatcher.register(CommandManager.literal("dracos")
-                    .requires(src -> src.hasPermissionLevel(2))
+                    .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                     .then(CommandManager.literal("give")
                             .then(CommandManager.argument("player", EntityArgumentType.player())
                                     .then(CommandManager.argument("item", StringArgumentType.word())
