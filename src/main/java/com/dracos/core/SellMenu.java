@@ -1,5 +1,6 @@
 package com.dracos.core;
 
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
@@ -37,7 +38,7 @@ public final class SellMenu {
         Map<String, Double> prices = Money.sellPrices();
         Double each = priceOf(stack, prices);
         if (each == null) {
-            player.sendMessage(Text.literal("This item can't be sold. Try /ah sell <price>.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.literal("This item can't be sold (empty it first, or use /ah sell <price>).").formatted(Formatting.RED), false);
             return;
         }
         long total = (long) Math.floor(each * stack.getCount());
@@ -46,11 +47,41 @@ public final class SellMenu {
         pay(player, total, count);
     }
 
+    /**
+     * Every item can be sold. Items listed in sell_prices.json / /shop use that price,
+     * everything else gets a fallback price based on rarity and stack size.
+     * Returns null only for things that must not be sold (legendary items, filled shulkers/bundles).
+     */
     static Double priceOf(ItemStack stack, Map<String, Double> prices) {
         if (stack.isEmpty() || LegendaryItems.idOf(stack) != null) return null;
-        // poskodene veci a veci s vlastnym menom nekupujeme (aby nesli predat enchanty za cenu zakladnej veci)
-        if (stack.isDamaged() || stack.hasEnchantments()) return null;
-        return prices.get(Registries.ITEM.getId(stack.getItem()).toString());
+        var container = stack.get(DataComponentTypes.CONTAINER);
+        if (container != null && container.stream().anyMatch(s -> !s.isEmpty())) return null;
+        var bundle = stack.get(DataComponentTypes.BUNDLE_CONTENTS);
+        if (bundle != null && !bundle.isEmpty()) return null;
+
+        Double listed = prices.get(Registries.ITEM.getId(stack.getItem()).toString());
+        double price = listed != null ? listed : fallback(stack);
+
+        // damaged tools/armor are worth less
+        if (stack.isDamageable() && stack.getMaxDamage() > 0) {
+            double left = 1.0 - (double) stack.getDamage() / stack.getMaxDamage();
+            price *= Math.max(0.1, left);
+        }
+        return price;
+    }
+
+    private static double fallback(ItemStack stack) {
+        double p = SellPrices.defaultPrice();
+        int max = stack.getMaxCount();
+        if (max == 1) p *= 20;          // tools, armor, single items
+        else if (max <= 16) p *= 3;     // eggs, pearls, signs...
+        p *= switch (stack.getRarity()) {
+            case UNCOMMON -> 5;
+            case RARE -> 25;
+            case EPIC -> 100;
+            default -> 1;
+        };
+        return p;
     }
 
     static void pay(ServerPlayerEntity player, long total, int count) {
