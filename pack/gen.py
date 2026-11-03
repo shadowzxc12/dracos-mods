@@ -169,32 +169,6 @@ PAL = {
 FRAMES = 16
 
 
-def sprite_frames(name):
-    rows = SPRITES[name]
-    assert len(rows) == 16 and all(len(r) == 16 for r in rows), name
-    pal = {k: hx(v) for k, v in PAL[name].items()}
-    strip = Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0))
-    for f in range(FRAMES):
-        pulse = 0.75 + 0.35 * (0.5 + 0.5 * math.sin(2 * math.pi * f / FRAMES))
-        band = f * 2 - 2  # shine travels along x - y
-        for y in range(16):
-            for x in range(16):
-                ch = rows[y][x]
-                if ch == ".":
-                    # outline: any filled 4-neighbour
-                    if any(0 <= x + dx < 16 and 0 <= y + dy < 16 and rows[y + dy][x + dx] != "."
-                           for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                        strip.putpixel((x, y + 16 * f), pal["o"])
-                    continue
-                c = pal[ch]
-                if ch == "A":
-                    c = bright(c, pulse)
-                elif ch in "234" and abs((x + (15 - y)) - band) <= 1:
-                    c = mix(c, (255, 255, 255, 255), 0.45)
-                strip.putpixel((x, y + 16 * f), c)
-    return strip
-
-
 def anim_meta(frametime=2):
     return {"animation": {"frametime": frametime, "interpolate": False}}
 
@@ -257,6 +231,30 @@ def recolor(img, set_name, seed, pattern=True):
 
 
 def armor_layer(set_name, layer):
+    img = armor_layer16(set_name, layer).resize((128, 64), Image.NEAREST)
+    st = SETS[set_name]
+    rnd = random.Random(hash((set_name, layer, 2)) & 0xffff)
+    for y in range(64):
+        for x in range(128):
+            c = img.getpixel((x, y))
+            if c[3] == 0:
+                continue
+            k = 1.0 + (_h(x, y, 9) - 0.5) * 0.16
+            # bevel on every 2x2 source pixel block edge of the box faces
+            if img.getpixel((x, y - 1))[3] == 0 if y > 0 else True:
+                k += 0.18
+            c = bright(c, k)
+            if set_name == "void" and rnd.random() < 0.012:
+                c = hx(st["spark"])
+            if set_name == "draco" and (x + y) % 6 == 0 and y % 2 == 0:
+                c = mix(c, hx("#ffe9a8"), 0.25)
+            if set_name == "bone" and rnd.random() < 0.01:
+                c = mix(c, hx("#4a4234"), 0.6)
+            img.putpixel((x, y), c)
+    return img
+
+
+def armor_layer16(set_name, layer):
     src = Image.open(os.path.join(VT, "entity/equipment", layer, "netherite.png"))
     img = recolor(src, set_name, hash((set_name, layer)) & 0xffff)
     st = SETS[set_name]
@@ -295,22 +293,8 @@ ARMOR_ACCENTS = {
 def armor_icon(set_name, piece):
     src = Image.open(os.path.join(VT, "item", f"netherite_{piece}.png"))
     base = recolor(src, set_name, hash((set_name, piece)) & 0xffff)
-    acc = hx(SETS[set_name]["accent"])
-    strip = Image.new("RGBA", (16, 16 * FRAMES), (0, 0, 0, 0))
-    for f in range(FRAMES):
-        pulse = 0.7 + 0.4 * (0.5 + 0.5 * math.sin(2 * math.pi * f / FRAMES))
-        fr = base.copy()
-        for (x, y) in ARMOR_ACCENTS[piece]:
-            if fr.getpixel((x, y))[3] > 0:
-                fr.putpixel((x, y), bright(acc, pulse))
-        band = f * 2 - 2
-        for y in range(16):
-            for x in range(16):
-                p = fr.getpixel((x, y))
-                if p[3] > 0 and abs((x + (15 - y)) - band) <= 0 and (x, y) not in ARMOR_ACCENTS[piece]:
-                    fr.putpixel((x, y), mix(p, (255, 255, 255, 255), 0.35))
-        strip.paste(fr, (0, 16 * f))
-    return strip
+    acc = {p for p in ARMOR_ACCENTS[piece] if base.getpixel(p)[3] > 0}
+    return hd_frames(base, acc, hx(SETS[set_name]["accent"]), seed=hash((set_name, piece)) & 0xff)
 
 
 def bow_textures():
@@ -324,8 +308,95 @@ def bow_textures():
                 p = src.getpixel((x, y))
                 if p[3] > 0 and abs(p[0] - p[1]) < 12 and abs(p[1] - p[2]) < 12 and lum(p) > 150:
                     img.putpixel((x, y), hx("#e47bff"))
-        out[n] = img
+        strings = {(x, y) for y in range(16) for x in range(16)
+                   if img.getpixel((x, y))[:3] == hx("#e47bff")[:3]}
+        out[n] = hd_frames(img, strings, hx("#e47bff"), seed=len(n))
     return out
+
+
+
+
+# --------------------------------------------------------------------------- HD (32x32) rendering
+def _h(*a):
+    return (hash(a) & 0xffff) / 0xffff
+
+
+def hd_frames(base16, accent16, accent, aura=True, n=FRAMES, seed=0, outline=None):
+    """base16: 16x16 RGBA, accent16: set of (x,y) accent pixels. Returns 32 x (32*n) strip."""
+    S = 32
+    big = base16.resize((S, S), Image.NEAREST)
+    filled = lambda x, y: 0 <= x < S and 0 <= y < S and big.getpixel((x, y))[3] > 0
+    acc_big = {(x * 2 + i, y * 2 + j) for (x, y) in accent16 for i in (0, 1) for j in (0, 1)}
+    # distance to shape for aura
+    dist = {}
+    for y in range(S):
+        for x in range(S):
+            if filled(x, y):
+                continue
+            d = min((abs(dx) + abs(dy) for dx in range(-3, 4) for dy in range(-3, 4) if filled(x + dx, y + dy)), default=9)
+            if d <= 3:
+                dist[(x, y)] = d
+    rnd = random.Random(seed)
+    sparks = [(rnd.randrange(n), rnd.choice([(x, y) for y in range(S) for x in range(S) if filled(x, y)])) for _ in range(5)]
+    strip = Image.new("RGBA", (S, S * n), (0, 0, 0, 0))
+    for f in range(n):
+        ph = 0.5 + 0.5 * math.sin(2 * math.pi * f / n)
+        band = f * 4 - 6
+        fr = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        for y in range(S):
+            for x in range(S):
+                c = big.getpixel((x, y))
+                if c[3] == 0:
+                    d = dist.get((x, y))
+                    if aura and d is not None:
+                        a = int((70, 38, 16)[d - 1] * (0.55 + 0.45 * ph))
+                        fr.putpixel((x, y), accent[:3] + (a,))
+                    continue
+                is_out = outline is not None and c[:3] == outline[:3]
+                if (x, y) in acc_big:
+                    c = bright(accent, 0.75 + 0.4 * ph)
+                    # hot core
+                    if (x + y + f) % 4 == 0:
+                        c = mix(c, (255, 255, 255, 255), 0.4)
+                elif not is_out:
+                    k = 1.0 + (_h(x, y, seed) - 0.5) * 0.14
+                    if not filled(x - 1, y) or not filled(x, y - 1):
+                        k += 0.22
+                    elif not filled(x + 1, y) or not filled(x, y + 1):
+                        k -= 0.22
+                    c = bright(c, k)
+                    if abs((x + (S - 1 - y)) - band) <= 1:
+                        c = mix(c, (255, 255, 255, 255), 0.5)
+                fr.putpixel((x, y), c)
+        for (sf, (sx, sy)) in sparks:
+            age = (f - sf) % n
+            if age < 3:
+                col = (255, 255, 255, 255) if age == 0 else mix(accent, (255, 255, 255, 255), 0.5)
+                for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))[: 5 if age == 1 else 1]:
+                    if 0 <= sx + dx < S and 0 <= sy + dy < S:
+                        fr.putpixel((sx + dx, sy + dy), col)
+        strip.paste(fr, (0, S * f))
+    return strip
+
+
+def sprite_frames(name):
+    rows = SPRITES[name]
+    assert len(rows) == 16 and all(len(r) == 16 for r in rows), name
+    pal = {k: hx(v) for k, v in PAL[name].items()}
+    base = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    acc = set()
+    for y in range(16):
+        for x in range(16):
+            ch = rows[y][x]
+            if ch == ".":
+                if any(0 <= x + dx < 16 and 0 <= y + dy < 16 and rows[y + dy][x + dx] != "."
+                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    base.putpixel((x, y), pal["o"])
+                continue
+            base.putpixel((x, y), pal[ch])
+            if ch == "A":
+                acc.add((x, y))
+    return hd_frames(base, acc, pal["A"], seed=hash(name) & 0xff, outline=pal["o"])
 
 
 # --------------------------------------------------------------------------- build
@@ -355,6 +426,7 @@ def main():
     for n, img in bow_textures().items():
         tex = "void_" + n
         save(img, f"assets/{NS}/textures/item/{tex}.png")
+        wjson(anim_meta(), f"assets/{NS}/textures/item/{tex}.png.mcmeta")
         wjson({"parent": "minecraft:item/bow", "textures": {"layer0": f"{NS}:item/{tex}"}},
               f"assets/{NS}/models/item/{tex}.json")
     m = lambda t: {"type": "minecraft:model", "model": f"{NS}:item/{t}"}

@@ -75,17 +75,23 @@ public final class Abilities {
             String id = LegendaryItems.idOf(player.getMainHandStack());
             if (id == null) return ActionResult.PASS;
             switch (id) {
-                case LegendaryItems.LAVA_AXE -> living.setOnFireFor(8f);
+                case LegendaryItems.LAVA_AXE -> {
+                    living.setOnFireFor(8f);
+                    Effects.impact(sw, living, ParticleTypes.FLAME);
+                    Effects.p(sw, ParticleTypes.LAVA, living.getX(), living.getBodyY(0.5), living.getZ(), 4, 0.3, 0);
+                }
                 case LegendaryItems.DRAGON_BLADE -> {
                     living.setOnFireFor(5f);
-                    sw.spawnParticles(ParticleTypes.FLAME, living.getX(), living.getBodyY(0.5), living.getZ(),
-                            12, 0.3, 0.4, 0.3, 0.02);
+                    Effects.impact(sw, living, Effects.PINK_DUST);
+                    Effects.p(sw, ParticleTypes.FLAME, living.getX(), living.getBodyY(0.5), living.getZ(), 10, 0.3, 0.02);
                 }
                 case LegendaryItems.BONE_REAPER -> {
                     living.addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 80, 1));
                     living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 1));
-                    sw.spawnParticles(ParticleTypes.WHITE_ASH, living.getX(), living.getBodyY(0.5), living.getZ(),
-                            20, 0.3, 0.5, 0.3, 0.05);
+                    Effects.impact(sw, living, Effects.BONE_DUST);
+                    Effects.p(sw, Effects.BLOOD_DUST, living.getX(), living.getBodyY(0.5), living.getZ(), 8, 0.3, 0);
+                    Effects.p(sw, ParticleTypes.WHITE_ASH, living.getX(), living.getBodyY(0.5), living.getZ(), 20, 0.4, 0.05);
+                    sw.playSound(null, living.getBlockPos(), SoundEvents.ENTITY_SKELETON_HURT, SoundCategory.PLAYERS, 0.6f, 0.6f);
                 }
                 case LegendaryItems.VOID_SCYTHE -> {
                     if (player.getAttackCooldownProgress(0.5f) > 0.8f) {
@@ -93,11 +99,14 @@ public final class Abilities {
                         for (LivingEntity other : sw.getEntitiesByClass(LivingEntity.class, box,
                                 o -> o != player && o != living && o.isAlive() && !isProtected(o))) {
                             other.damage(sw, sw.getDamageSources().playerAttack(player), 14f);
+                            Effects.impact(sw, other, Effects.VOID_DUST);
                         }
                     }
                     player.heal(6f);
-                    sw.spawnParticles(ParticleTypes.REVERSE_PORTAL, living.getX(), living.getBodyY(0.5), living.getZ(),
-                            30, 1.2, 0.4, 1.2, 0.05);
+                    Effects.ring(sw, Effects.VOID_DUST, player.getX(), player.getY() + 1.0, player.getZ(), 2.5, 24, player.getYaw());
+                    Effects.impact(sw, living, Effects.VOID_DUST);
+                    Effects.p(sw, ParticleTypes.REVERSE_PORTAL, living.getX(), living.getBodyY(0.5), living.getZ(), 25, 0.8, 0.05);
+                    sw.playSound(null, living.getBlockPos(), SoundEvents.ENTITY_PHANTOM_BITE, SoundCategory.PLAYERS, 0.7f, 0.5f);
                     sw.spawnParticles(ParticleTypes.SWEEP_ATTACK, living.getX(), living.getBodyY(0.5), living.getZ(),
                             1, 0, 0, 0, 0);
                 }
@@ -130,6 +139,8 @@ public final class Abilities {
                     player.getItemCooldownManager().set(stack, 40);
                     sw.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDER_DRAGON_FLAP, SoundCategory.PLAYERS, 1.0f, 1.3f);
                     sw.spawnParticles(ParticleTypes.PORTAL, player.getX(), player.getY() + 1, player.getZ(), 40, 0.4, 0.6, 0.4, 0.3);
+                    Effects.ring(sw, Effects.PINK_DUST, player.getX(), player.getY() + 0.1, player.getZ(), 1.2, 16, 0);
+                    Effects.dashTrail(sp);
                 }
                 case LegendaryItems.VOID_SCYTHE -> {
                     Box box = player.getBoundingBox().expand(10);
@@ -141,11 +152,15 @@ public final class Abilities {
                         t.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
                         t.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 80, 1));
                         if (t instanceof ServerPlayerEntity tp) tp.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(tp));
+                        Effects.line(sw, Effects.VOID_DUST, new Vec3d(t.getX(), t.getBodyY(0.5), t.getZ()),
+                                new Vec3d(player.getX(), player.getBodyY(0.5), player.getZ()), 0.4);
                         n++;
                     }
                     player.getItemCooldownManager().set(stack, 160);
                     sw.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_WARDEN_SONIC_BOOM, SoundCategory.PLAYERS, 0.8f, 0.7f);
                     sw.spawnParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY() + 1, player.getZ(), 200, 5, 1, 5, 0.1);
+                    Effects.shockwave(sw, Effects.VOID_DUST, player.getX(), player.getY() + 0.2, player.getZ(), 10);
+                    sw.spawnParticles(ParticleTypes.SONIC_BOOM, player.getX(), player.getY() + 1, player.getZ(), 1, 0, 0, 0, 0);
                     sp.sendMessage(Text.literal("Void Pull! (" + n + " pulled)").formatted(Formatting.DARK_PURPLE), true);
                 }
                 case LegendaryItems.BONE_REAPER -> {
@@ -154,6 +169,8 @@ public final class Abilities {
                     player.getItemCooldownManager().set(stack, 500);
                     sw.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_SKELETON_AMBIENT, SoundCategory.PLAYERS, 1.0f, 0.6f);
                     sw.spawnParticles(ParticleTypes.WHITE_ASH, player.getX(), player.getY() + 1, player.getZ(), 120, 0.8, 1, 0.8, 0.05);
+                    Effects.shockwave(sw, Effects.BONE_DUST, player.getX(), player.getY() + 0.2, player.getZ(), 4);
+                    Effects.boneShield(sp);
                     sp.sendMessage(Text.literal("Bone Shield!").formatted(Formatting.WHITE, Formatting.BOLD), true);
                 }
                 case LegendaryItems.THUNDER_HAMMER -> {
@@ -173,7 +190,12 @@ public final class Abilities {
                         if (t instanceof ServerPlayerEntity tp) tp.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(tp));
                     }
                     player.getItemCooldownManager().set(stack, 120);
-                    sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, pos.x, pos.y + 1, pos.z, 80, 2, 1, 2, 0.3);
+                    sw.spawnParticles(ParticleTypes.ELECTRIC_SPARK, pos.x, pos.y + 1, pos.z, 120, 2, 1, 2, 0.4);
+                    Effects.shockwave(sw, Effects.YELLOW_DUST, pos.x, pos.y + 0.2, pos.z, 5);
+                    Effects.shockwave(sw, ParticleTypes.CLOUD, pos.x, pos.y + 0.1, pos.z, 4);
+                    sw.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, pos.x, pos.y + 0.5, pos.z, 1, 0, 0, 0, 0);
+                    Effects.line(sw, ParticleTypes.ELECTRIC_SPARK, new Vec3d(player.getX(), player.getEyeY() - 0.3, player.getZ()), pos, 0.6);
+                    sw.playSound(null, BlockPos.ofFloored(pos), SoundEvents.ENTITY_LIGHTNING_BOLT_THUNDER, SoundCategory.PLAYERS, 1.5f, 1.2f);
                 }
                 default -> {}
             }
@@ -190,6 +212,7 @@ public final class Abilities {
                 arrow.setNoGravity(true);
                 arrow.setVelocity(arrow.getVelocity().multiply(2.0));
                 arrow.addCommandTag(VOID_ARROW);
+                Effects.trackArrow(arrow);
             }
         });
 
@@ -197,6 +220,10 @@ public final class Abilities {
         ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, base, taken, blocked) -> {
             if (source.getSource() != null && source.getSource().getCommandTags().contains(VOID_ARROW)) {
                 entity.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 40, 1));
+                if (entity.getEntityWorld() instanceof ServerWorld w) {
+                    Effects.impact(w, entity, Effects.VOID_DUST);
+                    Effects.ring(w, Effects.VOID_DUST, entity.getX(), entity.getY() + 0.1, entity.getZ(), 1.0, 12, 0);
+                }
             }
         });
 
