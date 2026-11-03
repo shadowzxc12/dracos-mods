@@ -19,6 +19,7 @@ public class DracosCore implements ModInitializer {
     @Override
     public void onInitialize() {
         Abilities.register();
+        Combat.register();
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {

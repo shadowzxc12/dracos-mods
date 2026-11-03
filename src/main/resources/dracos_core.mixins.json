@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.dracos.core.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["CommandMixin"],
+  "injectors": { "defaultRequire": 0 }
+}
