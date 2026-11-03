@@ -78,7 +78,7 @@ public final class Abilities {
                 case LegendaryItems.LAVA_AXE -> living.setOnFireFor(8f);
                 case LegendaryItems.DRAGON_BLADE -> {
                     living.setOnFireFor(5f);
-                    sw.spawnParticles(ParticleTypes.DRAGON_BREATH, living.getX(), living.getBodyY(0.5), living.getZ(),
+                    sw.spawnParticles(ParticleTypes.FLAME, living.getX(), living.getBodyY(0.5), living.getZ(),
                             12, 0.3, 0.4, 0.3, 0.02);
                 }
                 case LegendaryItems.BONE_REAPER -> {
