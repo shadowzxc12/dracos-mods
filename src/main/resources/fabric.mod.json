@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "dracos_core",
+  "version": "${version}",
+  "name": "Dracos Core",
+  "description": "Dracos SMP: /sell, legendary weapons and armor. Server-side only.",
+  "authors": ["Damian"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": { "main": ["com.dracos.core.DracosCore"] },
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*",
+    "burgereconomy": "*"
+  }
+}
