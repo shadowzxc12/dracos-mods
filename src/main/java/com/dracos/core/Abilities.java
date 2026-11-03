@@ -200,6 +200,54 @@ public final class Abilities {
             }
         });
 
+        // ---- ambient visuals: weapon particles, set auras, void arrow trails
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            int t = server.getTicks();
+            if (t % 4 != 0) return;
+            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                if (p.isSpectator() || p.isInvisible()) continue;
+                ServerWorld w = (ServerWorld) p.getEntityWorld();
+                double x = p.getX(), y = p.getY(), z = p.getZ();
+                String held = LegendaryItems.idOf(p.getMainHandStack());
+                if (held != null) {
+                    double yaw = Math.toRadians(p.getYaw() + 40);
+                    double hx = x - Math.sin(yaw) * 0.5, hz = z + Math.cos(yaw) * 0.5, hy = y + 1.0;
+                    switch (held) {
+                        case LegendaryItems.VOID_SCYTHE -> { w.spawnParticles(ParticleTypes.REVERSE_PORTAL, hx, hy, hz, 4, 0.15, 0.3, 0.15, 0.01);
+                            w.spawnParticles(ParticleTypes.WITCH, hx, hy + 0.3, hz, 1, 0.1, 0.1, 0.1, 0); }
+                        case LegendaryItems.THUNDER_HAMMER -> w.spawnParticles(ParticleTypes.ELECTRIC_SPARK, hx, hy, hz, 3, 0.15, 0.25, 0.15, 0.05);
+                        case LegendaryItems.BONE_REAPER -> { w.spawnParticles(ParticleTypes.WHITE_ASH, hx, hy, hz, 4, 0.2, 0.3, 0.2, 0.01);
+                            w.spawnParticles(ParticleTypes.SOUL, hx, hy + 0.2, hz, 1, 0.1, 0.1, 0.1, 0.01); }
+                        case LegendaryItems.DRAGON_BLADE -> { w.spawnParticles(ParticleTypes.PORTAL, hx, hy, hz, 4, 0.15, 0.3, 0.15, 0.2);
+                            w.spawnParticles(ParticleTypes.SMALL_FLAME, hx, hy + 0.3, hz, 1, 0.05, 0.1, 0.05, 0); }
+                        case LegendaryItems.LAVA_AXE -> { w.spawnParticles(ParticleTypes.FLAME, hx, hy, hz, 1, 0.1, 0.2, 0.1, 0.01);
+                            if (t % 12 == 0) w.spawnParticles(ParticleTypes.LAVA, hx, hy, hz, 1, 0.1, 0.1, 0.1, 0); }
+                        case LegendaryItems.SHARD_PICKAXE -> w.spawnParticles(ParticleTypes.END_ROD, hx, hy + 0.2, hz, 1, 0.15, 0.2, 0.15, 0.005);
+                        case LegendaryItems.VOID_BOW -> w.spawnParticles(ParticleTypes.REVERSE_PORTAL, hx, hy, hz, 2, 0.15, 0.3, 0.15, 0.01);
+                        default -> {}
+                    }
+                }
+                // rotating aura ring for full sets
+                net.minecraft.particle.ParticleEffect aura = fullSet(p, LegendaryItems.VOID_SET) ? ParticleTypes.REVERSE_PORTAL
+                        : fullSet(p, LegendaryItems.BONE_SET) ? ParticleTypes.SOUL_FIRE_FLAME
+                        : fullSet(p, LegendaryItems.DRACO_SET) ? ParticleTypes.FLAME : null;
+                if (aura != null) {
+                    for (int k = 0; k < 3; k++) {
+                        double a = (t * 0.15) + k * (Math.PI * 2 / 3);
+                        w.spawnParticles(aura, x + Math.cos(a) * 0.8, y + 0.1 + (k * 0.6), z + Math.sin(a) * 0.8, 1, 0, 0, 0, 0);
+                    }
+                }
+            }
+            // void arrow trails
+            for (ServerWorld w : server.getWorlds()) {
+                for (PersistentProjectileEntity arrow : w.getEntitiesByType(net.minecraft.util.TypeFilter.instanceOf(PersistentProjectileEntity.class),
+                        a -> a.getCommandTags().contains(VOID_ARROW) && a.age < 200)) {
+                    w.spawnParticles(ParticleTypes.REVERSE_PORTAL, arrow.getX(), arrow.getY(), arrow.getZ(), 6, 0.05, 0.05, 0.05, 0.02);
+                    w.spawnParticles(ParticleTypes.WITCH, arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0, 0, 0, 0);
+                }
+            }
+        });
+
         // ---- set bonuses + held effects
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % 20 != 0) return;
