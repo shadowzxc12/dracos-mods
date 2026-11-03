@@ -1,6 +1,11 @@
 package com.dracos.core;
 
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.EquippableComponent;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.util.Unit;
 import net.minecraft.component.type.AttributeModifierSlot;
 import net.minecraft.component.type.AttributeModifiersComponent;
 import net.minecraft.component.type.LoreComponent;
@@ -40,21 +45,55 @@ public final class LegendaryItems {
     public static final String DRAGON_BLADE = "dragon_blade";
     public static final String LAVA_AXE = "lava_axe";
     public static final String VOID_BOW = "void_bow";
+    public static final String VOID_SCYTHE = "void_scythe";
+    public static final String BONE_REAPER = "bone_reaper";
+    public static final String THUNDER_HAMMER = "thunder_hammer";
     public static final String DRACO_HELMET = "draco_helmet";
     public static final String DRACO_CHESTPLATE = "draco_chestplate";
     public static final String DRACO_LEGGINGS = "draco_leggings";
     public static final String DRACO_BOOTS = "draco_boots";
+    public static final String VOID_HELMET = "void_helmet";
+    public static final String VOID_CHESTPLATE = "void_chestplate";
+    public static final String VOID_LEGGINGS = "void_leggings";
+    public static final String VOID_BOOTS = "void_boots";
+    public static final String BONE_HELMET = "bone_helmet";
+    public static final String BONE_CHESTPLATE = "bone_chestplate";
+    public static final String BONE_LEGGINGS = "bone_leggings";
+    public static final String BONE_BOOTS = "bone_boots";
 
-    public static final List<String> IDS = List.of(SHARD_PICKAXE, DRAGON_BLADE, LAVA_AXE, VOID_BOW,
-            DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
+    public static final List<String> WEAPONS = List.of(VOID_SCYTHE, THUNDER_HAMMER, BONE_REAPER, DRAGON_BLADE,
+            VOID_BOW, SHARD_PICKAXE, LAVA_AXE);
+    public static final List<String> DRACO_SET = List.of(DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
+    public static final List<String> VOID_SET = List.of(VOID_HELMET, VOID_CHESTPLATE, VOID_LEGGINGS, VOID_BOOTS);
+    public static final List<String> BONE_SET = List.of(BONE_HELMET, BONE_CHESTPLATE, BONE_LEGGINGS, BONE_BOOTS);
+
+    public static final List<String> IDS;
+    static {
+        List<String> all = new ArrayList<>(WEAPONS);
+        all.addAll(VOID_SET);
+        all.addAll(BONE_SET);
+        all.addAll(DRACO_SET);
+        IDS = List.copyOf(all);
+    }
 
     /** Prices in /shop -> Legendary and /legendary. */
     public static final Map<String, Long> PRICES = new LinkedHashMap<>();
     static {
-        PRICES.put(SHARD_PICKAXE, 25_000_000L);
+        PRICES.put(VOID_SCYTHE, 100_000_000L);
+        PRICES.put(THUNDER_HAMMER, 75_000_000L);
+        PRICES.put(BONE_REAPER, 60_000_000L);
         PRICES.put(DRAGON_BLADE, 50_000_000L);
+        PRICES.put(VOID_BOW, 35_000_000L);
+        PRICES.put(SHARD_PICKAXE, 25_000_000L);
         PRICES.put(LAVA_AXE, 20_000_000L);
-        PRICES.put(VOID_BOW, 20_000_000L);
+        PRICES.put(VOID_HELMET, 40_000_000L);
+        PRICES.put(VOID_CHESTPLATE, 80_000_000L);
+        PRICES.put(VOID_LEGGINGS, 70_000_000L);
+        PRICES.put(VOID_BOOTS, 40_000_000L);
+        PRICES.put(BONE_HELMET, 30_000_000L);
+        PRICES.put(BONE_CHESTPLATE, 60_000_000L);
+        PRICES.put(BONE_LEGGINGS, 50_000_000L);
+        PRICES.put(BONE_BOOTS, 30_000_000L);
         PRICES.put(DRACO_HELMET, 15_000_000L);
         PRICES.put(DRACO_CHESTPLATE, 30_000_000L);
         PRICES.put(DRACO_LEGGINGS, 25_000_000L);
@@ -75,34 +114,84 @@ public final class LegendaryItems {
 
     public static ItemStack create(String id, RegistryWrapper.WrapperLookup lookup) {
         return switch (id) {
-            case SHARD_PICKAXE -> build(Items.NETHERITE_PICKAXE, id, "Shard Pickaxe", 0x6FE3FF, lookup,
-                    List.of("Mines 3x3 at once", "Hold SHIFT to mine 1 block"),
-                    new Ench[]{e(Enchantments.EFFICIENCY, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.FORTUNE, 3), e(Enchantments.MENDING, 1)},
-                    null);
+            // ------------------------------------------------------------ weapons & tools
+            case VOID_SCYTHE -> build(Items.NETHERITE_SWORD, id, "Void Scythe", 0x9D4DFF, lookup,
+                    List.of("28 damage", "Every hit slices all enemies around you", "Lifesteal: heals 3 hearts per hit",
+                            "Right-click: Void Pull - drags enemies in (8s cooldown)"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 10), e(Enchantments.SWEEPING_EDGE, 5), e(Enchantments.LOOTING, 5),
+                            e(Enchantments.FIRE_ASPECT, 2)},
+                    weapon(28.0, 1.2), null);
+            case THUNDER_HAMMER -> build(Items.MACE, id, "Thunder Hammer", 0xFFE14D, lookup,
+                    List.of("22 damage", "Right-click: call lightning where you look", "Blast hits & launches enemies (6s cooldown)"),
+                    new Ench[]{e(Enchantments.DENSITY, 5), e(Enchantments.WIND_BURST, 3), e(Enchantments.FIRE_ASPECT, 2)},
+                    weapon(22.0, 1.0), null);
+            case BONE_REAPER -> build(Items.NETHERITE_SWORD, id, "Bone Reaper", 0xF2E8C9, lookup,
+                    List.of("20 damage, very fast", "Hits: Wither II + Slowness", "Right-click: Bone Shield (25s cooldown)"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.LOOTING, 5), e(Enchantments.KNOCKBACK, 2)},
+                    weapon(20.0, 2.0), null);
             case DRAGON_BLADE -> build(Items.NETHERITE_SWORD, id, "Dragon Blade", 0xB14BFF, lookup,
-                    List.of("12 damage", "Right-click: Dragon Dash (3s cooldown)"),
-                    new Ench[]{e(Enchantments.SHARPNESS, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.LOOTING, 3), e(Enchantments.MENDING, 1)},
-                    weapon(12.0, 1.6));
+                    List.of("18 damage", "Right-click: Dragon Dash (2s cooldown)", "Hits set enemies on dragon fire"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.LOOTING, 4), e(Enchantments.FIRE_ASPECT, 3)},
+                    weapon(18.0, 1.7), null);
+            case VOID_BOW -> build(Items.BOW, id, "Void Bow", 0x7A3BFF, lookup,
+                    List.of("Arrows fly straight - no gravity", "Double arrow speed & damage", "Hits pull targets into the void (Levitation)"),
+                    new Ench[]{e(Enchantments.POWER, 10), e(Enchantments.PUNCH, 2), e(Enchantments.FLAME, 1), e(Enchantments.INFINITY, 1)},
+                    null, null);
+            case SHARD_PICKAXE -> build(Items.NETHERITE_PICKAXE, id, "Shard Pickaxe", 0x6FE3FF, lookup,
+                    List.of("Mines 3x3 at once", "Haste II while held", "Hold SHIFT to mine 1 block"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 10), e(Enchantments.FORTUNE, 5)},
+                    null, null);
             case LAVA_AXE -> build(Items.NETHERITE_AXE, id, "Lava Axe", 0xFF6A00, lookup,
-                    List.of("Sets every target on fire", "Chops the whole tree at once"),
-                    new Ench[]{e(Enchantments.EFFICIENCY, 5), e(Enchantments.UNBREAKING, 5), e(Enchantments.MENDING, 1)},
-                    weapon(13.0, 1.0));
-            case VOID_BOW -> build(Items.BOW, id, "Void Bow", 0x3B2BFF, lookup,
-                    List.of("Arrows fly straight - no gravity", "+50% arrow speed & damage"),
-                    new Ench[]{e(Enchantments.POWER, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.INFINITY, 1)},
-                    null);
-            case DRACO_HELMET -> build(Items.NETHERITE_HELMET, id, "Draco Helmet", 0xFFB000, lookup,
-                    setLore(), protection(), armor(AttributeModifierSlot.HEAD, 4, 4, 2));
-            case DRACO_CHESTPLATE -> build(Items.NETHERITE_CHESTPLATE, id, "Draco Chestplate", 0xFFB000, lookup,
-                    setLore(), protection(), armor(AttributeModifierSlot.CHEST, 10, 4, 4));
-            case DRACO_LEGGINGS -> build(Items.NETHERITE_LEGGINGS, id, "Draco Leggings", 0xFFB000, lookup,
-                    setLore(), protection(), armor(AttributeModifierSlot.LEGS, 8, 4, 2));
-            case DRACO_BOOTS -> build(Items.NETHERITE_BOOTS, id, "Draco Boots", 0xFFB000, lookup,
-                    setLore(), new Ench[]{e(Enchantments.PROTECTION, 5), e(Enchantments.UNBREAKING, 5),
-                            e(Enchantments.FEATHER_FALLING, 4), e(Enchantments.MENDING, 1)},
-                    armor(AttributeModifierSlot.FEET, 4, 4, 2));
+                    List.of("24 damage", "Sets every target on fire", "Chops the whole tree at once"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 8), e(Enchantments.SHARPNESS, 6)},
+                    weapon(24.0, 1.0), null);
+
+            // ------------------------------------------------------------ Void set
+            case VOID_HELMET -> armorPiece(Items.NETHERITE_HELMET, id, "Void Helmet", 0x9D4DFF, lookup, voidLore(), "void",
+                    EquipmentSlot.HEAD, AttributeModifierSlot.HEAD, 6, 6, 3, e(Enchantments.RESPIRATION, 3), e(Enchantments.AQUA_AFFINITY, 1));
+            case VOID_CHESTPLATE -> armorPiece(Items.NETHERITE_CHESTPLATE, id, "Void Chestplate", 0x9D4DFF, lookup, voidLore(), "void",
+                    EquipmentSlot.CHEST, AttributeModifierSlot.CHEST, 14, 6, 3, e(Enchantments.THORNS, 5));
+            case VOID_LEGGINGS -> armorPiece(Items.NETHERITE_LEGGINGS, id, "Void Leggings", 0x9D4DFF, lookup, voidLore(), "void",
+                    EquipmentSlot.LEGS, AttributeModifierSlot.LEGS, 11, 6, 3, e(Enchantments.SWIFT_SNEAK, 5));
+            case VOID_BOOTS -> armorPiece(Items.NETHERITE_BOOTS, id, "Void Boots", 0x9D4DFF, lookup, voidLore(), "void",
+                    EquipmentSlot.FEET, AttributeModifierSlot.FEET, 6, 6, 3, e(Enchantments.FEATHER_FALLING, 10), e(Enchantments.DEPTH_STRIDER, 3), e(Enchantments.SOUL_SPEED, 5));
+
+            // ------------------------------------------------------------ Bone set
+            case BONE_HELMET -> armorPiece(Items.NETHERITE_HELMET, id, "Bone Helmet", 0xF2E8C9, lookup, boneLore(), "bone",
+                    EquipmentSlot.HEAD, AttributeModifierSlot.HEAD, 5, 5, 4, e(Enchantments.RESPIRATION, 3), e(Enchantments.AQUA_AFFINITY, 1));
+            case BONE_CHESTPLATE -> armorPiece(Items.NETHERITE_CHESTPLATE, id, "Bone Chestplate", 0xF2E8C9, lookup, boneLore(), "bone",
+                    EquipmentSlot.CHEST, AttributeModifierSlot.CHEST, 12, 5, 4, e(Enchantments.THORNS, 3));
+            case BONE_LEGGINGS -> armorPiece(Items.NETHERITE_LEGGINGS, id, "Bone Leggings", 0xF2E8C9, lookup, boneLore(), "bone",
+                    EquipmentSlot.LEGS, AttributeModifierSlot.LEGS, 10, 5, 4, e(Enchantments.SWIFT_SNEAK, 3));
+            case BONE_BOOTS -> armorPiece(Items.NETHERITE_BOOTS, id, "Bone Boots", 0xF2E8C9, lookup, boneLore(), "bone",
+                    EquipmentSlot.FEET, AttributeModifierSlot.FEET, 5, 5, 4, e(Enchantments.FEATHER_FALLING, 10), e(Enchantments.DEPTH_STRIDER, 3));
+
+            // ------------------------------------------------------------ Draco set
+            case DRACO_HELMET -> armorPiece(Items.NETHERITE_HELMET, id, "Draco Helmet", 0xFFB000, lookup, dracoLore(), "draco",
+                    EquipmentSlot.HEAD, AttributeModifierSlot.HEAD, 5, 4, 2, e(Enchantments.RESPIRATION, 3));
+            case DRACO_CHESTPLATE -> armorPiece(Items.NETHERITE_CHESTPLATE, id, "Draco Chestplate", 0xFFB000, lookup, dracoLore(), "draco",
+                    EquipmentSlot.CHEST, AttributeModifierSlot.CHEST, 11, 4, 2);
+            case DRACO_LEGGINGS -> armorPiece(Items.NETHERITE_LEGGINGS, id, "Draco Leggings", 0xFFB000, lookup, dracoLore(), "draco",
+                    EquipmentSlot.LEGS, AttributeModifierSlot.LEGS, 9, 4, 2);
+            case DRACO_BOOTS -> armorPiece(Items.NETHERITE_BOOTS, id, "Draco Boots", 0xFFB000, lookup, dracoLore(), "draco",
+                    EquipmentSlot.FEET, AttributeModifierSlot.FEET, 5, 4, 2, e(Enchantments.FEATHER_FALLING, 6));
             default -> ItemStack.EMPTY;
         };
+    }
+
+    public static List<String> voidLore() {
+        return List.of("Void Set (4 pieces):", " - Strength II", " - Resistance I", " - Speed I + Night Vision",
+                " - +3 hearts & +2 damage per piece");
+    }
+
+    public static List<String> boneLore() {
+        return List.of("Bone Set (4 pieces):", " - Regeneration II", " - Resistance I", " - Jump Boost II",
+                " - +4 hearts per piece");
+    }
+
+    public static List<String> dracoLore() {
+        return List.of("Draco Set (4 pieces):", " - Speed II", " - Fire Resistance", " - Haste II",
+                " - +2 hearts per piece");
     }
 
     // ---------------------------------------------------------------- helpers
@@ -111,14 +200,6 @@ public final class LegendaryItems {
 
     private static Ench e(RegistryKey<Enchantment> key, int level) {
         return new Ench(key, level);
-    }
-
-    private static Ench[] protection() {
-        return new Ench[]{e(Enchantments.PROTECTION, 5), e(Enchantments.UNBREAKING, 5), e(Enchantments.MENDING, 1)};
-    }
-
-    private static List<String> setLore() {
-        return List.of("Draco Set (4 pieces):", " - Speed I", " - Fire Resistance", " - +2 hearts per piece");
     }
 
     private static AttributeModifiersComponent weapon(double damage, double speed) {
@@ -135,15 +216,24 @@ public final class LegendaryItems {
                 .build();
     }
 
-    private static AttributeModifiersComponent armor(AttributeModifierSlot slot, double armor, double toughness, double hearts) {
+    private static ItemStack armorPiece(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
+                                        List<String> lore, String asset, EquipmentSlot eq, AttributeModifierSlot slot,
+                                        double armor, double toughness, double hearts, Ench... extra) {
+        Ench[] ench = new Ench[2 + extra.length];
+        ench[0] = e(Enchantments.PROTECTION, 6);
+        ench[1] = e(Enchantments.BLAST_PROTECTION, 4);
+        System.arraycopy(extra, 0, ench, 2, extra.length);
         String s = slot.asString();
-        return AttributeModifiersComponent.builder()
+        var b = AttributeModifiersComponent.builder()
                 .add(EntityAttributes.ARMOR, mod("armor_" + s, armor), slot)
                 .add(EntityAttributes.ARMOR_TOUGHNESS, mod("toughness_" + s, toughness), slot)
-                .add(EntityAttributes.KNOCKBACK_RESISTANCE, mod("kb_" + s, 0.15), slot)
-                .add(EntityAttributes.MAX_HEALTH, mod("health_" + s, hearts * 2), slot)
-                .build();
+                .add(EntityAttributes.KNOCKBACK_RESISTANCE, mod("kb_" + s, 0.2), slot)
+                .add(EntityAttributes.MAX_HEALTH, mod("health_" + s, hearts * 2), slot);
+        if (asset.equals("void")) b.add(EntityAttributes.ATTACK_DAMAGE, mod("dmg_" + s, 2), slot);
+        return build(base, id, name, color, lookup, lore, ench, b.build(), new Equip(eq, asset));
     }
+
+    private record Equip(EquipmentSlot slot, String asset) {}
 
     private static EntityAttributeModifier mod(String name, double value) {
         return new EntityAttributeModifier(Identifier.of(DracosCore.MOD_ID, name), value,
@@ -151,7 +241,7 @@ public final class LegendaryItems {
     }
 
     private static ItemStack build(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
-                                   List<String> abilities, Ench[] enchants, AttributeModifiersComponent attrs) {
+                                   List<String> abilities, Ench[] enchants, AttributeModifiersComponent attrs, Equip equip) {
         ItemStack stack = new ItemStack(base);
 
         stack.set(DataComponentTypes.ITEM_NAME, Text.literal(name)
@@ -174,8 +264,19 @@ public final class LegendaryItems {
         stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
 
         stack.set(DataComponentTypes.RARITY, Rarity.EPIC);
-        stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
+        stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, false); // custom texture from the server pack
+        stack.set(DataComponentTypes.UNBREAKABLE, Unit.INSTANCE);
+        stack.set(DataComponentTypes.ITEM_MODEL, Identifier.of(DracosCore.MOD_ID, id));
         if (attrs != null) stack.set(DataComponentTypes.ATTRIBUTE_MODIFIERS, attrs);
+        if (equip != null) {
+            JsonObject json = new JsonObject();
+            json.addProperty("slot", equip.slot().asString());
+            json.addProperty("asset_id", DracosCore.MOD_ID + ":" + equip.asset());
+            json.addProperty("equip_sound", "minecraft:item.armor.equip_netherite");
+            EquippableComponent.CODEC.parse(lookup.getOps(JsonOps.INSTANCE), json).result()
+                    .ifPresentOrElse(c -> stack.set(DataComponentTypes.EQUIPPABLE, c),
+                            () -> DracosCore.LOGGER.warn("Could not build equippable for {}", id));
+        }
 
         RegistryWrapper.Impl<Enchantment> reg = lookup.getOrThrow(RegistryKeys.ENCHANTMENT);
         for (Ench en : enchants) {
