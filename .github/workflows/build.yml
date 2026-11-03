@@ -13,7 +13,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "9.2.1"
+          gradle-version: "9.5.0"
       - name: Download Burger Economy (compile only)
         run: |
           mkdir -p libs
