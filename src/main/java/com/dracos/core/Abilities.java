@@ -13,6 +13,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -74,7 +75,7 @@ public final class Abilities {
 
             Vec3d look = player.getRotationVector();
             player.addVelocity(look.x * 1.8, 0.35, look.z * 1.8);
-            player.velocityModified = true;
+            if (player instanceof ServerPlayerEntity sp) sp.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(sp));
             player.fallDistance = 0;
             player.getItemCooldownManager().set(stack, 60);
 

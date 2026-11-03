@@ -24,3 +24,10 @@ jobs:
         with:
           name: dracos-core
           path: build/libs/*.jar
+      - name: Debug - permission API names
+        if: always()
+        run: |
+          J=$(find ~/.gradle/caches/fabric-loom .gradle/loom-cache -name "minecraft-merged*.jar" 2>/dev/null | grep -v sources | head -1)
+          echo "JAR=$J"
+          javap -cp "$J" net.minecraft.server.command.ServerCommandSource | grep -i -E "perm|level" || true
+          javap -cp "$J" net.minecraft.server.command.CommandManager | grep -i -E "perm|level|check" || true
