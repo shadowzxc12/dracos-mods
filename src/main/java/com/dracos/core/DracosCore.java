@@ -20,6 +20,7 @@ public class DracosCore implements ModInitializer {
     public void onInitialize() {
         Abilities.register();
         Combat.register();
+        RandomRespawn.register();
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
