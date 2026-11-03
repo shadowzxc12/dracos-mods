@@ -48,17 +48,17 @@ public final class LegendaryItems {
     public static final List<String> IDS = List.of(SHARD_PICKAXE, DRAGON_BLADE, LAVA_AXE, VOID_BOW,
             DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
 
-    /** Ceny v /legendary. */
+    /** Prices in /shop -> Legendary and /legendary. */
     public static final Map<String, Long> PRICES = new LinkedHashMap<>();
     static {
-        PRICES.put(SHARD_PICKAXE, 250_000L);
-        PRICES.put(DRAGON_BLADE, 300_000L);
-        PRICES.put(LAVA_AXE, 200_000L);
-        PRICES.put(VOID_BOW, 200_000L);
-        PRICES.put(DRACO_HELMET, 150_000L);
-        PRICES.put(DRACO_CHESTPLATE, 250_000L);
-        PRICES.put(DRACO_LEGGINGS, 200_000L);
-        PRICES.put(DRACO_BOOTS, 150_000L);
+        PRICES.put(SHARD_PICKAXE, 25_000_000L);
+        PRICES.put(DRAGON_BLADE, 50_000_000L);
+        PRICES.put(LAVA_AXE, 20_000_000L);
+        PRICES.put(VOID_BOW, 20_000_000L);
+        PRICES.put(DRACO_HELMET, 15_000_000L);
+        PRICES.put(DRACO_CHESTPLATE, 30_000_000L);
+        PRICES.put(DRACO_LEGGINGS, 25_000_000L);
+        PRICES.put(DRACO_BOOTS, 15_000_000L);
     }
 
     public static String idOf(ItemStack stack) {

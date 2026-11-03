@@ -3,6 +3,7 @@ package com.dracos.core;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -18,6 +19,12 @@ public class DracosCore implements ModInitializer {
     @Override
     public void onInitialize() {
         Abilities.register();
+
+        // load /sell prices and put the Legendary category into /shop
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            SellPrices.load();
+            ShopSync.sync(server);
+        });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             // /sell  -> okno na predaj
@@ -42,6 +49,13 @@ public class DracosCore implements ModInitializer {
             // /dracos give <hrac> <vec>   (len OP)
             dispatcher.register(CommandManager.literal("dracos")
                     .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
+                    .then(CommandManager.literal("reload").executes(ctx -> {
+                        SellPrices.load();
+                        ShopSync.sync(ctx.getSource().getServer());
+                        ctx.getSource().sendFeedback(() -> Text.literal("Dracos Core reloaded (sell prices + Legendary shop).")
+                                .formatted(Formatting.GREEN), true);
+                        return 1;
+                    }))
                     .then(CommandManager.literal("give")
                             .then(CommandManager.argument("player", EntityArgumentType.player())
                                     .then(CommandManager.argument("item", StringArgumentType.word())

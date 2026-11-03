@@ -34,9 +34,9 @@ public final class Money {
         return "$" + String.format("%,d", amount);
     }
 
-    /** Cena za 1 kus kazdej veci, ktora sa da predat v /shop (berie najvyssiu). */
+    /** Price per item: config/dracos/sell_prices.json + everything sellable in /shop (highest wins). */
     public static Map<String, Double> sellPrices() {
-        Map<String, Double> prices = new HashMap<>();
+        Map<String, Double> prices = new HashMap<>(SellPrices.get());
         for (Object co : ShopConfig.categories()) {
             if (!(co instanceof ShopConfig.Category cat) || cat.items == null) continue;
             for (Object eo : cat.items) {
