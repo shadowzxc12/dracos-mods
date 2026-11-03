@@ -40,9 +40,9 @@ public final class LegendaryShop {
             LoreComponent old = display.get(DataComponentTypes.LORE);
             List<Text> lore = new ArrayList<>(old != null ? old.lines() : List.of());
             lore.add(Text.empty());
-            lore.add(Text.literal("Cena: " + Money.fmt(LegendaryItems.PRICES.get(id)))
+            lore.add(Text.literal("Price: " + Money.fmt(LegendaryItems.PRICES.get(id)))
                     .styled(s -> s.withColor(Formatting.GOLD).withBold(true).withItalic(false)));
-            lore.add(Text.literal("Klikni pre kupu").styled(s -> s.withColor(Formatting.GREEN).withItalic(false)));
+            lore.add(Text.literal("Click to buy").styled(s -> s.withColor(Formatting.GREEN).withItalic(false)));
             display.set(DataComponentTypes.LORE, new LoreComponent(lore));
             inv.setStack(SLOTS[i], display);
         }
@@ -83,15 +83,15 @@ public final class LegendaryShop {
         private void buy(ServerPlayerEntity sp, String id) {
             long price = LegendaryItems.PRICES.get(id);
             if (!Money.has(sp, price)) {
-                sp.sendMessage(Text.literal("Nemas dost penazi! Potrebujes " + Money.fmt(price)
-                        + ", mas " + Money.fmt(Money.get(sp)) + ".").formatted(Formatting.RED), false);
+                sp.sendMessage(Text.literal("Not enough money! You need " + Money.fmt(price)
+                        + ", you have " + Money.fmt(Money.get(sp)) + ".").formatted(Formatting.RED), false);
                 sp.getEntityWorld().playSound(null, sp.getBlockPos(), SoundEvents.ENTITY_VILLAGER_NO,
                         SoundCategory.PLAYERS, 1f, 1f);
                 return;
             }
             Money.add(sp, -price);
             sp.getInventory().offerOrDrop(LegendaryItems.create(id, sp.getEntityWorld().getRegistryManager()));
-            sp.sendMessage(Text.literal("Kupil si legendarnu vec za " + Money.fmt(price) + "!")
+            sp.sendMessage(Text.literal("You bought a legendary item for " + Money.fmt(price) + "!")
                     .formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD), false);
             sp.getEntityWorld().playSound(null, sp.getBlockPos(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                     SoundCategory.PLAYERS, 0.7f, 1.2f);

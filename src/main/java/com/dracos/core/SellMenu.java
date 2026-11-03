@@ -25,19 +25,19 @@ public final class SellMenu {
         SimpleInventory inv = new SimpleInventory(54);
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, playerInv, p) -> new Handler(syncId, playerInv, inv),
-                Text.literal("Sell - daj sem veci a zavri").formatted(Formatting.DARK_GREEN)));
+                Text.literal("Sell - put items here and close").formatted(Formatting.DARK_GREEN)));
     }
 
     public static void sellHand(ServerPlayerEntity player) {
         ItemStack stack = player.getMainHandStack();
         if (stack.isEmpty()) {
-            player.sendMessage(Text.literal("Nemas nic v ruke.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.literal("You are not holding anything.").formatted(Formatting.RED), false);
             return;
         }
         Map<String, Double> prices = Money.sellPrices();
         Double each = priceOf(stack, prices);
         if (each == null) {
-            player.sendMessage(Text.literal("Tato vec sa neda predat. Skus /ah sell <cena>.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.literal("This item can't be sold. Try /ah sell <price>.").formatted(Formatting.RED), false);
             return;
         }
         long total = (long) Math.floor(each * stack.getCount());
@@ -55,11 +55,11 @@ public final class SellMenu {
 
     static void pay(ServerPlayerEntity player, long total, int count) {
         if (total <= 0) {
-            player.sendMessage(Text.literal("Nic z toho sa neda predat.").formatted(Formatting.RED), false);
+            player.sendMessage(Text.literal("None of these items can be sold.").formatted(Formatting.RED), false);
             return;
         }
         Money.add(player, total);
-        player.sendMessage(Text.literal("Predal si " + count + " vec(i) za ").formatted(Formatting.GREEN)
+        player.sendMessage(Text.literal("Sold " + count + " item(s) for ").formatted(Formatting.GREEN)
                 .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD)), false);
         player.getEntityWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
                 SoundCategory.PLAYERS, 0.8f, 1.2f);
@@ -95,7 +95,7 @@ public final class SellMenu {
                 }
             }
             if (sold == 0) {
-                sp.sendMessage(Text.literal("Nic si nepredal.").formatted(Formatting.GRAY), false);
+                sp.sendMessage(Text.literal("Nothing was sold.").formatted(Formatting.GRAY), false);
                 return;
             }
             pay(sp, (long) Math.floor(total), sold);

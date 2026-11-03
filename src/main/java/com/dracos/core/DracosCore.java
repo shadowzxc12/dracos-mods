@@ -53,12 +53,12 @@ public class DracosCore implements ModInitializer {
                                                 ServerPlayerEntity target = EntityArgumentType.getPlayer(ctx, "player");
                                                 String id = StringArgumentType.getString(ctx, "item");
                                                 if (!LegendaryItems.IDS.contains(id)) {
-                                                    ctx.getSource().sendError(Text.literal("Neznamy item: " + id));
+                                                    ctx.getSource().sendError(Text.literal("Unknown item: " + id));
                                                     return 0;
                                                 }
                                                 target.getInventory().offerOrDrop(
                                                         LegendaryItems.create(id, target.getEntityWorld().getRegistryManager()));
-                                                ctx.getSource().sendFeedback(() -> Text.literal("Dal si " + id + " hracovi "
+                                                ctx.getSource().sendFeedback(() -> Text.literal("Gave " + id + " to "
                                                         + target.getName().getString()).formatted(Formatting.GREEN), true);
                                                 return 1;
                                             })))));

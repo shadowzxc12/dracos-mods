@@ -76,19 +76,19 @@ public final class LegendaryItems {
     public static ItemStack create(String id, RegistryWrapper.WrapperLookup lookup) {
         return switch (id) {
             case SHARD_PICKAXE -> build(Items.NETHERITE_PICKAXE, id, "Shard Pickaxe", 0x6FE3FF, lookup,
-                    List.of("Kope 3x3 naraz", "Drz SHIFT pre kopanie 1 bloku"),
+                    List.of("Mines 3x3 at once", "Hold SHIFT to mine 1 block"),
                     new Ench[]{e(Enchantments.EFFICIENCY, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.FORTUNE, 3), e(Enchantments.MENDING, 1)},
                     null);
             case DRAGON_BLADE -> build(Items.NETHERITE_SWORD, id, "Dragon Blade", 0xB14BFF, lookup,
-                    List.of("12 damage", "Pravy klik: Dragon Dash (3s cooldown)"),
+                    List.of("12 damage", "Right-click: Dragon Dash (3s cooldown)"),
                     new Ench[]{e(Enchantments.SHARPNESS, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.LOOTING, 3), e(Enchantments.MENDING, 1)},
                     weapon(12.0, 1.6));
             case LAVA_AXE -> build(Items.NETHERITE_AXE, id, "Lava Axe", 0xFF6A00, lookup,
-                    List.of("Zapali kazdeho, koho udries", "Zoberie cely strom naraz"),
+                    List.of("Sets every target on fire", "Chops the whole tree at once"),
                     new Ench[]{e(Enchantments.EFFICIENCY, 5), e(Enchantments.UNBREAKING, 5), e(Enchantments.MENDING, 1)},
                     weapon(13.0, 1.0));
             case VOID_BOW -> build(Items.BOW, id, "Void Bow", 0x3B2BFF, lookup,
-                    List.of("Sipy letia rovno - bez gravitacie", "+50% damage sipov"),
+                    List.of("Arrows fly straight - no gravity", "+50% arrow speed & damage"),
                     new Ench[]{e(Enchantments.POWER, 6), e(Enchantments.UNBREAKING, 5), e(Enchantments.INFINITY, 1)},
                     null);
             case DRACO_HELMET -> build(Items.NETHERITE_HELMET, id, "Draco Helmet", 0xFFB000, lookup,
@@ -118,7 +118,7 @@ public final class LegendaryItems {
     }
 
     private static List<String> setLore() {
-        return List.of("Draco Set (4 kusy):", " - Speed I", " - Fire Resistance", " - +2 srdcia na kus");
+        return List.of("Draco Set (4 pieces):", " - Speed I", " - Fire Resistance", " - +2 hearts per piece");
     }
 
     private static AttributeModifiersComponent weapon(double damage, double speed) {
