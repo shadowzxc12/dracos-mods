@@ -50,7 +50,7 @@ public final class RankShop {
                 o(L, Items.BEACON, 1, 200_000), o(L, Items.NETHERITE_BLOCK, 1, 300_000));
         row(4, D, o(D, Items.HEAVY_CORE, 1, 300_000), o(D, Items.DRAGON_HEAD, 1, 150_000),
                 o(D, Items.ENCHANTED_GOLDEN_APPLE, 32, 700_000), o(D, Items.TOTEM_OF_UNDYING, 16, 550_000),
-                o(D, Items.NETHERITE_BLOCK, 4, 1_000_000), o(D, Items.DRAGON_EGG, 1, 2_500_000));
+                o(D, Items.NETHERITE_BLOCK, 4, 1_000_000), o(D, Items.BEACON, 2, 400_000));
     }
 
     public static void open(ServerPlayerEntity player) {
