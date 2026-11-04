@@ -26,6 +26,7 @@ public class DracosCore implements ModInitializer {
         Tutorial.register();
         Pack.register();
         Bounty.register();
+        Announcer.register();
         Combat.register();
         RandomRespawn.register();
 
@@ -34,6 +35,7 @@ public class DracosCore implements ModInitializer {
             SellPrices.load();
             ShopSync.sync(server);
             Ranks.load(server);
+            Announcer.load();
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -96,6 +98,10 @@ public class DracosCore implements ModInitializer {
                                                 com.mojang.brigadier.arguments.LongArgumentType.getLong(ctx, "amount"));
                                         return 1;
                                     }))));
+            dispatcher.register(CommandManager.literal("discord").executes(ctx -> {
+                ctx.getSource().getPlayerOrThrow().sendMessage(Announcer.discordMessage(), false);
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
                 Settings.open(ctx.getSource().getPlayerOrThrow());
                 return 1;
