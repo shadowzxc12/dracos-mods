@@ -87,6 +87,13 @@ public final class Settings {
         save();
     }
 
+    /** Sound only this player hears. */
+    public static void sound(ServerPlayerEntity p, net.minecraft.sound.SoundEvent ev, float vol, float pitch) {
+        p.networkHandler.sendPacket(new net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket(
+                net.minecraft.registry.Registries.SOUND_EVENT.getEntry(ev), SoundCategory.PLAYERS,
+                p.getX(), p.getY(), p.getZ(), vol, pitch, p.getRandom().nextLong()));
+    }
+
     private static final int[] SLOTS = {10, 11, 12, 13, 14};
 
     public static void open(ServerPlayerEntity p) {
@@ -127,7 +134,7 @@ public final class Settings {
             if (player instanceof ServerPlayerEntity sp && type == SlotActionType.PICKUP) {
                 for (int i = 0; i < SLOTS.length; i++) if (SLOTS[i] == slot) {
                     toggle(sp, Opt.values()[i]);
-                    sp.playSoundToPlayer(SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.MASTER, 0.6f, 1.2f);
+                    sound(sp, SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 1.2f);
                     fill(sp, inv);
                 }
                 if (slot == 16) { Tutorial.give(sp); sp.closeHandledScreen(); }

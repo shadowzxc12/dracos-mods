@@ -98,7 +98,7 @@ public final class SellMenu {
         if (bonus > 0) msg.append(Text.literal(" (+" + rank.sellBonus + "% " + rank.title + " bonus)").formatted(rank.color));
         player.sendMessage(msg, false);
         if (Settings.on(player, Settings.Opt.SELLSOUND))
-            player.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.2f);
+            Settings.sound(player, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);
     }
 
     static class Handler extends GenericContainerScreenHandler {

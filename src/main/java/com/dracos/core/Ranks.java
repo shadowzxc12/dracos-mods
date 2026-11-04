@@ -249,7 +249,7 @@ public final class Ranks {
                 for (ServerPlayerEntity o : server.getPlayerManager().getPlayerList()) {
                     if (!Settings.on(o, Settings.Opt.JOIN)) continue;
                     o.sendMessage(msg, false);
-                    if (r.atLeast(Rank.DRACO)) o.playSoundToPlayer(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 0.4f, 1.4f);
+                    if (r.atLeast(Rank.DRACO)) Settings.sound(o, SoundEvents.ENTITY_ENDER_DRAGON_GROWL, 0.4f, 1.4f);
                 }
             }
             if (Settings.on(p, Settings.Opt.DAILY) && Perks.dailyReady(p)) {
