@@ -13,6 +13,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DracosCore implements ModInitializer {
+    /** Another mod also registers /settings (text only). Remove every other /settings node and register ours. */
+    @SuppressWarnings("unchecked")
+    private static void takeOverSettings(net.minecraft.server.MinecraftServer server) {
+        var dispatcher = server.getCommandManager().getDispatcher();
+        var root = dispatcher.getRoot();
+        try {
+            for (String field : new String[]{"children", "literals", "arguments"}) {
+                java.lang.reflect.Field f = com.mojang.brigadier.tree.CommandNode.class.getDeclaredField(field);
+                f.setAccessible(true);
+                ((java.util.Map<String, ?>) f.get(root)).remove("settings");
+            }
+            dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
+                Settings.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            for (var p : server.getPlayerManager().getPlayerList()) server.getCommandManager().sendCommandTree(p);
+            LOGGER.info("/settings now opens the Dracos settings menu");
+        } catch (Exception e) {
+            LOGGER.warn("Could not take over /settings", e);
+        }
+    }
+
     public static final String MOD_ID = "dracos_core";
     public static final Logger LOGGER = LoggerFactory.getLogger("DracosCore");
 
@@ -36,6 +58,7 @@ public class DracosCore implements ModInitializer {
             ShopSync.sync(server);
             Ranks.load(server);
             Announcer.load();
+            takeOverSettings(server);
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
