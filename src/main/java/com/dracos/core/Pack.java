@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.network.packet.common.ResourcePackSendS2CPacket;
+import net.minecraft.network.packet.s2c.common.ResourcePackSendS2CPacket;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
