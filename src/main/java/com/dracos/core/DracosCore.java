@@ -25,6 +25,7 @@ public class DracosCore implements ModInitializer {
         Ranks.register();
         Tutorial.register();
         Pack.register();
+        Bounty.register();
         Combat.register();
         RandomRespawn.register();
 
@@ -86,6 +87,15 @@ public class DracosCore implements ModInitializer {
                 Perks.glow(ctx.getSource().getPlayerOrThrow());
                 return 1;
             }));
+            dispatcher.register(CommandManager.literal("bounty")
+                    .executes(ctx -> { Bounty.list(ctx.getSource().getPlayerOrThrow()); return 1; })
+                    .then(CommandManager.argument("target", EntityArgumentType.player())
+                            .then(CommandManager.argument("amount", com.mojang.brigadier.arguments.LongArgumentType.longArg(1))
+                                    .executes(ctx -> {
+                                        Bounty.place(ctx.getSource().getPlayerOrThrow(), EntityArgumentType.getPlayer(ctx, "target"),
+                                                com.mojang.brigadier.arguments.LongArgumentType.getLong(ctx, "amount"));
+                                        return 1;
+                                    }))));
             dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
                 Settings.open(ctx.getSource().getPlayerOrThrow());
                 return 1;

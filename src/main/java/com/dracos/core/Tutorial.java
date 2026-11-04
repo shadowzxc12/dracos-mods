@@ -23,7 +23,7 @@ public final class Tutorial {
             "§6§lHomes & travel§r\n\n§2/sethome <name>\n/home <name>\n/delhome <name>\n/homelimit§0\n\nMembers get 5 homes, ranks get up to 50.\n\n§2/spawn  /tpa <player>\n/rtp§0 - random teleport\n\n§cNo teleporting in combat!",
             "§6§lLegendary items§r\n\n§0Open §2/legendary§0 to see 25 legendary weapons, tools and armor sets.\n\nThey never break and have special abilities. Right-click swords for powers. Full armor sets give bonus effects.\n\nBuy them with money you earn.",
             "§6§lRanks§r\n\n§0Ranks are monthly: §aVIP§0, §bMVP§0, §6LEGEND§0, §dDRACO§0.\n\nMore homes, bigger /sell bonus, /kit, /craft, /ec, /rankshop and more.\n\n§2/ranks§0 - all perks\n§2/store§0 - buy a rank",
-            "§6§lCommands§r\n\n§2/settings§0 - turn effects and messages on/off\n§2/rankshop§0 - rank items\n§2/kit§0 - daily rank kit\n§2/hat§0 - wear any block\n§2/tutorial§0 - this book again",
+            "§6§lCommands§r\n\n§2/settings§0 - turn effects and messages on/off\n§2/rankshop§0 - rank items\n§2/kit§0 - daily rank kit\n§2/hat§0 - wear any block\n§2/bounty <player> <$>§0 - price on a head\n§2/tutorial§0 - this book again",
             "§6§lRules§r\n\n§01. No cheats or hacked clients\n2. No griefing or stealing\n3. Be respectful in chat\n4. No spam or advertising\n5. Combat logging = death\n\n§8Have fun and good luck!\n§6- Dracos team",
     };
 
