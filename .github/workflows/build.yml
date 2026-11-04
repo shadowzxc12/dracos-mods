@@ -32,7 +32,7 @@ jobs:
           C=$(curl -s "$V" | jq -r .downloads.client.url)
           curl -sSL -o /tmp/client.jar "$C"
           mkdir -p /tmp/ref && cd /tmp/ref
-          unzip -q -o /tmp/client.jar 'assets/minecraft/textures/item/bow*' 'assets/minecraft/textures/item/netherite_*' 'assets/minecraft/textures/item/mace.png' 'assets/minecraft/textures/item/trident.png' 'assets/minecraft/textures/item/elytra.png' 'assets/minecraft/textures/entity/equipment/humanoid/*' 'assets/minecraft/textures/entity/equipment/humanoid_leggings/*' 'assets/minecraft/items/bow.json' 'assets/minecraft/items/mace.json' 'assets/minecraft/items/netherite_sword.json' 'assets/minecraft/models/item/bow*.json' 'assets/minecraft/models/item/mace*.json' 'assets/minecraft/models/item/handheld*.json' 'assets/minecraft/equipment/netherite.json' || true
+          unzip -q -o /tmp/client.jar 'assets/minecraft/textures/item/bow*' 'assets/minecraft/textures/item/netherite_*' 'assets/minecraft/textures/item/mace.png' 'assets/minecraft/textures/item/trident.png' 'assets/minecraft/textures/item/elytra.png' 'assets/minecraft/textures/item/golden_*' 'assets/minecraft/textures/item/diamond_*' 'assets/minecraft/textures/entity/equipment/humanoid/*' 'assets/minecraft/textures/entity/equipment/humanoid_leggings/*' 'assets/minecraft/items/bow.json' 'assets/minecraft/items/mace.json' 'assets/minecraft/items/netherite_sword.json' 'assets/minecraft/models/item/bow*.json' 'assets/minecraft/models/item/mace*.json' 'assets/minecraft/models/item/handheld*.json' 'assets/minecraft/equipment/netherite.json' || true
           unzip -p /tmp/client.jar version.json > version.json
           find . -type f | sort
       - name: Build & upload resource pack

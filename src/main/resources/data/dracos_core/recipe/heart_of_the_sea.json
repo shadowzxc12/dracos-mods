@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PPP",
+    "PDP",
+    "PPP"
+  ],
+  "key": {
+    "P": "minecraft:prismarine_crystals",
+    "D": "minecraft:diamond_block"
+  },
+  "result": {
+    "id": "minecraft:heart_of_the_sea",
+    "count": 1
+  }
+}

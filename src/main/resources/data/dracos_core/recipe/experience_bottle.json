@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:glass_bottle",
+    "minecraft:lapis_lazuli",
+    "minecraft:gold_nugget"
+  ],
+  "result": {
+    "id": "minecraft:experience_bottle",
+    "count": 1
+  }
+}

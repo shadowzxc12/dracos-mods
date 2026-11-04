@@ -54,6 +54,21 @@ public final class LegendaryItems {
     public static final String EARTH_DRILL = "earth_drill";
     public static final String TITAN_SHIELD = "titan_shield";
     public static final String PHOENIX_ELYTRA = "phoenix_elytra";
+    public static final String INFERNO_GREATSWORD = "inferno_greatsword";
+    public static final String VENOM_FANG = "venom_fang";
+    public static final String GLACIER_AXE = "glacier_axe";
+    public static final String SOUL_REAPER = "soul_reaper";
+    public static final String STORM_AXE = "storm_axe";
+    public static final String EARTHSHAKER = "earthshaker";
+    public static final String CELESTIAL_BLADE = "celestial_blade";
+    public static final String NIGHT_STALKER = "night_stalker";
+    public static final String ENDER_BLADE = "ender_blade";
+    public static final String GRAVITY_MACE = "gravity_mace";
+    public static final String BLOOD_MOON_SCYTHE = "blood_moon_scythe";
+    public static final String HELLFIRE_AXE = "hellfire_axe";
+    public static final String OCEAN_TRIDENT = "ocean_trident";
+    public static final String CRYSTAL_PICKAXE = "crystal_pickaxe";
+    public static final String MYTHRIL_SHOVEL = "mythril_shovel";
     public static final String DRACO_HELMET = "draco_helmet";
     public static final String DRACO_CHESTPLATE = "draco_chestplate";
     public static final String DRACO_LEGGINGS = "draco_leggings";
@@ -71,6 +86,7 @@ public final class LegendaryItems {
             VOID_BOW, SHARD_PICKAXE, LAVA_AXE);
     public static final List<String> EXTRAS = List.of(BLOOD_KATANA, FROST_TRIDENT, SHADOW_DAGGER, PHOENIX_ELYTRA,
             TITAN_SHIELD, EARTH_DRILL);
+    public static final List<String> PAGE2 = List.of(INFERNO_GREATSWORD, VENOM_FANG, GLACIER_AXE, SOUL_REAPER, STORM_AXE, EARTHSHAKER, CELESTIAL_BLADE, NIGHT_STALKER, ENDER_BLADE, GRAVITY_MACE, BLOOD_MOON_SCYTHE, HELLFIRE_AXE, OCEAN_TRIDENT, CRYSTAL_PICKAXE, MYTHRIL_SHOVEL);
     public static final List<String> DRACO_SET = List.of(DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
     public static final List<String> VOID_SET = List.of(VOID_HELMET, VOID_CHESTPLATE, VOID_LEGGINGS, VOID_BOOTS);
     public static final List<String> BONE_SET = List.of(BONE_HELMET, BONE_CHESTPLATE, BONE_LEGGINGS, BONE_BOOTS);
@@ -79,6 +95,7 @@ public final class LegendaryItems {
     static {
         List<String> all = new ArrayList<>(WEAPONS);
         all.addAll(EXTRAS);
+        all.addAll(PAGE2);
         all.addAll(VOID_SET);
         all.addAll(BONE_SET);
         all.addAll(DRACO_SET);
@@ -101,6 +118,21 @@ public final class LegendaryItems {
         PRICES.put(PHOENIX_ELYTRA, 90_000_000L);
         PRICES.put(TITAN_SHIELD, 40_000_000L);
         PRICES.put(EARTH_DRILL, 20_000_000L);
+        PRICES.put(INFERNO_GREATSWORD, 65_000_000L);
+        PRICES.put(VENOM_FANG, 40_000_000L);
+        PRICES.put(GLACIER_AXE, 45_000_000L);
+        PRICES.put(SOUL_REAPER, 70_000_000L);
+        PRICES.put(STORM_AXE, 55_000_000L);
+        PRICES.put(EARTHSHAKER, 60_000_000L);
+        PRICES.put(CELESTIAL_BLADE, 50_000_000L);
+        PRICES.put(NIGHT_STALKER, 45_000_000L);
+        PRICES.put(ENDER_BLADE, 60_000_000L);
+        PRICES.put(GRAVITY_MACE, 55_000_000L);
+        PRICES.put(BLOOD_MOON_SCYTHE, 85_000_000L);
+        PRICES.put(HELLFIRE_AXE, 35_000_000L);
+        PRICES.put(OCEAN_TRIDENT, 40_000_000L);
+        PRICES.put(CRYSTAL_PICKAXE, 30_000_000L);
+        PRICES.put(MYTHRIL_SHOVEL, 15_000_000L);
         PRICES.put(VOID_HELMET, 40_000_000L);
         PRICES.put(VOID_CHESTPLATE, 80_000_000L);
         PRICES.put(VOID_LEGGINGS, 70_000_000L);
@@ -183,6 +215,67 @@ public final class LegendaryItems {
             case EARTH_DRILL -> build(Items.NETHERITE_SHOVEL, id, "Earth Drill", 0x8B5A2B, lookup,
                     List.of("Digs 3x3 at once", "Haste II while held", "Hold SHIFT to dig 1 block"),
                     new Ench[]{e(Enchantments.EFFICIENCY, 10), e(Enchantments.FORTUNE, 3)},
+                    null, null);
+
+            case INFERNO_GREATSWORD -> build(Items.NETHERITE_SWORD, id, "Inferno Greatsword", 0xFF4500, lookup,
+                    List.of("23 damage", "Burns targets for 10 seconds", "Flame burst on every hit"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.FIRE_ASPECT, 3)},
+                    weapon(23.0, 1.0), null);
+            case VENOM_FANG -> build(Items.NETHERITE_SWORD, id, "Venom Fang", 0x55D400, lookup,
+                    List.of("17 damage, very fast", "Poison II on every hit"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 7), e(Enchantments.LOOTING, 3)},
+                    weapon(17.0, 2.2), null);
+            case GLACIER_AXE -> build(Items.NETHERITE_AXE, id, "Glacier Axe", 0x9FE7FF, lookup,
+                    List.of("24 damage", "Slowness III + frost", "Chops trees faster"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 7), e(Enchantments.EFFICIENCY, 8)},
+                    weapon(24.0, 1.0), null);
+            case SOUL_REAPER -> build(Items.NETHERITE_HOE, id, "Soul Reaper", 0x47E0D2, lookup,
+                    List.of("22 damage", "Wither + steals 2 hearts per hit"),
+                    new Ench[]{e(Enchantments.LOOTING, 5)},
+                    weapon(22.0, 1.4), null);
+            case STORM_AXE -> build(Items.DIAMOND_AXE, id, "Storm Axe", 0x4FA3FF, lookup,
+                    List.of("21 damage", "25% chance to strike lightning"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 7), e(Enchantments.EFFICIENCY, 6)},
+                    weapon(21.0, 1.1), null);
+            case EARTHSHAKER -> build(Items.MACE, id, "Earthshaker", 0x8B6B3D, lookup,
+                    List.of("20 damage", "Slowness III + Nausea", "Knocks enemies up"),
+                    new Ench[]{e(Enchantments.DENSITY, 4), e(Enchantments.BREACH, 3)},
+                    weapon(20.0, 0.9), null);
+            case CELESTIAL_BLADE -> build(Items.GOLDEN_SWORD, id, "Celestial Blade", 0xFFF2A8, lookup,
+                    List.of("19 damage", "Targets glow + Weakness", "Regeneration while held"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.SMITE, 5)},
+                    weapon(19.0, 1.8), null);
+            case NIGHT_STALKER -> build(Items.NETHERITE_SWORD, id, "Night Stalker", 0x2B2B4A, lookup,
+                    List.of("18 damage", "Blindness + Darkness on hit", "Night Vision while held"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 7), e(Enchantments.LOOTING, 4)},
+                    weapon(18.0, 2.0), null);
+            case ENDER_BLADE -> build(Items.NETHERITE_SWORD, id, "Ender Blade", 0x2FD39A, lookup,
+                    List.of("19 damage", "Hits teleport you behind the target"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.LOOTING, 3)},
+                    weapon(19.0, 1.7), null);
+            case GRAVITY_MACE -> build(Items.MACE, id, "Gravity Mace", 0xB57BFF, lookup,
+                    List.of("18 damage", "Launches targets into the air"),
+                    new Ench[]{e(Enchantments.DENSITY, 3), e(Enchantments.WIND_BURST, 2)},
+                    weapon(18.0, 1.0), null);
+            case BLOOD_MOON_SCYTHE -> build(Items.NETHERITE_HOE, id, "Blood Moon Scythe", 0xA0001E, lookup,
+                    List.of("25 damage", "Lifesteal 25% + Wither II"),
+                    new Ench[]{e(Enchantments.LOOTING, 5)},
+                    weapon(25.0, 1.2), null);
+            case HELLFIRE_AXE -> build(Items.GOLDEN_AXE, id, "Hellfire Axe", 0xFF7A1A, lookup,
+                    List.of("22 damage", "Sets targets on fire", "Chops the whole tree at once"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 8), e(Enchantments.SHARPNESS, 6)},
+                    weapon(22.0, 1.0), null);
+            case OCEAN_TRIDENT -> build(Items.TRIDENT, id, "Ocean Trident", 0x2FB5E8, lookup,
+                    List.of("18 damage", "Water Breathing + Dolphin's Grace while held", "Riptide-like speed in water"),
+                    new Ench[]{e(Enchantments.IMPALING, 6), e(Enchantments.LOYALTY, 3)},
+                    weapon(18.0, 1.1), null);
+            case CRYSTAL_PICKAXE -> build(Items.DIAMOND_PICKAXE, id, "Crystal Pickaxe", 0xB4F3FF, lookup,
+                    List.of("Mines 3x3 at once", "Fortune V + Haste II"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 10), e(Enchantments.FORTUNE, 5)},
+                    null, null);
+            case MYTHRIL_SHOVEL -> build(Items.DIAMOND_SHOVEL, id, "Mythril Shovel", 0x7FFFD4, lookup,
+                    List.of("Digs 3x3 at once", "Haste II while held"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 10)},
                     null, null);
 
             // ------------------------------------------------------------ Void set

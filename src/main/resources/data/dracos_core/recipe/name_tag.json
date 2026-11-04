@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:paper",
+    "minecraft:string",
+    "minecraft:iron_nugget"
+  ],
+  "result": {
+    "id": "minecraft:name_tag",
+    "count": 1
+  }
+}

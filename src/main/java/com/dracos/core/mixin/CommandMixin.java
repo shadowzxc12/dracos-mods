@@ -23,6 +23,15 @@ public abstract class CommandMixin {
             ci.cancel();
             return;
         }
+        String c = packet.command().trim().toLowerCase();
+        if (c.equals("settings") || c.equals("setting") || c.equals("dracos:settings")) {
+            // other mods also register /settings; always open ours (on the server thread)
+            var server = player.getEntityWorld().getServer();
+            if (server != null && server.isOnThread()) com.dracos.core.Settings.open(player);
+            else if (server != null) server.execute(() -> com.dracos.core.Settings.open(player));
+            ci.cancel();
+            return;
+        }
         if (com.dracos.core.Homes.onCommand(player, packet.command())) ci.cancel();
     }
 }

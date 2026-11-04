@@ -50,11 +50,13 @@ public final class Perks {
     }
 
     /** Returns ms left on a 24h cooldown, or 0 and starts it. */
-    private static long useDaily(ServerPlayerEntity p, String key) {
+    private static long useDaily(ServerPlayerEntity p, String key) { return useCooldown(p, key, 86_400_000L); }
+
+    private static long useCooldown(ServerPlayerEntity p, String key, long cooldown) {
         String k = p.getUuidAsString() + ":" + key;
         long now = System.currentTimeMillis();
         long last = data().has(k) ? data().get(k).getAsLong() : 0;
-        long left = last + 86_400_000L - now;
+        long left = last + cooldown - now;
         if (left > 0) return left;
         data().addProperty(k, now);
         save();
@@ -90,7 +92,7 @@ public final class Perks {
 
     public static void kit(ServerPlayerEntity p) {
         Ranks.Rank r = Ranks.of(p);
-        long left = useDaily(p, "kit");
+        long left = useCooldown(p, "kit", 3_600_000L); // once per hour
         if (left > 0) {
             p.sendMessage(Text.literal("Next kit in " + fmt(left)).formatted(Formatting.RED), false);
             return;

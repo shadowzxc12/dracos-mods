@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "YSY",
+    "SYS",
+    "YSY"
+  ],
+  "key": {
+    "Y": "minecraft:yellow_wool",
+    "S": "minecraft:string"
+  },
+  "result": {
+    "id": "minecraft:sponge",
+    "count": 1
+  }
+}

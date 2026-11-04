@@ -29,16 +29,30 @@ public final class Stats {
     private static final String KILL_PREFIX = "☠ Kills: ";
 
     /** Crit chance (0..1) and crit multiplier per weapon. */
-    public static final Map<String, double[]> CRIT = Map.of(
-            LegendaryItems.VOID_SCYTHE, new double[]{0.25, 1.75},
-            LegendaryItems.THUNDER_HAMMER, new double[]{0.20, 2.0},
-            LegendaryItems.BONE_REAPER, new double[]{0.30, 1.6},
-            LegendaryItems.DRAGON_BLADE, new double[]{0.20, 1.8},
-            LegendaryItems.LAVA_AXE, new double[]{0.15, 1.7},
-            LegendaryItems.VOID_BOW, new double[]{0.20, 1.5},
-            LegendaryItems.BLOOD_KATANA, new double[]{0.25, 1.7},
-            LegendaryItems.FROST_TRIDENT, new double[]{0.20, 1.6},
-            LegendaryItems.SHADOW_DAGGER, new double[]{0.35, 1.8});
+    public static final Map<String, double[]> CRIT = Map.ofEntries(
+            Map.entry(LegendaryItems.VOID_SCYTHE, new double[]{0.25, 1.75}),
+            Map.entry(LegendaryItems.THUNDER_HAMMER, new double[]{0.20, 2.0}),
+            Map.entry(LegendaryItems.BONE_REAPER, new double[]{0.30, 1.6}),
+            Map.entry(LegendaryItems.DRAGON_BLADE, new double[]{0.20, 1.8}),
+            Map.entry(LegendaryItems.LAVA_AXE, new double[]{0.15, 1.7}),
+            Map.entry(LegendaryItems.VOID_BOW, new double[]{0.20, 1.5}),
+            Map.entry(LegendaryItems.BLOOD_KATANA, new double[]{0.25, 1.7}),
+            Map.entry(LegendaryItems.FROST_TRIDENT, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.SHADOW_DAGGER, new double[]{0.35, 1.8}),
+            Map.entry(LegendaryItems.INFERNO_GREATSWORD, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.VENOM_FANG, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.GLACIER_AXE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.SOUL_REAPER, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.STORM_AXE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.EARTHSHAKER, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.CELESTIAL_BLADE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.NIGHT_STALKER, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.ENDER_BLADE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.GRAVITY_MACE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.BLOOD_MOON_SCYTHE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.HELLFIRE_AXE, new double[]{0.20, 1.6}),
+            Map.entry(LegendaryItems.OCEAN_TRIDENT, new double[]{0.20, 1.6})
+    );
 
     /** Stat lines: label -> value. */
     public static final Map<String, Map<String, String>> LINES = new LinkedHashMap<>();
@@ -51,6 +65,19 @@ public final class Stats {
         w(LegendaryItems.VOID_BOW, "x2 arrow", "-", "Levitation 2s", "-");
         w(LegendaryItems.BLOOD_KATANA, "21", "1.9", "Bleed (Wither I)", "30% of damage");
         w(LegendaryItems.FROST_TRIDENT, "19", "1.1", "Slowness IV + freeze", "-");
+        w(LegendaryItems.INFERNO_GREATSWORD, "23", "1.0", "Burns targets for 10 seconds", "-");
+        w(LegendaryItems.VENOM_FANG, "17", "2.2", "Poison II on every hit", "-");
+        w(LegendaryItems.GLACIER_AXE, "24", "1.0", "Slowness III + frost", "-");
+        w(LegendaryItems.SOUL_REAPER, "22", "1.4", "Wither + steals 2 hearts per hit", "-");
+        w(LegendaryItems.STORM_AXE, "21", "1.1", "25% chance to strike lightning", "-");
+        w(LegendaryItems.EARTHSHAKER, "20", "0.9", "Slowness III + Nausea", "-");
+        w(LegendaryItems.CELESTIAL_BLADE, "19", "1.8", "Targets glow + Weakness", "-");
+        w(LegendaryItems.NIGHT_STALKER, "18", "2.0", "Blindness + Darkness on hit", "-");
+        w(LegendaryItems.ENDER_BLADE, "19", "1.7", "Hits teleport you behind the target", "-");
+        w(LegendaryItems.GRAVITY_MACE, "18", "1.0", "Launches targets into the air", "-");
+        w(LegendaryItems.BLOOD_MOON_SCYTHE, "25", "1.2", "Lifesteal 25% + Wither II", "-");
+        w(LegendaryItems.HELLFIRE_AXE, "22", "1.0", "Sets targets on fire", "-");
+        w(LegendaryItems.OCEAN_TRIDENT, "18", "1.1", "Water Breathing + Dolphin's Grace while held", "-");
         w(LegendaryItems.SHADOW_DAGGER, "15", "2.6", "x2 from behind", "-");
         Map<String, String> pick = new LinkedHashMap<>();
         pick.put("⛏ Mining", "3x3 + Haste II");

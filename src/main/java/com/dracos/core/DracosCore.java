@@ -98,6 +98,14 @@ public class DracosCore implements ModInitializer {
                                                 com.mojang.brigadier.arguments.LongArgumentType.getLong(ctx, "amount"));
                                         return 1;
                                     }))));
+            dispatcher.register(CommandManager.literal("backpack").executes(ctx -> {
+                Backpack.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("bp").executes(ctx -> {
+                Backpack.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("discord").executes(ctx -> {
                 ctx.getSource().getPlayerOrThrow().sendMessage(Announcer.discordMessage(), false);
                 return 1;

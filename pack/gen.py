@@ -184,6 +184,18 @@ SETS = {
     "shadow": dict(stops=["#050507", "#16161f", "#2e2e44", "#59597a"], accent="#8f6bff", spark="#c9b8ff"),
     "phoenix": dict(stops=["#3a0a00", "#a32800", "#ff6a00", "#ffd24d"], accent="#ffef7a", spark="#fff6c2"),
     "earth": dict(stops=["#1e1206", "#4d3013", "#8b5a2b", "#d7a65e"], accent="#7dff6a", spark="#e9ffd9"),
+    "inferno": dict(stops=["#2a0500", "#8a1c00", "#ff4500", "#ffcf4a"], accent="#fff07a", spark="#ffffff"),
+    "venom": dict(stops=["#0b1a00", "#2f5c00", "#55d400", "#c8ff7a"], accent="#e9ff5a", spark="#f4ffd0"),
+    "soul": dict(stops=["#03161a", "#0d4f55", "#2fb9ad", "#a7fff4"], accent="#c6fff9", spark="#ffffff"),
+    "storm": dict(stops=["#050d26", "#163f8f", "#4fa3ff", "#d6ecff"], accent="#fff36b", spark="#ffffff"),
+    "celestial": dict(stops=["#4a3a12", "#b08a2e", "#ffe27a", "#fffbe0"], accent="#ffffff", spark="#fff6c2"),
+    "night": dict(stops=["#020208", "#12122a", "#2b2b4a", "#5a5a8a"], accent="#7f7fff", spark="#c9c9ff"),
+    "ender": dict(stops=["#020f0b", "#0b4d3a", "#2fd39a", "#c8ffe9"], accent="#e070ff", spark="#f3d9ff"),
+    "gravity": dict(stops=["#10061f", "#3d1d7a", "#b57bff", "#efe0ff"], accent="#ffffff", spark="#f6dcff"),
+    "bloodmoon": dict(stops=["#120002", "#4a000c", "#a0001e", "#ff6b7d"], accent="#ffd0d6", spark="#ffffff"),
+    "ocean": dict(stops=["#021a24", "#0b5a7a", "#2fb5e8", "#cff3ff"], accent="#aef9ff", spark="#ffffff"),
+    "crystal": dict(stops=["#0d2a33", "#3b8fa3", "#b4f3ff", "#ffffff"], accent="#e8fdff", spark="#ffffff"),
+    "mythril": dict(stops=["#062a22", "#1f7a63", "#7fffd4", "#e9fff8"], accent="#ffffff", spark="#e9fff8"),
 }
 
 # new legendaries made from recolored vanilla textures: id -> (vanilla texture, set, model parent)
@@ -193,6 +205,21 @@ RECOLORED = {
     "frost_trident": ("trident", "frost", "minecraft:item/handheld"),
     "phoenix_elytra": ("elytra", "phoenix", "minecraft:item/generated"),
     "earth_drill": ("netherite_shovel", "earth", "minecraft:item/handheld"),
+    "inferno_greatsword": ("netherite_sword", "inferno", "minecraft:item/handheld"),
+    "venom_fang": ("netherite_sword", "venom", "minecraft:item/handheld"),
+    "glacier_axe": ("netherite_axe", "frost", "minecraft:item/handheld"),
+    "soul_reaper": ("netherite_hoe", "soul", "minecraft:item/handheld"),
+    "storm_axe": ("diamond_axe", "storm", "minecraft:item/handheld"),
+    "earthshaker": ("mace", "earth", "minecraft:item/handheld_mace"),
+    "celestial_blade": ("golden_sword", "celestial", "minecraft:item/handheld"),
+    "night_stalker": ("netherite_sword", "night", "minecraft:item/handheld"),
+    "ender_blade": ("netherite_sword", "ender", "minecraft:item/handheld"),
+    "gravity_mace": ("mace", "gravity", "minecraft:item/handheld_mace"),
+    "blood_moon_scythe": ("netherite_hoe", "bloodmoon", "minecraft:item/handheld"),
+    "hellfire_axe": ("golden_axe", "inferno", "minecraft:item/handheld"),
+    "ocean_trident": ("trident", "ocean", "minecraft:item/handheld"),
+    "crystal_pickaxe": ("diamond_pickaxe", "crystal", "minecraft:item/handheld"),
+    "mythril_shovel": ("diamond_shovel", "mythril", "minecraft:item/handheld"),
 }
 
 

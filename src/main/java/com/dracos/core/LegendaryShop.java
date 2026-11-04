@@ -38,22 +38,32 @@ public final class LegendaryShop {
         for (int i = 0; i < x.length; i++) LAYOUT.put(x[i], LegendaryItems.EXTRAS.get(i));
     }
 
+    private static final Map<Integer, String> LAYOUT2 = new HashMap<>();
+    static {
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 31};
+        for (int i = 0; i < LegendaryItems.PAGE2.size() && i < slots.length; i++) LAYOUT2.put(slots[i], LegendaryItems.PAGE2.get(i));
+    }
+
     private static void putSet(int rowStart, List<String> set) {
         int[] off = {1, 2, 4, 5};
         for (int i = 0; i < 4; i++) LAYOUT.put(rowStart + off[i], set.get(i));
     }
 
-    public static void open(ServerPlayerEntity player) {
+    public static void open(ServerPlayerEntity player) { open(player, 1); }
+
+    private static Map<Integer, String> layout(int page) { return page == 2 ? LAYOUT2 : LAYOUT; }
+
+    public static void open(ServerPlayerEntity player, int page) {
         SimpleInventory inv = new SimpleInventory(54);
         ItemStack pane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
         pane.set(DataComponentTypes.ITEM_NAME, Text.literal(" "));
         for (int i = 0; i < 54; i++) inv.setStack(i, pane.copy());
-        inv.setStack(22, info(Items.ECHO_SHARD, "Void Set", 0x9D4DFF, LegendaryItems.voidLore()));
-        inv.setStack(31, info(Items.BONE, "Bone Set", 0xF2E8C9, LegendaryItems.boneLore()));
-        inv.setStack(40, info(Items.BLAZE_POWDER, "Draco Set", 0xFFB000, LegendaryItems.dracoLore()));
+        if (page == 1) inv.setStack(22, info(Items.ECHO_SHARD, "Void Set", 0x9D4DFF, LegendaryItems.voidLore()));
+        if (page == 1) inv.setStack(31, info(Items.BONE, "Bone Set", 0xF2E8C9, LegendaryItems.boneLore()));
+        if (page == 1) inv.setStack(40, info(Items.BLAZE_POWDER, "Draco Set", 0xFFB000, LegendaryItems.dracoLore()));
 
         var lookup = player.getEntityWorld().getRegistryManager();
-        for (Map.Entry<Integer, String> en : LAYOUT.entrySet()) {
+        for (Map.Entry<Integer, String> en : layout(page).entrySet()) {
             String id = en.getValue();
             ItemStack display = LegendaryItems.create(id, lookup);
             LoreComponent old = display.get(DataComponentTypes.LORE);
@@ -66,13 +76,17 @@ public final class LegendaryShop {
             inv.setStack(en.getKey(), display);
         }
 
+        ItemStack arrow = new ItemStack(Items.ARROW);
+        arrow.set(DataComponentTypes.ITEM_NAME, Text.literal(page == 1 ? "Next page ➜" : "⬅ Previous page")
+                .styled(st -> st.withColor(Formatting.YELLOW).withBold(true).withItalic(false)));
+        inv.setStack(page == 1 ? 53 : 45, arrow);
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
-                (syncId, playerInv, p) -> new Handler(syncId, playerInv, inv),
-                Text.literal("Legendary Shop").formatted(Formatting.DARK_PURPLE, Formatting.BOLD)));
+                (syncId, playerInv, p) -> new Handler(syncId, playerInv, inv, page),
+                Text.literal("Legendary Shop " + page + "/2").formatted(Formatting.DARK_PURPLE, Formatting.BOLD)));
     }
 
-    private static String idAtSlot(int slot) {
-        return LAYOUT.get(slot);
+    private static String idAtSlot(int page, int slot) {
+        return layout(page).get(slot);
     }
 
     private static ItemStack info(net.minecraft.item.Item item, String name, int color, List<String> lines) {
@@ -86,8 +100,11 @@ public final class LegendaryShop {
     }
 
     static class Handler extends GenericContainerScreenHandler {
-        Handler(int syncId, PlayerInventory playerInv, SimpleInventory inv) {
+        private final int page;
+
+        Handler(int syncId, PlayerInventory playerInv, SimpleInventory inv, int page) {
             super(ScreenHandlerType.GENERIC_9X6, syncId, playerInv, inv, 6);
+            this.page = page;
         }
 
         @Override
@@ -95,7 +112,12 @@ public final class LegendaryShop {
             // nic sa neda vybrat z okna - len kupit
             if (player instanceof ServerPlayerEntity sp && slotIndex >= 0 && slotIndex < 54
                     && actionType == SlotActionType.PICKUP) {
-                String id = idAtSlot(slotIndex);
+                if ((page == 1 && slotIndex == 53) || (page == 2 && slotIndex == 45)) {
+                    int to = page == 1 ? 2 : 1;
+                    sp.getEntityWorld().getServer().execute(() -> open(sp, to));
+                    return;
+                }
+                String id = idAtSlot(page, slotIndex);
                 if (id != null) buy(sp, id);
             }
             this.syncState();

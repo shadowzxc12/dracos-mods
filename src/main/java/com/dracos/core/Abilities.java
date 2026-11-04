@@ -57,9 +57,10 @@ public final class Abilities {
             if (id == null) return;
             try {
                 breaking = true;
-                if ((id.equals(LegendaryItems.SHARD_PICKAXE) || id.equals(LegendaryItems.EARTH_DRILL)) && !sp.isSneaking()) {
+                if ((id.equals(LegendaryItems.SHARD_PICKAXE) || id.equals(LegendaryItems.EARTH_DRILL)
+                        || id.equals(LegendaryItems.CRYSTAL_PICKAXE) || id.equals(LegendaryItems.MYTHRIL_SHOVEL)) && !sp.isSneaking()) {
                     mine3x3(sp, world, pos);
-                } else if (id.equals(LegendaryItems.LAVA_AXE) && state.isIn(BlockTags.LOGS) && !sp.isSneaking()) {
+                } else if ((id.equals(LegendaryItems.LAVA_AXE) || id.equals(LegendaryItems.HELLFIRE_AXE)) && state.isIn(BlockTags.LOGS) && !sp.isSneaking()) {
                     fellTree(sp, world, pos);
                 }
             } finally {
@@ -98,6 +99,71 @@ public final class Abilities {
                         sw.playSound(null, living.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.PLAYERS, 0.8f, 0.6f);
                     }
                     Effects.p(sw, ParticleTypes.SQUID_INK, living.getX(), living.getBodyY(0.5), living.getZ(), 6, 0.3, 0.01);
+                }
+                case LegendaryItems.INFERNO_GREATSWORD, LegendaryItems.HELLFIRE_AXE -> {
+                    living.setOnFireFor(10f);
+                    Effects.p(sw, ParticleTypes.FLAME, living.getX(), living.getBodyY(0.5), living.getZ(), 25, 0.4, 0.05);
+                    Effects.p(sw, ParticleTypes.LAVA, living.getX(), living.getBodyY(0.5), living.getZ(), 4, 0.3, 0);
+                }
+                case LegendaryItems.VENOM_FANG -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 100, 1));
+                    Effects.p(sw, ParticleTypes.ITEM_SLIME, living.getX(), living.getBodyY(0.5), living.getZ(), 15, 0.3, 0.05);
+                }
+                case LegendaryItems.GLACIER_AXE -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 2));
+                    living.setFrozenTicks(Math.max(living.getFrozenTicks(), 200));
+                    Effects.p(sw, ParticleTypes.SNOWFLAKE, living.getX(), living.getBodyY(0.5), living.getZ(), 25, 0.4, 0.03);
+                }
+                case LegendaryItems.SOUL_REAPER -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 60, 0));
+                    player.heal(4f * player.getAttackCooldownProgress(0.5f));
+                    Effects.p(sw, ParticleTypes.SOUL, living.getX(), living.getBodyY(0.5), living.getZ(), 15, 0.4, 0.04);
+                }
+                case LegendaryItems.BLOOD_MOON_SCYTHE -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 80, 1));
+                    player.heal(6f * player.getAttackCooldownProgress(0.5f));
+                    Effects.p(sw, Effects.BLOOD_DUST, living.getX(), living.getBodyY(0.5), living.getZ(), 20, 0.4, 0);
+                }
+                case LegendaryItems.STORM_AXE -> {
+                    if (sw.getRandom().nextFloat() < 0.25f) {
+                        LightningEntity bolt = EntityType.LIGHTNING_BOLT.create(sw, SpawnReason.TRIGGERED);
+                        if (bolt != null) { bolt.refreshPositionAfterTeleport(living.getX(), living.getY(), living.getZ()); bolt.setCosmetic(true); sw.spawnEntity(bolt); }
+                        living.timeUntilRegen = 0;
+                        living.damage(sw, sw.getDamageSources().playerAttack(player), 8f);
+                    }
+                    Effects.p(sw, ParticleTypes.ELECTRIC_SPARK, living.getX(), living.getBodyY(0.5), living.getZ(), 15, 0.4, 0.1);
+                }
+                case LegendaryItems.EARTHSHAKER -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 2));
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 100, 0));
+                    living.addVelocity(0, 0.6, 0);
+                    if (living instanceof ServerPlayerEntity tp) tp.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(tp));
+                    Effects.p(sw, ParticleTypes.CLOUD, living.getX(), living.getY(), living.getZ(), 20, 0.6, 0.05);
+                }
+                case LegendaryItems.GRAVITY_MACE -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 40, 1));
+                    Effects.p(sw, ParticleTypes.REVERSE_PORTAL, living.getX(), living.getBodyY(0.5), living.getZ(), 25, 0.4, 0.05);
+                }
+                case LegendaryItems.CELESTIAL_BLADE -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 80, 0));
+                    Effects.p(sw, ParticleTypes.END_ROD, living.getX(), living.getBodyY(0.5), living.getZ(), 15, 0.4, 0.05);
+                }
+                case LegendaryItems.NIGHT_STALKER -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0));
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
+                    Effects.p(sw, ParticleTypes.SQUID_INK, living.getX(), living.getBodyY(0.5), living.getZ(), 12, 0.3, 0.02);
+                }
+                case LegendaryItems.ENDER_BLADE -> {
+                    if (player.getAttackCooldownProgress(0.5f) > 0.9f) {
+                        Vec3d back = living.getRotationVector().multiply(-1.5, 0, -1.5);
+                        double tx = living.getX() + back.x, tz = living.getZ() + back.z;
+                        if (sw.isAir(BlockPos.ofFloored(tx, living.getY(), tz)) && sw.isAir(BlockPos.ofFloored(tx, living.getY() + 1, tz))) {
+                            player.requestTeleport(tx, living.getY(), tz);
+                            sw.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.7f, 1.2f);
+                        }
+                    }
+                    Effects.p(sw, ParticleTypes.PORTAL, living.getX(), living.getBodyY(0.5), living.getZ(), 30, 0.4, 0.3);
                 }
                 case LegendaryItems.LAVA_AXE -> {
                     living.setOnFireFor(8f);
@@ -319,6 +385,12 @@ public final class Abilities {
                     effect(p, StatusEffects.RESISTANCE, 0);
                     effect(p, StatusEffects.JUMP_BOOST, 1);
                 }
+                String held = LegendaryItems.idOf(p.getMainHandStack());
+                if (LegendaryItems.CELESTIAL_BLADE.equals(held)) effect(p, StatusEffects.REGENERATION, 0);
+                if (LegendaryItems.NIGHT_STALKER.equals(held))
+                    p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 300, 0, true, false, true));
+                if (LegendaryItems.OCEAN_TRIDENT.equals(held)) { effect(p, StatusEffects.WATER_BREATHING, 0); effect(p, StatusEffects.DOLPHINS_GRACE, 0); }
+                if (LegendaryItems.CRYSTAL_PICKAXE.equals(held) || LegendaryItems.MYTHRIL_SHOVEL.equals(held)) effect(p, StatusEffects.HASTE, 1);
                 if (LegendaryItems.is(p.getMainHandStack(), LegendaryItems.SHARD_PICKAXE)
                         || LegendaryItems.is(p.getMainHandStack(), LegendaryItems.EARTH_DRILL)) {
                     effect(p, StatusEffects.HASTE, 1);
