@@ -372,7 +372,7 @@ public final class Abilities {
                 att.damage(sw, sw.getDamageSources().thorns(p), Math.max(2f, amount * 0.5f));
                 Vec3d push = new Vec3d(att.getX() - p.getX(), 0, att.getZ() - p.getZ()).multiply(1, 0, 1).normalize().multiply(1.2);
                 att.addVelocity(push.x, 0.35, push.z);
-                att.velocityModified = true;
+                if (att instanceof ServerPlayerEntity tp) tp.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(tp));
                 Effects.p(sw, ParticleTypes.CRIT, att.getX(), att.getBodyY(0.5), att.getZ(), 15, 0.3, 0.1);
                 sw.playSound(null, p.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK.value(), SoundCategory.PLAYERS, 1f, 0.6f);
             }
