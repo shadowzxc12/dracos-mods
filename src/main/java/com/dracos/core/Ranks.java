@@ -43,7 +43,8 @@ public final class Ranks {
         VIP("d", "VIP", Formatting.GREEN, ParticleTypes.HAPPY_VILLAGER, 10, 5),
         MVP("c", "MVP", Formatting.AQUA, ParticleTypes.END_ROD, 15, 10),
         LEGEND("b", "Legend", Formatting.GOLD, ParticleTypes.FLAME, 25, 15),
-        DRACO("a", "Draco", Formatting.LIGHT_PURPLE, ParticleTypes.REVERSE_PORTAL, 50, 25);
+        DRACO("a", "Draco", Formatting.LIGHT_PURPLE, ParticleTypes.REVERSE_PORTAL, 50, 25),
+        OWNER("0", "Owner", Formatting.RED, ParticleTypes.SOUL_FIRE_FLAME, 1000, 25); // only via console/OP, never sold
 
         final String sort;
         public final String title;
@@ -156,7 +157,7 @@ public final class Ranks {
         try {
             r = Rank.valueOf(rank.toUpperCase());
         } catch (Exception e) {
-            return "Unknown rank: " + rank + " (member, vip, mvp, legend, draco)";
+            return "Unknown rank: " + rank + " (member, vip, mvp, legend, draco, owner)";
         }
         String key = name.toLowerCase();
         if (r == Rank.MEMBER) { RANKS.remove(key); EXPIRES.remove(key); }
@@ -178,7 +179,7 @@ public final class Ranks {
                         .append(Text.literal(p.getName().getString()).formatted(Formatting.WHITE, Formatting.BOLD))
                         .append(Text.literal(" just got the ").formatted(Formatting.GRAY))
                         .append(r.prefix())
-                        .append(Text.literal("rank! Thank you for supporting Dracos SMP!").formatted(Formatting.GRAY)), false);
+                        .append(Text.literal(r == Rank.OWNER ? "rank!" : "rank! Thank you for supporting Dracos SMP!").formatted(Formatting.GRAY)), false);
                 ((ServerWorld) p.getEntityWorld()).playSound(null, p.getBlockPos(), SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                         SoundCategory.PLAYERS, 1f, 1f);
             }

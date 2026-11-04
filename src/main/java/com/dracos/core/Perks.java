@@ -79,7 +79,7 @@ public final class Perks {
             return;
         }
         long amount = switch (Ranks.of(p)) {
-            case MEMBER -> 10_000; case VIP -> 25_000; case MVP -> 50_000; case LEGEND -> 100_000; case DRACO -> 250_000;
+            case MEMBER -> 10_000; case VIP -> 25_000; case MVP -> 50_000; case LEGEND -> 100_000; case DRACO, OWNER -> 250_000;
         };
         Money.add(p, amount);
         p.sendMessage(Text.literal("Daily reward: ").formatted(Formatting.GREEN)
