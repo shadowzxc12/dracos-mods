@@ -1,0 +1,33 @@
+name: TTS
+on:
+  push:
+    paths: ["tts/**", ".github/workflows/tts.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  tts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Synthesize
+        run: |
+          pip install --quiet piper-tts
+          mkdir -p /tmp/v /tmp/out
+          B=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high
+          curl -sSL -o /tmp/v/ryan.onnx $B/en_US-ryan-high.onnx
+          curl -sSL -o /tmp/v/ryan.onnx.json $B/en_US-ryan-high.onnx.json
+          python3 - <<'PY'
+          import json, subprocess
+          lines = json.load(open("tts/lines.json"))
+          for k, t in lines.items():
+              subprocess.run(["piper", "-m", "/tmp/v/ryan.onnx", "--length_scale", "0.88", "-f", f"/tmp/out/{k}.wav"],
+                             input=t.encode(), check=True)
+          PY
+          ls -l /tmp/out
+      - name: Publish
+        run: |
+          cd /tmp/out && git init -q -b tts-out
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add -A && git commit -qm "tts"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" tts-out
