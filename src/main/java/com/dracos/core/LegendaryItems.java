@@ -256,6 +256,11 @@ public final class LegendaryItems {
             lore.add(line);
         }
         lore.add(Text.empty());
+        List<Text> stats = Stats.lore(id, 0);
+        if (!stats.isEmpty()) {
+            lore.addAll(stats);
+            lore.add(Text.empty());
+        }
         lore.add(Text.literal("Dracos SMP").styled(st -> st.withColor(0xFF8A00).withItalic(false)));
         stack.set(DataComponentTypes.LORE, new LoreComponent(lore));
 

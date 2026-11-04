@@ -20,6 +20,8 @@ public class DracosCore implements ModInitializer {
     public void onInitialize() {
         Abilities.register();
         Effects.register();
+        Stats.register();
+        Ranks.register();
         Combat.register();
         RandomRespawn.register();
 
@@ -27,6 +29,7 @@ public class DracosCore implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SellPrices.load();
             ShopSync.sync(server);
+            Ranks.load(server);
         });
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
@@ -41,6 +44,16 @@ public class DracosCore implements ModInitializer {
                         SellMenu.sellHand(ctx.getSource().getPlayerOrThrow());
                         return 1;
                     })));
+
+            // /ranks -> list of ranks and perks, /hat -> wear held item (VIP+)
+            dispatcher.register(CommandManager.literal("ranks").executes(ctx -> {
+                Ranks.showRanks(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("hat").executes(ctx -> {
+                Ranks.hat(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
 
             // /legendary -> obchod s legendarnymi vecami
             dispatcher.register(CommandManager.literal("legendary")
@@ -59,6 +72,25 @@ public class DracosCore implements ModInitializer {
                                 .formatted(Formatting.GREEN), true);
                         return 1;
                     }))
+                    .then(CommandManager.literal("rank")
+                            .then(CommandManager.argument("player", StringArgumentType.word())
+                                    .then(CommandManager.argument("rank", StringArgumentType.word())
+                                            .suggests((ctx, b) -> {
+                                                for (Ranks.Rank r : Ranks.Rank.values()) b.suggest(r.name().toLowerCase());
+                                                return b.buildFuture();
+                                            })
+                                            .executes(ctx -> {
+                                                String name = StringArgumentType.getString(ctx, "player");
+                                                String rank = StringArgumentType.getString(ctx, "rank");
+                                                String err = Ranks.set(ctx.getSource().getServer(), name, rank);
+                                                if (err != null) {
+                                                    ctx.getSource().sendError(Text.literal(err));
+                                                    return 0;
+                                                }
+                                                ctx.getSource().sendFeedback(() -> Text.literal("Set rank of " + name + " to "
+                                                        + rank.toUpperCase()).formatted(Formatting.GREEN), true);
+                                                return 1;
+                                            }))))
                     .then(CommandManager.literal("give")
                             .then(CommandManager.argument("player", EntityArgumentType.player())
                                     .then(CommandManager.argument("item", StringArgumentType.word())

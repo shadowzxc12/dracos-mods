@@ -67,7 +67,7 @@ public final class SellMenu {
             double left = 1.0 - (double) stack.getDamage() / stack.getMaxDamage();
             price *= Math.max(0.1, left);
         }
-        return price;
+        return price * SellPrices.multiplier();
     }
 
     private static double fallback(ItemStack stack) {

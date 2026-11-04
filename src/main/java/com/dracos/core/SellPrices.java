@@ -26,6 +26,12 @@ public final class SellPrices {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile Map<String, Double> PRICES = Collections.emptyMap();
     private static volatile double DEFAULT = 1.0;
+    private static volatile double MULTIPLIER = 1.5;
+
+    /** Global /sell bonus (key "multiplier" in the file, default 1.5 = +50%). */
+    public static double multiplier() {
+        return MULTIPLIER;
+    }
 
     /** Base price for items not in the file (key "*"). */
     public static double defaultPrice() {
@@ -67,6 +73,8 @@ public final class SellPrices {
         } catch (Exception ex) {
             DracosCore.LOGGER.error("Failed to load sell_prices.json", ex);
         }
+        Double mul = map.remove("multiplier");
+        MULTIPLIER = mul != null ? mul : 1.5;
         Double d = map.remove("*");
         DEFAULT = d != null ? d : 1.0;
         PRICES = Collections.unmodifiableMap(map);
