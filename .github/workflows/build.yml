@@ -35,11 +35,21 @@ jobs:
           unzip -q -o /tmp/client.jar 'assets/minecraft/textures/item/bow*' 'assets/minecraft/textures/item/netherite_*' 'assets/minecraft/textures/item/mace.png' 'assets/minecraft/textures/item/trident.png' 'assets/minecraft/textures/entity/equipment/humanoid/*' 'assets/minecraft/textures/entity/equipment/humanoid_leggings/*' 'assets/minecraft/items/bow.json' 'assets/minecraft/items/mace.json' 'assets/minecraft/items/netherite_sword.json' 'assets/minecraft/models/item/bow*.json' 'assets/minecraft/models/item/mace*.json' 'assets/minecraft/models/item/handheld*.json' 'assets/minecraft/equipment/netherite.json' || true
           unzip -p /tmp/client.jar version.json > version.json
           find . -type f | sort
+      - name: Build & upload resource pack
+        run: |
+          pip install --quiet pillow
+          PYTHONHASHSEED=1 python3 pack/gen.py /tmp/ref /tmp/pack
+          cd /tmp/pack && find . -exec touch -t 202601010000 {} + && zip -qrX9 /tmp/dracos-pack.zip pack.mcmeta pack.png assets
+          SHA=$(sha1sum /tmp/dracos-pack.zip | cut -d' ' -f1)
+          curl -sS -o /tmp/up.html -F "file=@/tmp/dracos-pack.zip" https://mc-packs.net/ || true
+          URL=$(grep -oE 'https://download\.mc-packs\.net/pack/[A-Za-z0-9_.-]+\.zip' /tmp/up.html | head -1)
+          echo "url=$URL" > /tmp/pack.txt; echo "sha1=$SHA" >> /tmp/pack.txt; cat /tmp/pack.txt
       - name: Publish jar to dist branch
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/dist && cp build/libs/*.jar /tmp/dist/
           cp -r /tmp/ref /tmp/dist/ref
+          cp /tmp/pack.txt /tmp/up.html /tmp/dracos-pack.zip /tmp/dist/ || true
           cd /tmp/dist && git init -q -b dist
           git config user.name "github-actions" && git config user.email "actions@github.com"
           git add -A && git commit -qm "Build ${GITHUB_SHA::7}"
