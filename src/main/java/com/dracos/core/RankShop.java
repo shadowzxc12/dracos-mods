@@ -39,18 +39,19 @@ public final class RankShop {
 
     static {
         Ranks.Rank V = Ranks.Rank.VIP, M = Ranks.Rank.MVP, L = Ranks.Rank.LEGEND, D = Ranks.Rank.DRACO;
-        row(1, V, o(V, Items.GOLDEN_APPLE, 16, 20_000), o(V, Items.EXPERIENCE_BOTTLE, 64, 15_000),
-                o(V, Items.SHULKER_BOX, 1, 25_000), o(V, Items.ENDER_PEARL, 16, 10_000),
-                o(V, Items.DIAMOND_BLOCK, 4, 40_000), o(V, Items.FIREWORK_ROCKET, 64, 8_000));
-        row(2, M, o(M, Items.ENCHANTED_GOLDEN_APPLE, 2, 60_000), o(M, Items.TOTEM_OF_UNDYING, 1, 50_000),
-                o(M, Items.NETHERITE_INGOT, 2, 80_000), o(M, Items.ELYTRA, 1, 250_000),
-                o(M, Items.SHULKER_BOX, 4, 80_000), o(M, Items.EXPERIENCE_BOTTLE, 256, 50_000));
-        row(3, L, o(L, Items.ENCHANTED_GOLDEN_APPLE, 8, 200_000), o(L, Items.TOTEM_OF_UNDYING, 4, 160_000),
-                o(L, Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 2, 90_000), o(L, Items.NETHER_STAR, 1, 150_000),
-                o(L, Items.BEACON, 1, 200_000), o(L, Items.NETHERITE_BLOCK, 1, 300_000));
-        row(4, D, o(D, Items.HEAVY_CORE, 1, 300_000), o(D, Items.DRAGON_HEAD, 1, 150_000),
-                o(D, Items.ENCHANTED_GOLDEN_APPLE, 32, 700_000), o(D, Items.TOTEM_OF_UNDYING, 16, 550_000),
-                o(D, Items.NETHERITE_BLOCK, 4, 1_000_000), o(D, Items.BEACON, 2, 400_000));
+        // rarer items cost a lot more; no elytra (must be found in the End)
+        row(1, V, o(V, Items.GOLDEN_APPLE, 16, 40_000), o(V, Items.EXPERIENCE_BOTTLE, 64, 25_000),
+                o(V, Items.SHULKER_BOX, 1, 120_000), o(V, Items.ENDER_PEARL, 16, 20_000),
+                o(V, Items.DIAMOND_BLOCK, 4, 150_000), o(V, Items.FIREWORK_ROCKET, 64, 15_000));
+        row(2, M, o(M, Items.ENCHANTED_GOLDEN_APPLE, 1, 500_000), o(M, Items.TOTEM_OF_UNDYING, 1, 250_000),
+                o(M, Items.NETHERITE_INGOT, 1, 400_000), o(M, Items.WIND_CHARGE, 32, 60_000),
+                o(M, Items.SHULKER_BOX, 4, 450_000), o(M, Items.EXPERIENCE_BOTTLE, 256, 90_000));
+        row(3, L, o(L, Items.ENCHANTED_GOLDEN_APPLE, 3, 1_400_000), o(L, Items.TOTEM_OF_UNDYING, 4, 900_000),
+                o(L, Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 1, 750_000), o(L, Items.NETHER_STAR, 1, 2_000_000),
+                o(L, Items.BEACON, 1, 2_500_000), o(L, Items.NETHERITE_BLOCK, 1, 3_500_000));
+        row(4, D, o(D, Items.HEAVY_CORE, 1, 5_000_000), o(D, Items.DRAGON_HEAD, 1, 3_000_000),
+                o(D, Items.ENCHANTED_GOLDEN_APPLE, 8, 3_500_000), o(D, Items.TOTEM_OF_UNDYING, 8, 1_700_000),
+                o(D, Items.NETHERITE_BLOCK, 4, 13_000_000), o(D, Items.BEACON, 2, 4_800_000));
     }
 
     public static void open(ServerPlayerEntity player) {

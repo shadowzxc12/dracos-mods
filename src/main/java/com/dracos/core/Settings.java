@@ -40,7 +40,8 @@ public final class Settings {
         AURAS("Legendary item effects", Items.NETHER_STAR, "Particles around your legendary items and armor"),
         JOIN("Join messages", Items.OAK_SIGN, "See when ranked players join (and the Draco roar)"),
         DAILY("Daily reward reminder", Items.CLOCK, "Reminder on join when /daily is ready"),
-        SELLSOUND("Sell sounds", Items.GOLD_NUGGET, "Play a sound when you sell items");
+        SELLSOUND("Sell sounds", Items.GOLD_NUGGET, "Play a sound when you sell items"),
+        BOUNTY("Bounty alerts", Items.WITHER_SKELETON_SKULL, "Chat messages about new and claimed bounties");
 
         final String title; final Item icon; final String desc;
         Opt(String title, Item icon, String desc) { this.title = title; this.icon = icon; this.desc = desc; }
@@ -94,45 +95,59 @@ public final class Settings {
                 p.getX(), p.getY(), p.getZ(), vol, pitch, p.getRandom().nextLong()));
     }
 
-    private static final int[] SLOTS = {10, 11, 12, 13, 14};
+    // DonutSMP-style: icon on row 2, ON/OFF switch right under it on row 3
+    private static final int[] SLOTS = {10, 11, 12, 13, 14, 15};
 
     public static void open(ServerPlayerEntity p) {
-        SimpleInventory inv = new SimpleInventory(27);
+        SimpleInventory inv = new SimpleInventory(45);
         fill(p, inv);
         p.openHandledScreen(new SimpleNamedScreenHandlerFactory((id, pi, pl) -> new Handler(id, pi, inv),
-                Text.literal("Settings").formatted(Formatting.DARK_AQUA, Formatting.BOLD)));
+                Text.literal("⚙ Settings").formatted(Formatting.DARK_GRAY, Formatting.BOLD)));
     }
 
+    private static ItemStack named(Item item, Text name, List<Text> lore) {
+        ItemStack s = new ItemStack(item);
+        s.set(DataComponentTypes.ITEM_NAME, name);
+        if (lore != null) s.set(DataComponentTypes.LORE, new LoreComponent(lore));
+        return s;
+    }
+
+    private static Text gray(String t) { return Text.literal(t).styled(st -> st.withColor(Formatting.GRAY).withItalic(false)); }
+
     private static void fill(ServerPlayerEntity p, SimpleInventory inv) {
-        ItemStack pane = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
-        pane.set(DataComponentTypes.ITEM_NAME, Text.literal(" "));
-        for (int i = 0; i < 27; i++) inv.setStack(i, pane.copy());
+        ItemStack pane = named(Items.BLACK_STAINED_GLASS_PANE, Text.literal(" "), null);
+        for (int i = 0; i < 45; i++) inv.setStack(i, pane.copy());
         Opt[] opts = Opt.values();
         for (int i = 0; i < opts.length; i++) {
             Opt o = opts[i];
             boolean on = on(p, o);
-            ItemStack s = new ItemStack(o.icon);
-            s.set(DataComponentTypes.ITEM_NAME, Text.literal(o.title).styled(st -> st.withColor(on ? Formatting.GREEN : Formatting.RED).withBold(true).withItalic(false)));
-            s.set(DataComponentTypes.LORE, new LoreComponent(List.of(
-                    Text.literal(o.desc).styled(st -> st.withColor(Formatting.GRAY).withItalic(false)),
-                    Text.literal(on ? "● ON" : "○ OFF").styled(st -> st.withColor(on ? Formatting.GREEN : Formatting.RED).withItalic(false)),
-                    Text.literal("Click to switch").styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false)))));
-            if (on) s.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
-            inv.setStack(SLOTS[i], s);
+            Text title = Text.literal(o.title).styled(st -> st.withColor(Formatting.WHITE).withBold(true).withItalic(false));
+            ItemStack icon = named(o.icon, title, List.of(gray(o.desc), Text.empty(),
+                    Text.literal(on ? "Enabled" : "Disabled").styled(st -> st.withColor(on ? Formatting.GREEN : Formatting.RED).withItalic(false)),
+                    Text.literal("Click to toggle").styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false))));
+            inv.setStack(SLOTS[i], icon);
+            ItemStack sw = named(on ? Items.LIME_DYE : Items.GRAY_DYE,
+                    Text.literal(on ? "ON" : "OFF").styled(st -> st.withColor(on ? Formatting.GREEN : Formatting.RED).withBold(true).withItalic(false)),
+                    List.of(gray(o.title), Text.literal("Click to toggle").styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false))));
+            inv.setStack(SLOTS[i] + 9, sw);
         }
-        ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-        book.set(DataComponentTypes.ITEM_NAME, Text.literal("Get the tutorial book").styled(st -> st.withColor(Formatting.GOLD).withBold(true).withItalic(false)));
-        inv.setStack(16, book);
+        inv.setStack(16, named(Items.WRITTEN_BOOK, Text.literal("Tutorial book").styled(st -> st.withColor(Formatting.GOLD).withBold(true).withItalic(false)),
+                List.of(gray("Get the server guide again"))));
+        Ranks.Rank r = Ranks.of(p);
+        inv.setStack(25, named(Items.NAME_TAG, Text.literal("Your rank: " + r.title).styled(st -> st.withColor(r.color).withBold(true).withItalic(false)),
+                List.of(gray(r.homes + " homes, +" + r.sellBonus + "% /sell"), gray(Ranks.daysLeft(p) >= 0 ? Ranks.daysLeft(p) + " days left" : "No expiry"))));
+        inv.setStack(40, named(Items.BARRIER, Text.literal("Close").styled(st -> st.withColor(Formatting.RED).withBold(true).withItalic(false)), null));
     }
 
     static class Handler extends GenericContainerScreenHandler {
         private final SimpleInventory inv;
-        Handler(int id, PlayerInventory pi, SimpleInventory inv) { super(ScreenHandlerType.GENERIC_9X3, id, pi, inv, 3); this.inv = inv; }
+        Handler(int id, PlayerInventory pi, SimpleInventory inv) { super(ScreenHandlerType.GENERIC_9X5, id, pi, inv, 5); this.inv = inv; }
 
         @Override
         public void onSlotClick(int slot, int button, SlotActionType type, PlayerEntity player) {
             if (player instanceof ServerPlayerEntity sp && type == SlotActionType.PICKUP) {
-                for (int i = 0; i < SLOTS.length; i++) if (SLOTS[i] == slot) {
+                if (slot == 40) { sp.closeHandledScreen(); return; }
+                for (int i = 0; i < SLOTS.length; i++) if (SLOTS[i] == slot || SLOTS[i] + 9 == slot) {
                     toggle(sp, Opt.values()[i]);
                     sound(sp, SoundEvents.UI_BUTTON_CLICK.value(), 0.6f, 1.2f);
                     fill(sp, inv);

@@ -56,12 +56,12 @@ public final class Bounty {
         data().addProperty(k, total);
         save();
         MinecraftServer server = from.getEntityWorld().getServer();
-        server.getPlayerManager().broadcast(Text.literal("☠ ").formatted(Formatting.DARK_RED)
+        broadcast(server, Text.literal("☠ ").formatted(Formatting.DARK_RED)
                 .append(Text.literal(from.getName().getString()).formatted(Formatting.WHITE))
                 .append(Text.literal(" put " + Money.fmt(amount) + " on ").formatted(Formatting.GRAY))
                 .append(Text.literal(target.getName().getString()).formatted(Formatting.RED, Formatting.BOLD))
                 .append(Text.literal("'s head! Total bounty: ").formatted(Formatting.GRAY))
-                .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD)), false);
+                .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD)));
         Settings.sound(target, SoundEvents.ENTITY_WITHER_SPAWN, 0.4f, 1.6f);
     }
 
@@ -78,6 +78,11 @@ public final class Bounty {
         }
     }
 
+    private static void broadcast(MinecraftServer server, Text msg) {
+        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList())
+            if (Settings.on(p, Settings.Opt.BOUNTY)) p.sendMessage(msg, false);
+    }
+
     public static void register() {
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (!(entity instanceof ServerPlayerEntity dead) || !(source.getAttacker() instanceof ServerPlayerEntity killer) || killer == dead) return;
@@ -87,12 +92,12 @@ public final class Bounty {
             data().remove(k);
             save();
             Money.add(killer, amount);
-            killer.getEntityWorld().getServer().getPlayerManager().broadcast(Text.literal("☠ ").formatted(Formatting.DARK_RED)
+            broadcast(killer.getEntityWorld().getServer(), Text.literal("☠ ").formatted(Formatting.DARK_RED)
                     .append(Text.literal(killer.getName().getString()).formatted(Formatting.GREEN, Formatting.BOLD))
                     .append(Text.literal(" claimed the ").formatted(Formatting.GRAY))
                     .append(Text.literal(Money.fmt(amount)).formatted(Formatting.GOLD, Formatting.BOLD))
                     .append(Text.literal(" bounty on ").formatted(Formatting.GRAY))
-                    .append(Text.literal(dead.getName().getString()).formatted(Formatting.RED)), false);
+                    .append(Text.literal(dead.getName().getString()).formatted(Formatting.RED)));
             Settings.sound(killer, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.8f, 1f);
         });
     }

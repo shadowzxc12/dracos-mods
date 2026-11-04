@@ -205,7 +205,7 @@ public final class Ranks {
 
     public static void showRanks(ServerPlayerEntity p) {
         p.sendMessage(Text.literal("━━━━━━ Dracos SMP Ranks ━━━━━━").formatted(Formatting.GOLD, Formatting.BOLD), false);
-        line(p, Rank.MEMBER, "5 homes");
+        line(p, Rank.MEMBER, "5 homes, /kit (starter), /daily $10k");
         line(p, Rank.VIP, "€2.99/mo - 10 homes, +5% /sell, VIP /rankshop, /hat, /kit vip, sparkle trail");
         line(p, Rank.MVP, "€4.99/mo - 15 homes, +10% /sell, MVP /rankshop, /kit mvp, /craft, glowing trail");
         line(p, Rank.LEGEND, "€7.99/mo - 25 homes, +15% /sell, LEGEND /rankshop, /kit legend, /ec, flame trail");

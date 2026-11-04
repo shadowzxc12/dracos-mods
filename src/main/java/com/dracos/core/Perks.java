@@ -90,10 +90,15 @@ public final class Perks {
 
     public static void kit(ServerPlayerEntity p) {
         Ranks.Rank r = Ranks.of(p);
-        if (!need(p, Ranks.Rank.VIP, "/kit")) return;
         long left = useDaily(p, "kit");
         if (left > 0) {
             p.sendMessage(Text.literal("Next kit in " + fmt(left)).formatted(Formatting.RED), false);
+            return;
+        }
+        if (r == Ranks.Rank.MEMBER) { // starter kit for everyone
+            give(p, Items.STONE_SWORD, 1); give(p, Items.STONE_PICKAXE, 1); give(p, Items.STONE_AXE, 1);
+            give(p, Items.BREAD, 16); give(p, Items.TORCH, 32); give(p, Items.OAK_LOG, 16);
+            p.sendMessage(Text.literal("You received the Member kit! Ranks get better kits: /ranks").formatted(Formatting.GRAY), false);
             return;
         }
         give(p, Items.COOKED_BEEF, 32);
