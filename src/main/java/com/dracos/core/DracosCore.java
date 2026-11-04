@@ -60,6 +60,30 @@ public class DracosCore implements ModInitializer {
                 RankShop.open(ctx.getSource().getPlayerOrThrow());
                 return 1;
             }));
+            dispatcher.register(CommandManager.literal("daily").executes(ctx -> {
+                Perks.daily(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("kit").executes(ctx -> {
+                Perks.kit(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("craft").executes(ctx -> {
+                Perks.craft(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("ec").executes(ctx -> {
+                Perks.enderChest(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("enderchest").executes(ctx -> {
+                Perks.enderChest(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("glow").executes(ctx -> {
+                Perks.glow(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("store").executes(ctx -> {
                 Store.show(ctx.getSource().getPlayerOrThrow());
                 return 1;
@@ -93,6 +117,17 @@ public class DracosCore implements ModInitializer {
                                                 for (Ranks.Rank r : Ranks.Rank.values()) b.suggest(r.name().toLowerCase());
                                                 return b.buildFuture();
                                             })
+                                            .then(CommandManager.argument("days", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 3650))
+                                                    .executes(ctx -> {
+                                                        String name = StringArgumentType.getString(ctx, "player");
+                                                        String rank = StringArgumentType.getString(ctx, "rank");
+                                                        int days = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "days");
+                                                        String err = Ranks.set(ctx.getSource().getServer(), name, rank, days);
+                                                        if (err != null) { ctx.getSource().sendError(Text.literal(err)); return 0; }
+                                                        ctx.getSource().sendFeedback(() -> Text.literal("Set rank of " + name + " to "
+                                                                + rank.toUpperCase() + " for " + days + " days").formatted(Formatting.GREEN), true);
+                                                        return 1;
+                                                    }))
                                             .executes(ctx -> {
                                                 String name = StringArgumentType.getString(ctx, "player");
                                                 String rank = StringArgumentType.getString(ctx, "rank");

@@ -40,10 +40,10 @@ public final class Store {
     public static void show(ServerPlayerEntity p) {
         String url = url();
         p.sendMessage(Text.literal("━━━━━━ Dracos SMP Store ━━━━━━").formatted(Formatting.GOLD, Formatting.BOLD), false);
-        price(p, Ranks.Rank.VIP, "€4.99");
-        price(p, Ranks.Rank.MVP, "€9.99");
-        price(p, Ranks.Rank.LEGEND, "€19.99");
-        price(p, Ranks.Rank.DRACO, "€34.99");
+        price(p, Ranks.Rank.VIP, "€2.99 / month");
+        price(p, Ranks.Rank.MVP, "€4.99 / month");
+        price(p, Ranks.Rank.LEGEND, "€7.99 / month");
+        price(p, Ranks.Rank.DRACO, "€11.99 / month");
         Text link = Text.literal("➤ CLICK HERE TO OPEN THE STORE").styled(s -> {
             s = s.withColor(Formatting.GREEN).withBold(true).withUnderline(true)
                     .withHoverEvent(new HoverEvent.ShowText(Text.literal(url).formatted(Formatting.GRAY)));

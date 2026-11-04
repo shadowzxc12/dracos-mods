@@ -72,6 +72,7 @@ public final class Ranks {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<String, Rank> RANKS = new ConcurrentHashMap<>();
+    private static final Map<String, Long> EXPIRES = new ConcurrentHashMap<>();
     private static final Map<java.util.UUID, double[]> LAST = new ConcurrentHashMap<>();
 
     private static Path file() {
@@ -79,7 +80,22 @@ public final class Ranks {
     }
 
     public static Rank of(ServerPlayerEntity p) {
-        return RANKS.getOrDefault(p.getName().getString().toLowerCase(), Rank.MEMBER);
+        String n = p.getName().getString().toLowerCase();
+        Long exp = EXPIRES.get(n);
+        if (exp != null && exp < System.currentTimeMillis()) {
+            RANKS.remove(n);
+            EXPIRES.remove(n);
+            save();
+            p.sendMessage(Text.literal("Your rank expired. Renew it with /store").formatted(Formatting.RED), false);
+        }
+        return RANKS.getOrDefault(n, Rank.MEMBER);
+    }
+
+    /** Days left (-1 = permanent / no rank). */
+    public static long daysLeft(ServerPlayerEntity p) {
+        Long exp = EXPIRES.get(p.getName().getString().toLowerCase());
+        if (exp == null) return -1;
+        return Math.max(0, (exp - System.currentTimeMillis() + 86_399_999L) / 86_400_000L);
     }
 
     public static void load(MinecraftServer server) {
@@ -92,7 +108,14 @@ public final class Ranks {
                     if (el != null && el.isJsonObject()) {
                         for (Map.Entry<String, JsonElement> e : el.getAsJsonObject().entrySet()) {
                             try {
-                                RANKS.put(e.getKey().toLowerCase(), Rank.valueOf(e.getValue().getAsString().toUpperCase()));
+                                String k = e.getKey().toLowerCase();
+                                if (e.getValue().isJsonObject()) {
+                                    JsonObject v = e.getValue().getAsJsonObject();
+                                    RANKS.put(k, Rank.valueOf(v.get("rank").getAsString().toUpperCase()));
+                                    if (v.has("expires")) EXPIRES.put(k, v.get("expires").getAsLong());
+                                } else {
+                                    RANKS.put(k, Rank.valueOf(e.getValue().getAsString().toUpperCase()));
+                                }
                             } catch (Exception ignored) {}
                         }
                     }
@@ -111,7 +134,13 @@ public final class Ranks {
             Path f = file();
             Files.createDirectories(f.getParent());
             JsonObject o = new JsonObject();
-            RANKS.forEach((k, v) -> o.addProperty(k, v.name().toLowerCase()));
+            RANKS.forEach((k, v) -> {
+                JsonObject e = new JsonObject();
+                e.addProperty("rank", v.name().toLowerCase());
+                Long exp = EXPIRES.get(k);
+                if (exp != null) e.addProperty("expires", exp);
+                o.add(k, e);
+            });
             try (Writer w = Files.newBufferedWriter(f)) { GSON.toJson(o, w); }
         } catch (Exception ex) {
             DracosCore.LOGGER.error("Failed to save ranks.json", ex);
@@ -119,14 +148,27 @@ public final class Ranks {
     }
 
     /** Returns an error message or null. */
-    public static String set(MinecraftServer server, String name, String rank) {
+    public static String set(MinecraftServer server, String name, String rank) { return set(server, name, rank, 0); }
+
+    /** days > 0: rank lasts that many days (monthly = 30); extends if the player already has it. */
+    public static String set(MinecraftServer server, String name, String rank, int days) {
         Rank r;
         try {
             r = Rank.valueOf(rank.toUpperCase());
         } catch (Exception e) {
             return "Unknown rank: " + rank + " (member, vip, mvp, legend, draco)";
         }
-        if (r == Rank.MEMBER) RANKS.remove(name.toLowerCase()); else RANKS.put(name.toLowerCase(), r);
+        String key = name.toLowerCase();
+        if (r == Rank.MEMBER) { RANKS.remove(key); EXPIRES.remove(key); }
+        else {
+            long now = System.currentTimeMillis();
+            if (days > 0) {
+                Long old = EXPIRES.get(key);
+                long base = (RANKS.get(key) == r && old != null && old > now) ? old : now;
+                EXPIRES.put(key, base + days * 86_400_000L);
+            } else EXPIRES.remove(key);
+            RANKS.put(key, r);
+        }
         save();
         ServerPlayerEntity p = server.getPlayerManager().getPlayer(name);
         if (p != null) {
@@ -163,12 +205,14 @@ public final class Ranks {
     public static void showRanks(ServerPlayerEntity p) {
         p.sendMessage(Text.literal("━━━━━━ Dracos SMP Ranks ━━━━━━").formatted(Formatting.GOLD, Formatting.BOLD), false);
         line(p, Rank.MEMBER, "5 homes");
-        line(p, Rank.VIP, "10 homes, +5% /sell, VIP /rankshop, /hat, sparkle trail");
-        line(p, Rank.MVP, "15 homes, +10% /sell, MVP /rankshop, glowing trail, join msg");
-        line(p, Rank.LEGEND, "25 homes, +15% /sell, LEGEND /rankshop, flame trail");
-        line(p, Rank.DRACO, "50 homes, +25% /sell, DRACO /rankshop, void trail, join sound");
+        line(p, Rank.VIP, "€2.99/mo - 10 homes, +5% /sell, VIP /rankshop, /hat, /kit vip, sparkle trail");
+        line(p, Rank.MVP, "€4.99/mo - 15 homes, +10% /sell, MVP /rankshop, /kit mvp, /craft, glowing trail");
+        line(p, Rank.LEGEND, "€7.99/mo - 25 homes, +15% /sell, LEGEND /rankshop, /kit legend, /ec, flame trail");
+        line(p, Rank.DRACO, "€11.99/mo - 50 homes, +25% /sell, DRACO /rankshop, /kit draco, /glow, void trail");
         p.sendMessage(Text.literal("Your rank: ").formatted(Formatting.GRAY)
-                .append(Text.literal(of(p).title).formatted(of(p).color, Formatting.BOLD)), false);
+                .append(Text.literal(of(p).title).formatted(of(p).color, Formatting.BOLD))
+                .append(Text.literal(daysLeft(p) >= 0 ? " (" + daysLeft(p) + " days left)" : "").formatted(Formatting.GRAY)), false);
+        p.sendMessage(Text.literal("Buy / renew monthly: /store").formatted(Formatting.YELLOW), false);
     }
 
     private static void line(ServerPlayerEntity p, Rank r, String perks) {
@@ -212,6 +256,9 @@ public final class Ranks {
         });
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 1200 == 0) { // expiry check every minute
+                for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) apply(server, p);
+            }
             if (server.getTicks() % 4 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 Rank r = of(p);
