@@ -24,6 +24,7 @@ public class DracosCore implements ModInitializer {
         Stats.register();
         Ranks.register();
         Tutorial.register();
+        Pack.register();
         Combat.register();
         RandomRespawn.register();
 

@@ -17,7 +17,7 @@ import java.nio.file.Path;
 public final class Store {
     private Store() {}
 
-    private static final String DEFAULT_URL = "https://claude.ai/artifact/RiUDH3fQtFHMmKjYa7S3yz";
+    private static final String DEFAULT_URL = "https://shadowzxc12.github.io/dracos-store/";
 
     static String url() {
         Path f = FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("store.json");
