@@ -33,33 +33,37 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Store ranks. Set with: /dracos rank <player> <member|vip|mvp|legend|draco>  (console / OP, e.g. from Tebex).
- * Perks are cosmetic / quality-of-life (Minecraft EULA friendly).
+ * Perks: tag, trail, more homes, /sell bonus, /rankshop tiers.
  */
 public final class Ranks {
     private Ranks() {}
 
     public enum Rank {
-        MEMBER("e", "Member", Formatting.GRAY, null),
-        VIP("d", "VIP", Formatting.GREEN, ParticleTypes.HAPPY_VILLAGER),
-        MVP("c", "MVP", Formatting.AQUA, ParticleTypes.END_ROD),
-        LEGEND("b", "Legend", Formatting.GOLD, ParticleTypes.FLAME),
-        DRACO("a", "Draco", Formatting.LIGHT_PURPLE, ParticleTypes.REVERSE_PORTAL);
+        MEMBER("e", "Member", Formatting.GRAY, null, 5, 0),
+        VIP("d", "VIP", Formatting.GREEN, ParticleTypes.HAPPY_VILLAGER, 10, 5),
+        MVP("c", "MVP", Formatting.AQUA, ParticleTypes.END_ROD, 15, 10),
+        LEGEND("b", "Legend", Formatting.GOLD, ParticleTypes.FLAME, 25, 15),
+        DRACO("a", "Draco", Formatting.LIGHT_PURPLE, ParticleTypes.REVERSE_PORTAL, 50, 25);
 
         final String sort;
-        final String title;
-        final Formatting color;
+        public final String title;
+        public final Formatting color;
         final ParticleEffect trail;
+        public final int homes;
+        public final int sellBonus; // percent
 
-        Rank(String sort, String title, Formatting color, ParticleEffect trail) {
+        Rank(String sort, String title, Formatting color, ParticleEffect trail, int homes, int sellBonus) {
+            this.homes = homes;
+            this.sellBonus = sellBonus;
             this.sort = sort;
             this.title = title;
             this.color = color;
             this.trail = trail;
         }
 
-        boolean atLeast(Rank r) { return ordinal() >= r.ordinal(); }
+        public boolean atLeast(Rank r) { return ordinal() >= r.ordinal(); }
 
-        Text prefix() {
+        public Text prefix() {
             if (this == MEMBER) return Text.empty();
             MutableText t = Text.literal("[" + title.toUpperCase() + "] ").formatted(color, Formatting.BOLD);
             return t;
@@ -158,10 +162,11 @@ public final class Ranks {
 
     public static void showRanks(ServerPlayerEntity p) {
         p.sendMessage(Text.literal("━━━━━━ Dracos SMP Ranks ━━━━━━").formatted(Formatting.GOLD, Formatting.BOLD), false);
-        line(p, Rank.VIP, "Green [VIP] tag, /hat, happy sparkle trail");
-        line(p, Rank.MVP, "Aqua [MVP] tag, /hat, glowing trail, join message");
-        line(p, Rank.LEGEND, "Gold [LEGEND] tag, /hat, flame trail, join message");
-        line(p, Rank.DRACO, "Purple [DRACO] tag, /hat, void trail, join sound + message");
+        line(p, Rank.MEMBER, "5 homes");
+        line(p, Rank.VIP, "10 homes, +5% /sell, VIP /rankshop, /hat, sparkle trail");
+        line(p, Rank.MVP, "15 homes, +10% /sell, MVP /rankshop, glowing trail, join msg");
+        line(p, Rank.LEGEND, "25 homes, +15% /sell, LEGEND /rankshop, flame trail");
+        line(p, Rank.DRACO, "50 homes, +25% /sell, DRACO /rankshop, void trail, join sound");
         p.sendMessage(Text.literal("Your rank: ").formatted(Formatting.GRAY)
                 .append(Text.literal(of(p).title).formatted(of(p).color, Formatting.BOLD)), false);
     }

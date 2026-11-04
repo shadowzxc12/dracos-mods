@@ -55,6 +55,15 @@ public class DracosCore implements ModInitializer {
                 return 1;
             }));
 
+            dispatcher.register(CommandManager.literal("rankshop").executes(ctx -> {
+                RankShop.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("homelimit").executes(ctx -> {
+                Homes.info(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+
             // /legendary -> obchod s legendarnymi vecami
             dispatcher.register(CommandManager.literal("legendary")
                     .executes(ctx -> {

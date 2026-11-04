@@ -89,9 +89,14 @@ public final class SellMenu {
             player.sendMessage(Text.literal("None of these items can be sold.").formatted(Formatting.RED), false);
             return;
         }
+        Ranks.Rank rank = Ranks.of(player);
+        long bonus = total * rank.sellBonus / 100;
+        total += bonus;
         Money.add(player, total);
-        player.sendMessage(Text.literal("Sold " + count + " item(s) for ").formatted(Formatting.GREEN)
-                .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD)), false);
+        var msg = Text.literal("Sold " + count + " item(s) for ").formatted(Formatting.GREEN)
+                .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD));
+        if (bonus > 0) msg.append(Text.literal(" (+" + rank.sellBonus + "% " + rank.title + " bonus)").formatted(rank.color));
+        player.sendMessage(msg, false);
         player.getEntityWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
                 SoundCategory.PLAYERS, 0.8f, 1.2f);
     }

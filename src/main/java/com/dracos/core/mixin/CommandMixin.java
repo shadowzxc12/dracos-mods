@@ -21,6 +21,8 @@ public abstract class CommandMixin {
         if (Combat.shouldBlock(player, packet.command())) {
             player.sendMessage(Text.literal("You can't use that command in combat!").formatted(Formatting.RED), false);
             ci.cancel();
+            return;
         }
+        if (com.dracos.core.Homes.onCommand(player, packet.command())) ci.cancel();
     }
 }
