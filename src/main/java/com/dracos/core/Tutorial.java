@@ -6,6 +6,7 @@ import net.minecraft.component.type.WrittenBookContentComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.RawFilteredPair;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -17,19 +18,38 @@ import java.util.List;
 public final class Tutorial {
     private Tutorial() {}
 
-    private static final String[] PAGES = {
-            "§6§lDracos SMP§r\n\n§0Welcome! This book explains everything on the server.\n\n§8Pages:\n§02 Money\n§03 Homes & travel\n§04 Legendary items\n§05 Ranks\n§06 Commands\n§07 Rules",
-            "§6§lMoney§r\n\n§0Earn money by selling what you farm and mine:\n\n§2/sell§0 - open the sell window\n§2/sell hand§0 - sell held item\n§2/shop§0 - buy items\n§2/ah§0 - auction house\n§2/daily§0 - free money every day\n§0Your balance is on the scoreboard.",
-            "§6§lHomes & travel§r\n\n§2/sethome <name>\n/home <name>\n/delhome <name>\n/homelimit§0\n\nMembers get 5 homes, ranks get up to 50.\n\n§2/spawn  /tpa <player>\n/rtp§0 - random teleport\n\n§cNo teleporting in combat!",
-            "§6§lLegendary items§r\n\n§0Open §2/legendary§0 to see 25 legendary weapons, tools and armor sets.\n\nThey never break and have special abilities. Right-click swords for powers. Full armor sets give bonus effects.\n\nBuy them with money you earn.",
-            "§6§lRanks§r\n\n§0Ranks are monthly: §aVIP§0, §bMVP§0, §6LEGEND§0, §dDRACO§0.\n\nMore homes, bigger /sell bonus, /kit, /craft, /ec, /rankshop and more.\n\n§2/ranks§0 - all perks\n§2/store§0 - buy a rank",
-            "§6§lCommands§r\n\n§2/settings§0 - turn effects and messages on/off\n§2/rankshop§0 - rank items\n§2/kit§0 - daily rank kit\n§2/hat§0 - wear any block\n§2/bounty <player> <$>§0 - price on a head\n§2/tutorial§0 - this book again",
-            "§6§lRules§r\n\n§01. No cheats or hacked clients\n2. No griefing or stealing\n3. Be respectful in chat\n4. No spam or advertising\n5. Combat logging = death\n\n§8Have fun and good luck!\n§6- Dracos team",
+    private static final String[][] PAGES = {
+            {"#Dracos SMP", "", "Welcome!", "This book explains", "the server.", "", "2 Money", "3 Homes", "4 Travel", "5 Legendary items", "6 Ranks", "7 Commands", "8 Rules"},
+            {"#Money", "", "Sell what you farm", "and mine:", "", "/sell", " open sell window", "/sell hand", " sell held item", "/shop  buy items", "/ah  auction house", "/daily  free money"},
+            {"#Homes", "", "/sethome <name>", "/home <name>", "/delhome <name>", "/homelimit", "", "Members get 5", "homes. Ranks get", "up to 50."},
+            {"#Travel", "", "/spawn", "/tpa <player>", "/rtp", " random teleport", "", "!No teleporting", "!in combat!"},
+            {"#Legendary", "", "/legendary", "", "25 weapons, tools", "and armor sets.", "They never break", "and have powers.", "Right-click swords", "for abilities.", "Full armor sets", "give bonus effects."},
+            {"#Ranks", "", "Monthly ranks:", "VIP  MVP", "LEGEND  DRACO", "", "More homes, more", "sell money, /kit", "and more.", "", "/ranks  all perks", "/store  buy a rank"},
+            {"#Commands", "", "/settings", " effects on/off", "/rankshop", "/kit  rank kit", "/hat  wear a block", "/bounty <player> <$>", "/tutorial", " this book again"},
+            {"#Rules", "", "1. No cheats", "2. No griefing", "3. No stealing", "4. Be respectful", "5. No spam or ads", "6. Combat logging", "   = death", "", "Have fun!", "- Dracos team"}
     };
+
+    /** "#" = title, "!" = warning, "/" = command (rest of line is the description), others = plain text. */
+    private static Text page(String[] lines) {
+        MutableText t = Text.empty();
+        for (int i = 0; i < lines.length; i++) {
+            String l = lines[i];
+            if (i > 0) t.append(Text.literal("\n"));
+            if (l.startsWith("#")) t.append(Text.literal(l.substring(1)).formatted(Formatting.DARK_RED, Formatting.BOLD));
+            else if (l.startsWith("!")) t.append(Text.literal(l.substring(1)).formatted(Formatting.DARK_RED));
+            else if (l.startsWith("/")) {
+                int sp = l.indexOf("  ");
+                String cmd = sp > 0 ? l.substring(0, sp) : l;
+                t.append(Text.literal(cmd).formatted(Formatting.DARK_GREEN, Formatting.BOLD));
+                if (sp > 0) t.append(Text.literal(l.substring(sp)).formatted(Formatting.BLACK));
+            } else t.append(Text.literal(l).formatted(Formatting.BLACK));
+        }
+        return t;
+    }
 
     public static ItemStack book() {
         List<RawFilteredPair<Text>> pages = new ArrayList<>();
-        for (String p : PAGES) pages.add(RawFilteredPair.of(Text.literal(p)));
+        for (String[] p : PAGES) pages.add(RawFilteredPair.of(page(p)));
         ItemStack b = new ItemStack(Items.WRITTEN_BOOK);
         b.set(DataComponentTypes.WRITTEN_BOOK_CONTENT, new WrittenBookContentComponent(
                 RawFilteredPair.of("Dracos SMP Guide"), "Dracos SMP", 0, pages, true));
