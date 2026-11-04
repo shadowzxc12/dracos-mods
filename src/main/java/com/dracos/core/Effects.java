@@ -87,7 +87,7 @@ public final class Effects {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             int t = server.getTicks();
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                if (p.isSpectator() || p.isInvisible()) continue;
+                if (p.isSpectator() || p.isInvisible() || !Settings.on(p, Settings.Opt.AURAS)) continue;
                 ServerWorld w = (ServerWorld) p.getEntityWorld();
 
                 // held item aura (every 3 ticks)

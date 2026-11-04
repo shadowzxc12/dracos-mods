@@ -23,6 +23,7 @@ public class DracosCore implements ModInitializer {
         Effects.register();
         Stats.register();
         Ranks.register();
+        Tutorial.register();
         Combat.register();
         RandomRespawn.register();
 
@@ -82,6 +83,14 @@ public class DracosCore implements ModInitializer {
             }));
             dispatcher.register(CommandManager.literal("glow").executes(ctx -> {
                 Perks.glow(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
+                Settings.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("tutorial").executes(ctx -> {
+                Tutorial.give(ctx.getSource().getPlayerOrThrow());
                 return 1;
             }));
             dispatcher.register(CommandManager.literal("store").executes(ctx -> {

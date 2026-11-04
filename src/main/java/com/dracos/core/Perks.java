@@ -44,6 +44,11 @@ public final class Perks {
         catch (Exception e) { DracosCore.LOGGER.warn("cooldowns.json save failed", e); }
     }
 
+    public static boolean dailyReady(ServerPlayerEntity p) {
+        String k = p.getUuidAsString() + ":daily";
+        return !data().has(k) || data().get(k).getAsLong() + 86_400_000L <= System.currentTimeMillis();
+    }
+
     /** Returns ms left on a 24h cooldown, or 0 and starts it. */
     private static long useDaily(ServerPlayerEntity p, String key) {
         String k = p.getUuidAsString() + ":" + key;

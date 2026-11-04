@@ -243,15 +243,17 @@ public final class Ranks {
             apply(server, p);
             Rank r = of(p);
             if (r.atLeast(Rank.MVP)) {
-                server.getPlayerManager().broadcast(Text.empty().append(r.prefix())
+                Text msg = Text.empty().append(r.prefix())
                         .append(Text.literal(p.getName().getString()).formatted(r.color))
-                        .append(Text.literal(" joined the server!").formatted(Formatting.YELLOW)), false);
-            }
-            if (r.atLeast(Rank.DRACO)) {
+                        .append(Text.literal(" joined the server!").formatted(Formatting.YELLOW));
                 for (ServerPlayerEntity o : server.getPlayerManager().getPlayerList()) {
-                    ((ServerWorld) o.getEntityWorld()).playSound(null, o.getBlockPos(), SoundEvents.ENTITY_ENDER_DRAGON_GROWL,
-                            SoundCategory.PLAYERS, 0.4f, 1.4f);
+                    if (!Settings.on(o, Settings.Opt.JOIN)) continue;
+                    o.sendMessage(msg, false);
+                    if (r.atLeast(Rank.DRACO)) o.playSoundToPlayer(SoundEvents.ENTITY_ENDER_DRAGON_GROWL, SoundCategory.PLAYERS, 0.4f, 1.4f);
                 }
+            }
+            if (Settings.on(p, Settings.Opt.DAILY) && Perks.dailyReady(p)) {
+                p.sendMessage(Text.literal("🎁 Your daily reward is ready! Type /daily").formatted(Formatting.GREEN), false);
             }
         });
 
@@ -262,7 +264,7 @@ public final class Ranks {
             if (server.getTicks() % 4 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 Rank r = of(p);
-                if (r.trail == null || p.isSpectator() || p.isInvisible() || p.isSneaking()) continue;
+                if (r.trail == null || !Settings.on(p, Settings.Opt.TRAIL) || p.isSpectator() || p.isInvisible() || p.isSneaking()) continue;
                 double[] last = LAST.put(p.getUuid(), new double[]{p.getX(), p.getZ()});
                 if (last == null || Math.abs(last[0] - p.getX()) + Math.abs(last[1] - p.getZ()) < 0.1) continue; // only while moving
                 ((ServerWorld) p.getEntityWorld()).spawnParticles(r.trail, p.getX(), p.getY() + 0.1, p.getZ(),

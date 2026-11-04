@@ -97,8 +97,8 @@ public final class SellMenu {
                 .append(Text.literal(Money.fmt(total)).formatted(Formatting.GOLD, Formatting.BOLD));
         if (bonus > 0) msg.append(Text.literal(" (+" + rank.sellBonus + "% " + rank.title + " bonus)").formatted(rank.color));
         player.sendMessage(msg, false);
-        player.getEntityWorld().playSound(null, player.getBlockPos(), SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,
-                SoundCategory.PLAYERS, 0.8f, 1.2f);
+        if (Settings.on(player, Settings.Opt.SELLSOUND))
+            player.playSoundToPlayer(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 0.8f, 1.2f);
     }
 
     static class Handler extends GenericContainerScreenHandler {
