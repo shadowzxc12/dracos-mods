@@ -48,6 +48,12 @@ public final class LegendaryItems {
     public static final String VOID_SCYTHE = "void_scythe";
     public static final String BONE_REAPER = "bone_reaper";
     public static final String THUNDER_HAMMER = "thunder_hammer";
+    public static final String FROST_TRIDENT = "frost_trident";
+    public static final String BLOOD_KATANA = "blood_katana";
+    public static final String SHADOW_DAGGER = "shadow_dagger";
+    public static final String EARTH_DRILL = "earth_drill";
+    public static final String TITAN_SHIELD = "titan_shield";
+    public static final String PHOENIX_ELYTRA = "phoenix_elytra";
     public static final String DRACO_HELMET = "draco_helmet";
     public static final String DRACO_CHESTPLATE = "draco_chestplate";
     public static final String DRACO_LEGGINGS = "draco_leggings";
@@ -63,6 +69,8 @@ public final class LegendaryItems {
 
     public static final List<String> WEAPONS = List.of(VOID_SCYTHE, THUNDER_HAMMER, BONE_REAPER, DRAGON_BLADE,
             VOID_BOW, SHARD_PICKAXE, LAVA_AXE);
+    public static final List<String> EXTRAS = List.of(BLOOD_KATANA, FROST_TRIDENT, SHADOW_DAGGER, PHOENIX_ELYTRA,
+            TITAN_SHIELD, EARTH_DRILL);
     public static final List<String> DRACO_SET = List.of(DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
     public static final List<String> VOID_SET = List.of(VOID_HELMET, VOID_CHESTPLATE, VOID_LEGGINGS, VOID_BOOTS);
     public static final List<String> BONE_SET = List.of(BONE_HELMET, BONE_CHESTPLATE, BONE_LEGGINGS, BONE_BOOTS);
@@ -70,6 +78,7 @@ public final class LegendaryItems {
     public static final List<String> IDS;
     static {
         List<String> all = new ArrayList<>(WEAPONS);
+        all.addAll(EXTRAS);
         all.addAll(VOID_SET);
         all.addAll(BONE_SET);
         all.addAll(DRACO_SET);
@@ -86,6 +95,12 @@ public final class LegendaryItems {
         PRICES.put(VOID_BOW, 35_000_000L);
         PRICES.put(SHARD_PICKAXE, 25_000_000L);
         PRICES.put(LAVA_AXE, 20_000_000L);
+        PRICES.put(BLOOD_KATANA, 70_000_000L);
+        PRICES.put(FROST_TRIDENT, 55_000_000L);
+        PRICES.put(SHADOW_DAGGER, 45_000_000L);
+        PRICES.put(PHOENIX_ELYTRA, 90_000_000L);
+        PRICES.put(TITAN_SHIELD, 40_000_000L);
+        PRICES.put(EARTH_DRILL, 20_000_000L);
         PRICES.put(VOID_HELMET, 40_000_000L);
         PRICES.put(VOID_CHESTPLATE, 80_000_000L);
         PRICES.put(VOID_LEGGINGS, 70_000_000L);
@@ -145,6 +160,30 @@ public final class LegendaryItems {
                     List.of("24 damage", "Sets every target on fire", "Chops the whole tree at once"),
                     new Ench[]{e(Enchantments.EFFICIENCY, 8), e(Enchantments.SHARPNESS, 6)},
                     weapon(24.0, 1.0), null);
+            case BLOOD_KATANA -> build(Items.NETHERITE_SWORD, id, "Blood Katana", 0xE0102A, lookup,
+                    List.of("21 damage, fast", "Lifesteal: heals 30% of damage dealt", "Hits make enemies bleed (Wither)"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 9), e(Enchantments.LOOTING, 4), e(Enchantments.SWEEPING_EDGE, 3)},
+                    weapon(21.0, 1.9), null);
+            case FROST_TRIDENT -> build(Items.TRIDENT, id, "Frost Trident", 0x7FE8FF, lookup,
+                    List.of("19 damage", "Hits freeze: Slowness IV + frost", "Loyalty - always comes back"),
+                    new Ench[]{e(Enchantments.IMPALING, 7), e(Enchantments.LOYALTY, 3), e(Enchantments.CHANNELING, 1)},
+                    weapon(19.0, 1.1), null);
+            case SHADOW_DAGGER -> build(Items.NETHERITE_SWORD, id, "Shadow Dagger", 0x3B3B55, lookup,
+                    List.of("15 damage, very fast", "Hits from behind deal double damage", "Kill: invisible + Speed III for 4s"),
+                    new Ench[]{e(Enchantments.SHARPNESS, 7), e(Enchantments.LOOTING, 5)},
+                    weapon(15.0, 2.6), null);
+            case PHOENIX_ELYTRA -> build(Items.ELYTRA, id, "Phoenix Elytra", 0xFF5A1A, lookup,
+                    List.of("Unbreakable wings", "Rebirth: survive a deadly hit (10 min cooldown)", "Fire Resistance while worn"),
+                    new Ench[]{e(Enchantments.PROTECTION, 6)},
+                    null, null);
+            case TITAN_SHIELD -> build(Items.SHIELD, id, "Titan Shield", 0xC9A227, lookup,
+                    List.of("Blocking reflects 50% damage back", "Knocks attackers away", "Resistance I while held"),
+                    new Ench[]{e(Enchantments.THORNS, 3)},
+                    null, null);
+            case EARTH_DRILL -> build(Items.NETHERITE_SHOVEL, id, "Earth Drill", 0x8B5A2B, lookup,
+                    List.of("Digs 3x3 at once", "Haste II while held", "Hold SHIFT to dig 1 block"),
+                    new Ench[]{e(Enchantments.EFFICIENCY, 10), e(Enchantments.FORTUNE, 3)},
+                    null, null);
 
             // ------------------------------------------------------------ Void set
             case VOID_HELMET -> armorPiece(Items.NETHERITE_HELMET, id, "Void Helmet", 0x9D4DFF, lookup, voidLore(), "void",
@@ -271,7 +310,8 @@ public final class LegendaryItems {
         stack.set(DataComponentTypes.RARITY, Rarity.EPIC);
         stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, false); // custom texture from the server pack
         stack.set(DataComponentTypes.UNBREAKABLE, Unit.INSTANCE);
-        stack.set(DataComponentTypes.ITEM_MODEL, Identifier.of(DracosCore.MOD_ID, id));
+        if (!id.equals(TITAN_SHIELD)) stack.set(DataComponentTypes.ITEM_MODEL, Identifier.of(DracosCore.MOD_ID, id));
+        else stack.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
         if (attrs != null) stack.set(DataComponentTypes.ATTRIBUTE_MODIFIERS, attrs);
         if (equip != null) {
             JsonObject json = new JsonObject();

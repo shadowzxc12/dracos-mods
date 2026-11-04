@@ -57,7 +57,7 @@ public final class Abilities {
             if (id == null) return;
             try {
                 breaking = true;
-                if (id.equals(LegendaryItems.SHARD_PICKAXE) && !sp.isSneaking()) {
+                if ((id.equals(LegendaryItems.SHARD_PICKAXE) || id.equals(LegendaryItems.EARTH_DRILL)) && !sp.isSneaking()) {
                     mine3x3(sp, world, pos);
                 } else if (id.equals(LegendaryItems.LAVA_AXE) && state.isIn(BlockTags.LOGS) && !sp.isSneaking()) {
                     fellTree(sp, world, pos);
@@ -75,6 +75,30 @@ public final class Abilities {
             String id = LegendaryItems.idOf(player.getMainHandStack());
             if (id == null) return ActionResult.PASS;
             switch (id) {
+                case LegendaryItems.BLOOD_KATANA -> {
+                    player.heal(6f * player.getAttackCooldownProgress(0.5f));
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.WITHER, 60, 0));
+                    Effects.impact(sw, living, Effects.BLOOD_DUST);
+                    Effects.p(sw, Effects.BLOOD_DUST, living.getX(), living.getBodyY(0.5), living.getZ(), 14, 0.35, 0);
+                    sw.playSound(null, living.getBlockPos(), SoundEvents.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH, SoundCategory.PLAYERS, 0.6f, 0.7f);
+                }
+                case LegendaryItems.FROST_TRIDENT -> {
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 3));
+                    living.setFrozenTicks(Math.max(living.getFrozenTicks(), 220));
+                    Effects.p(sw, ParticleTypes.SNOWFLAKE, living.getX(), living.getBodyY(0.5), living.getZ(), 25, 0.4, 0.03);
+                    sw.playSound(null, living.getBlockPos(), SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 0.5f, 1.6f);
+                }
+                case LegendaryItems.SHADOW_DAGGER -> {
+                    Vec3d facing = living.getRotationVector().multiply(1, 0, 1).normalize();
+                    Vec3d toAttacker = new Vec3d(player.getX() - living.getX(), 0, player.getZ() - living.getZ()).multiply(1, 0, 1).normalize();
+                    if (facing.dotProduct(toAttacker) < -0.3) { // attacker is behind the target
+                        living.timeUntilRegen = 0;
+                        living.damage(sw, sw.getDamageSources().playerAttack(player), 15f);
+                        Effects.p(sw, ParticleTypes.SMOKE, living.getX(), living.getBodyY(0.5), living.getZ(), 20, 0.3, 0.02);
+                        sw.playSound(null, living.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.PLAYERS, 0.8f, 0.6f);
+                    }
+                    Effects.p(sw, ParticleTypes.SQUID_INK, living.getX(), living.getBodyY(0.5), living.getZ(), 6, 0.3, 0.01);
+                }
                 case LegendaryItems.LAVA_AXE -> {
                     living.setOnFireFor(8f);
                     Effects.impact(sw, living, ParticleTypes.FLAME);
@@ -295,8 +319,16 @@ public final class Abilities {
                     effect(p, StatusEffects.RESISTANCE, 0);
                     effect(p, StatusEffects.JUMP_BOOST, 1);
                 }
-                if (LegendaryItems.is(p.getMainHandStack(), LegendaryItems.SHARD_PICKAXE)) {
+                if (LegendaryItems.is(p.getMainHandStack(), LegendaryItems.SHARD_PICKAXE)
+                        || LegendaryItems.is(p.getMainHandStack(), LegendaryItems.EARTH_DRILL)) {
                     effect(p, StatusEffects.HASTE, 1);
+                }
+                if (LegendaryItems.is(p.getMainHandStack(), LegendaryItems.TITAN_SHIELD)
+                        || LegendaryItems.is(p.getOffHandStack(), LegendaryItems.TITAN_SHIELD)) {
+                    effect(p, StatusEffects.RESISTANCE, 0);
+                }
+                if (LegendaryItems.is(p.getEquippedStack(EquipmentSlot.CHEST), LegendaryItems.PHOENIX_ELYTRA)) {
+                    effect(p, StatusEffects.FIRE_RESISTANCE, 0);
                 }
             }
         });
@@ -326,6 +358,55 @@ public final class Abilities {
         HitResult hit = player.raycast(6.0, 0f, false);
         if (hit instanceof BlockHitResult bhr && hit.getType() == HitResult.Type.BLOCK) return bhr.getSide();
         return Direction.UP;
+    }
+
+    private static final java.util.Map<java.util.UUID, Long> PHOENIX = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Titan Shield reflect, Phoenix rebirth, Shadow Dagger kill bonus. */
+    public static void registerExtras() {
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof ServerPlayerEntity p && p.isBlocking()
+                    && LegendaryItems.is(p.getActiveItem(), LegendaryItems.TITAN_SHIELD)
+                    && source.getAttacker() instanceof LivingEntity att && att != p
+                    && p.getEntityWorld() instanceof ServerWorld sw) {
+                att.damage(sw, sw.getDamageSources().thorns(p), Math.max(2f, amount * 0.5f));
+                Vec3d push = new Vec3d(att.getX() - p.getX(), 0, att.getZ() - p.getZ()).multiply(1, 0, 1).normalize().multiply(1.2);
+                att.addVelocity(push.x, 0.35, push.z);
+                att.velocityModified = true;
+                Effects.p(sw, ParticleTypes.CRIT, att.getX(), att.getBodyY(0.5), att.getZ(), 15, 0.3, 0.1);
+                sw.playSound(null, p.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK.value(), SoundCategory.PLAYERS, 1f, 0.6f);
+            }
+            return true;
+        });
+
+        ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+            if (!(entity instanceof ServerPlayerEntity p)) return true;
+            if (!LegendaryItems.is(p.getEquippedStack(EquipmentSlot.CHEST), LegendaryItems.PHOENIX_ELYTRA)) return true;
+            long now = System.currentTimeMillis();
+            Long last = PHOENIX.get(p.getUuid());
+            if (last != null && now - last < 600_000L) return true;
+            PHOENIX.put(p.getUuid(), now);
+            p.setHealth(10f);
+            p.clearStatusEffects();
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 200, 2));
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 2));
+            p.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 1200, 0));
+            if (p.getEntityWorld() instanceof ServerWorld sw) {
+                Effects.p(sw, ParticleTypes.FLAME, p.getX(), p.getBodyY(0.5), p.getZ(), 80, 0.8, 0.15);
+                Effects.p(sw, ParticleTypes.LAVA, p.getX(), p.getBodyY(0.5), p.getZ(), 20, 0.6, 0);
+                sw.playSound(null, p.getBlockPos(), SoundEvents.ITEM_TOTEM_USE, SoundCategory.PLAYERS, 1f, 0.8f);
+            }
+            p.sendMessage(Text.literal("🔥 Phoenix Rebirth! (next in 10 min)").formatted(Formatting.GOLD, Formatting.BOLD), false);
+            return false;
+        });
+
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (source.getAttacker() instanceof ServerPlayerEntity p
+                    && LegendaryItems.is(p.getMainHandStack(), LegendaryItems.SHADOW_DAGGER)) {
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 80, 0));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 80, 2));
+            }
+        });
     }
 
     private static void mine3x3(ServerPlayerEntity player, World world, BlockPos center) {

@@ -34,6 +34,8 @@ public final class LegendaryShop {
         putSet(19, LegendaryItems.VOID_SET);
         putSet(28, LegendaryItems.BONE_SET);
         putSet(37, LegendaryItems.DRACO_SET);
+        int[] x = {46, 47, 48, 50, 51, 52};
+        for (int i = 0; i < x.length; i++) LAYOUT.put(x[i], LegendaryItems.EXTRAS.get(i));
     }
 
     private static void putSet(int rowStart, List<String> set) {

@@ -35,7 +35,10 @@ public final class Stats {
             LegendaryItems.BONE_REAPER, new double[]{0.30, 1.6},
             LegendaryItems.DRAGON_BLADE, new double[]{0.20, 1.8},
             LegendaryItems.LAVA_AXE, new double[]{0.15, 1.7},
-            LegendaryItems.VOID_BOW, new double[]{0.20, 1.5});
+            LegendaryItems.VOID_BOW, new double[]{0.20, 1.5},
+            LegendaryItems.BLOOD_KATANA, new double[]{0.25, 1.7},
+            LegendaryItems.FROST_TRIDENT, new double[]{0.20, 1.6},
+            LegendaryItems.SHADOW_DAGGER, new double[]{0.35, 1.8});
 
     /** Stat lines: label -> value. */
     public static final Map<String, Map<String, String>> LINES = new LinkedHashMap<>();
@@ -46,6 +49,9 @@ public final class Stats {
         w(LegendaryItems.DRAGON_BLADE, "18", "1.7", "Dragon fire 5s", "-");
         w(LegendaryItems.LAVA_AXE, "24", "1.0", "Fire 8s", "-");
         w(LegendaryItems.VOID_BOW, "x2 arrow", "-", "Levitation 2s", "-");
+        w(LegendaryItems.BLOOD_KATANA, "21", "1.9", "Bleed (Wither I)", "30% of damage");
+        w(LegendaryItems.FROST_TRIDENT, "19", "1.1", "Slowness IV + freeze", "-");
+        w(LegendaryItems.SHADOW_DAGGER, "15", "2.6", "x2 from behind", "-");
         Map<String, String> pick = new LinkedHashMap<>();
         pick.put("⛏ Mining", "3x3 + Haste II");
         pick.put("✦ Efficiency", "X");

@@ -19,6 +19,7 @@ public class DracosCore implements ModInitializer {
     @Override
     public void onInitialize() {
         Abilities.register();
+        Abilities.registerExtras();
         Effects.register();
         Stats.register();
         Ranks.register();

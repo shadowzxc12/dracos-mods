@@ -179,7 +179,32 @@ SETS = {
     "bone": dict(stops=["#5e5444", "#a89b7a", "#ddd2b2", "#fbf7ea"], accent="#ff2a2a", spark="#4a4234"),
     "voidbow": dict(stops=["#12061f", "#4a1d85", "#8a4be8", "#d9b3ff"], accent="#e47bff", spark="#f6dcff"),
     "draco": dict(stops=["#3d1400", "#9a3f00", "#ec8500", "#ffdc73"], accent="#ff3a1a", spark="#ffe9a8"),
+    "blood": dict(stops=["#1a0003", "#5c0010", "#b3001e", "#ff4d5e"], accent="#ff1a33", spark="#ffc2c8"),
+    "frost": dict(stops=["#06202e", "#1f6f94", "#6fd3f0", "#e8fbff"], accent="#9ff3ff", spark="#ffffff"),
+    "shadow": dict(stops=["#050507", "#16161f", "#2e2e44", "#59597a"], accent="#8f6bff", spark="#c9b8ff"),
+    "phoenix": dict(stops=["#3a0a00", "#a32800", "#ff6a00", "#ffd24d"], accent="#ffef7a", spark="#fff6c2"),
+    "earth": dict(stops=["#1e1206", "#4d3013", "#8b5a2b", "#d7a65e"], accent="#7dff6a", spark="#e9ffd9"),
 }
+
+# new legendaries made from recolored vanilla textures: id -> (vanilla texture, set, model parent)
+RECOLORED = {
+    "blood_katana": ("netherite_sword", "blood", "minecraft:item/handheld"),
+    "shadow_dagger": ("netherite_sword", "shadow", "minecraft:item/handheld"),
+    "frost_trident": ("trident", "frost", "minecraft:item/handheld"),
+    "phoenix_elytra": ("elytra", "phoenix", "minecraft:item/generated"),
+    "earth_drill": ("netherite_shovel", "earth", "minecraft:item/handheld"),
+}
+
+
+def recolored_frames(name):
+    tex, set_name, _ = RECOLORED[name]
+    src = Image.open(os.path.join(VT, "item", tex + ".png")).convert("RGBA")
+    img = recolor(src, set_name, len(name), pattern=False)
+    acc = {(x, y) for y in range(16) for x in range(16) if src.getpixel((x, y))[3] > 0 and lum(src.getpixel((x, y))) > 175}
+    a = hx(SETS[set_name]["accent"])
+    for xy in acc:
+        img.putpixel(xy, a)
+    return hd_frames(img, acc, a, seed=len(name))
 
 
 def grad(stops, t):
@@ -419,6 +444,12 @@ def main():
         save(sprite_frames(name), f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         parent = "minecraft:item/handheld_mace" if name == "thunder_hammer" else "minecraft:item/handheld"
+        item_model(name, parent)
+        item_def(name)
+
+    for name, (_, _, parent) in RECOLORED.items():
+        save(recolored_frames(name), f"assets/{NS}/textures/item/{name}.png")
+        wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         item_model(name, parent)
         item_def(name)
 
