@@ -69,10 +69,12 @@ public final class Announcer {
             case 2 -> Text.empty().append(Text.literal("🎁 ").formatted(Formatting.GREEN))
                     .append(Text.literal("Free money every day: ").formatted(Formatting.GREEN, Formatting.BOLD))
                     .append(Text.literal("/daily").formatted(Formatting.YELLOW))
-                    .append(Text.literal(" and a free kit with ").formatted(Formatting.GRAY))
-                    .append(Text.literal("/kit").formatted(Formatting.YELLOW));
+                    .append(Text.literal(", a free kit every hour: ").formatted(Formatting.GRAY))
+                    .append(Text.literal("/kit").formatted(Formatting.YELLOW))
+                    .append(Text.literal(", backpack: ").formatted(Formatting.GRAY))
+                    .append(Text.literal("/backpack").formatted(Formatting.YELLOW));
             default -> Text.empty().append(Text.literal("⚔ ").formatted(Formatting.GOLD))
-                    .append(Text.literal("25 legendary items ").formatted(Formatting.GOLD, Formatting.BOLD))
+                    .append(Text.literal(LegendaryItems.IDS.size() + " legendary items ").formatted(Formatting.GOLD, Formatting.BOLD))
                     .append(Text.literal("are waiting for you in ").formatted(Formatting.GRAY))
                     .append(Text.literal("/legendary").formatted(Formatting.YELLOW));
         };
