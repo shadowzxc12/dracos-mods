@@ -49,7 +49,7 @@ public final class RankShop {
         row(3, L, o(L, Items.ENCHANTED_GOLDEN_APPLE, 3, 250_000), o(L, Items.TOTEM_OF_UNDYING, 4, 230_000),
                 o(L, Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE, 1, 150_000), o(L, Items.NETHER_STAR, 1, 360_000),
                 o(L, Items.BEACON, 1, 450_000), o(L, Items.NETHERITE_BLOCK, 1, 720_000));
-        row(4, D, o(D, Items.HEAVY_CORE, 1, 900_000), o(D, Items.DRAGON_HEAD, 1, 540_000),
+        row(4, D, o(D, Items.DRAGON_HEAD, 1, 540_000),
                 o(D, Items.ENCHANTED_GOLDEN_APPLE, 8, 660_000), o(D, Items.TOTEM_OF_UNDYING, 8, 450_000),
                 o(D, Items.NETHERITE_BLOCK, 4, 2_700_000), o(D, Items.BEACON, 2, 840_000));
     }

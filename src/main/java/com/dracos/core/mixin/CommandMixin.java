@@ -24,6 +24,7 @@ public abstract class CommandMixin {
             return;
         }
         String c = packet.command().trim().toLowerCase();
+        if (c.startsWith("setting")) com.dracos.core.DracosCore.LOGGER.info("[Settings] {} sent /{}", player.getName().getString(), c);
         if (c.equals("setting") || c.equals("dracos_core:setting")) {
             // other mods also register /settings; always open ours (on the server thread)
             var server = player.getEntityWorld().getServer();

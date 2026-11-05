@@ -99,6 +99,7 @@ public final class Settings {
     private static final int[] SLOTS = {10, 11, 12, 13, 14, 15};
 
     public static void open(ServerPlayerEntity p) {
+        DracosCore.LOGGER.info("[Settings] opening menu for {}", p.getName().getString());
         SimpleInventory inv = new SimpleInventory(45);
         fill(p, inv);
         p.openHandledScreen(new SimpleNamedScreenHandlerFactory((id, pi, pl) -> new Handler(id, pi, inv),
