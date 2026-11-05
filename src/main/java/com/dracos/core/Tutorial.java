@@ -25,7 +25,7 @@ public final class Tutorial {
             {"#Travel", "", "/spawn", "/tpa <player>", "/rtp", " random teleport", "", "!No teleporting", "!in combat!"},
             {"#Legendary", "", "/legendary", "", "40 weapons, tools", "and armor sets.", "They never break", "and have powers.", "Right-click swords", "for abilities.", "Full armor sets", "give bonus effects."},
             {"#Ranks", "", "Monthly ranks:", "VIP  MVP", "LEGEND  DRACO", "", "More homes, more", "sell money, /kit", "and more.", "", "/ranks  all perks", "/store  buy a rank"},
-            {"#Commands", "", "/menu", " effects on/off", "/rankshop", "/kit  free kit (1h)", "/backpack  storage", "/hat  wear a block", "/bounty <player> <$>", "/tutorial", " this book again"},
+            {"#Commands", "", "/menu", " effects on/off", "/rankshop", "/kit  free kit (1h)", "/backpack  storage", "/hat  wear a block", "/bounty <player> <$>", "/clan  make a clan", "/tutorial", " this book again"},
             {"#Rules", "", "1. No cheats", "2. No griefing", "3. No stealing", "4. Be respectful", "5. No spam or ads", "6. Combat logging", "   = death", "", "Have fun!", "- Dracos team"}
     };
 
