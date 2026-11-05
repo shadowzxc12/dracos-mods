@@ -23,7 +23,7 @@ public final class Combat {
     public static final Set<String> BLOCKED = Set.of(
             "spawn", "tpa", "tpahere", "tpaccept", "tpask", "tpyes", "home", "homes", "sethome",
             "rtp", "wild", "warp", "warps", "back", "tp", "teleport", "ah", "auction", "shop",
-            "sell", "legendary", "orders", "ec", "enderchest", "trash", "workbench", "craft", "backpack", "bp", "settings");
+            "sell", "legendary", "orders", "ec", "enderchest", "trash", "workbench", "craft", "backpack", "bp", "setting");
 
     private static final Map<UUID, Long> TAGGED = new ConcurrentHashMap<>();
 

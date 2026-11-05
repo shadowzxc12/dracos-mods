@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DracosCore implements ModInitializer {
-    /** Another mod also registers /settings (text only). Remove every other /settings node and register ours. */
+    /** Minehut's proxy owns /settings (network settings, text only). We drop any server /settings and use /setting. */
     @SuppressWarnings("unchecked")
     private static void takeOverSettings(net.minecraft.server.MinecraftServer server) {
         var dispatcher = server.getCommandManager().getDispatcher();
@@ -24,12 +24,8 @@ public class DracosCore implements ModInitializer {
                 f.setAccessible(true);
                 ((java.util.Map<String, ?>) f.get(root)).remove("settings");
             }
-            dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
-                Settings.open(ctx.getSource().getPlayerOrThrow());
-                return 1;
-            }));
             for (var p : server.getPlayerManager().getPlayerList()) server.getCommandManager().sendCommandTree(p);
-            LOGGER.info("/settings now opens the Dracos settings menu");
+            LOGGER.info("Removed server /settings; Dracos menu is /setting (Minehut owns /settings)");
         } catch (Exception e) {
             LOGGER.warn("Could not take over /settings", e);
         }
@@ -146,7 +142,7 @@ public class DracosCore implements ModInitializer {
                 ctx.getSource().getPlayerOrThrow().sendMessage(Announcer.discordMessage(), false);
                 return 1;
             }));
-            dispatcher.register(CommandManager.literal("settings").executes(ctx -> {
+            dispatcher.register(CommandManager.literal("setting").executes(ctx -> {
                 Settings.open(ctx.getSource().getPlayerOrThrow());
                 return 1;
             }));

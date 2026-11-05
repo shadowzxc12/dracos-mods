@@ -28,7 +28,7 @@ public final class SellPrices {
     private static volatile double DEFAULT = 1.0;
     private static volatile double MULTIPLIER = 1.5;
 
-    /** Global /sell bonus (key "multiplier" in the file, default 1.5 = +50%). */
+    /** Global /sell bonus (key "multiplier" in the file, default 3.0 = x3). */
     public static double multiplier() {
         return MULTIPLIER;
     }
@@ -74,7 +74,7 @@ public final class SellPrices {
             DracosCore.LOGGER.error("Failed to load sell_prices.json", ex);
         }
         Double mul = map.remove("multiplier");
-        MULTIPLIER = mul != null ? mul : 1.5;
+        MULTIPLIER = mul != null ? mul : 3.0;
         Double d = map.remove("*");
         DEFAULT = d != null ? d : 1.0;
         PRICES = Collections.unmodifiableMap(map);
