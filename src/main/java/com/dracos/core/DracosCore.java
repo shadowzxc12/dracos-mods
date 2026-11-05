@@ -25,7 +25,7 @@ public class DracosCore implements ModInitializer {
                 ((java.util.Map<String, ?>) f.get(root)).remove("settings");
             }
             for (var p : server.getPlayerManager().getPlayerList()) server.getCommandManager().sendCommandTree(p);
-            LOGGER.info("Removed server /settings; Dracos menu is /setting (Minehut owns /settings)");
+            LOGGER.info("Removed server /settings; Dracos settings menu is /menu (Minehut proxy owns /settings and /setting)");
         } catch (Exception e) {
             LOGGER.warn("Could not take over /settings", e);
         }
@@ -142,7 +142,7 @@ public class DracosCore implements ModInitializer {
                 ctx.getSource().getPlayerOrThrow().sendMessage(Announcer.discordMessage(), false);
                 return 1;
             }));
-            dispatcher.register(CommandManager.literal("setting").executes(ctx -> {
+            dispatcher.register(CommandManager.literal("menu").executes(ctx -> {
                 Settings.open(ctx.getSource().getPlayerOrThrow());
                 return 1;
             }));

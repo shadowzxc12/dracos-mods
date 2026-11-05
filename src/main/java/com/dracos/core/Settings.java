@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** /setting - per-player toggles (stored in config/dracos/setting.json, only the OFF ones). */
+/** /menu - per-player toggles (stored in config/dracos/settings.json, only the OFF ones). */
 public final class Settings {
     private Settings() {}
 
