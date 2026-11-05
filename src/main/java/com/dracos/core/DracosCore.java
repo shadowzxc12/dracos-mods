@@ -51,6 +51,7 @@ public class DracosCore implements ModInitializer {
         Announcer.register();
         Combat.register();
         RandomRespawn.register();
+        StoreBridge.register();
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -58,6 +59,7 @@ public class DracosCore implements ModInitializer {
             ShopSync.sync(server);
             Ranks.load(server);
             Announcer.load();
+            StoreBridge.load();
             takeOverSettings(server);
         });
 
@@ -78,7 +80,18 @@ public class DracosCore implements ModInitializer {
             dispatcher.register(CommandManager.literal("ranks").executes(ctx -> {
                 Ranks.showRanks(ctx.getSource().getPlayerOrThrow());
                 return 1;
-            }));
+            }).then(CommandManager.argument("code", StringArgumentType.word()).executes(ctx -> {
+                StoreBridge.start(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "code").toUpperCase());
+                return 1;
+            })));
+            // /rank CODE -> activate a rank bought on the web store, /rank -> pick up paid orders for my name
+            dispatcher.register(CommandManager.literal("rank").executes(ctx -> {
+                StoreBridge.start(ctx.getSource().getPlayerOrThrow(), null);
+                return 1;
+            }).then(CommandManager.argument("code", StringArgumentType.word()).executes(ctx -> {
+                StoreBridge.start(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "code").toUpperCase());
+                return 1;
+            })));
             dispatcher.register(CommandManager.literal("hat").executes(ctx -> {
                 Ranks.hat(ctx.getSource().getPlayerOrThrow());
                 return 1;
@@ -162,6 +175,7 @@ public class DracosCore implements ModInitializer {
                     .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                     .then(CommandManager.literal("reload").executes(ctx -> {
                         SellPrices.load();
+                        StoreBridge.load();
                         ShopSync.sync(ctx.getSource().getServer());
                         ctx.getSource().sendFeedback(() -> Text.literal("Dracos Core reloaded (sell prices + Legendary shop).")
                                 .formatted(Formatting.GREEN), true);

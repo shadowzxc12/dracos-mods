@@ -149,6 +149,39 @@ public final class Ranks {
     }
 
     /** Returns an error message or null. */
+    /** Rank currently stored for a username (expired ranks count as MEMBER). */
+    public static Rank stored(String name) {
+        String key = name.toLowerCase();
+        Long exp = EXPIRES.get(key);
+        if (exp != null && exp < System.currentTimeMillis()) return Rank.MEMBER;
+        return RANKS.getOrDefault(key, Rank.MEMBER);
+    }
+
+    /** Expiry in ms for a username, or -1 when permanent / no rank. */
+    public static long expiresAt(String name) {
+        Long exp = EXPIRES.get(name.toLowerCase());
+        return exp == null ? -1 : exp;
+    }
+
+    /**
+     * Store purchase: give rank until an absolute time. Idempotent - repeating the same grant never adds time.
+     * Returns false (nothing changed) when the player already holds a higher rank.
+     */
+    public static boolean setUntil(MinecraftServer server, String name, Rank r, long untilMs) {
+        String key = name.toLowerCase();
+        Rank cur = stored(name);
+        if (cur.ordinal() > r.ordinal()) return false;
+        if (cur == r) {
+            Long old = EXPIRES.get(key);
+            if (old == null || old >= untilMs) return true; // permanent or already longer
+        }
+        long days = Math.max(1, (untilMs - System.currentTimeMillis()) / 86_400_000L);
+        set(server, name, r.name(), (int) days);
+        EXPIRES.put(key, untilMs);
+        save();
+        return true;
+    }
+
     public static String set(MinecraftServer server, String name, String rank) { return set(server, name, rank, 0); }
 
     /** days > 0: rank lasts that many days (monthly = 30); extends if the player already has it. */
