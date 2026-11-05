@@ -49,6 +49,8 @@ public class DracosCore implements ModInitializer {
         RandomRespawn.register();
         StoreBridge.register();
         Clans.register();
+        Spawners.register();
+        Quests.register();
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -58,6 +60,8 @@ public class DracosCore implements ModInitializer {
             Announcer.load();
             StoreBridge.load();
             Clans.load();
+            Spawners.load();
+            Quests.load();
             takeOverSettings(server);
         });
 
@@ -145,6 +149,18 @@ public class DracosCore implements ModInitializer {
                 return 1;
             }));
             Clans.commands(dispatcher);
+            dispatcher.register(CommandManager.literal("spawners").executes(ctx -> {
+                Spawners.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("quests").executes(ctx -> {
+                Quests.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
+            dispatcher.register(CommandManager.literal("quest").executes(ctx -> {
+                Quests.open(ctx.getSource().getPlayerOrThrow());
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("menu").executes(ctx -> {
                 Settings.open(ctx.getSource().getPlayerOrThrow());
                 return 1;
