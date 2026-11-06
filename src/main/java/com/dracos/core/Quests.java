@@ -193,7 +193,8 @@ public final class Quests {
                             .withClickEvent(new net.minecraft.text.ClickEvent.RunCommand("/quests")))), false);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (++ticks % 600 == 0) { save(); Spawners.saveIfDirty(); }
+            if (++ticks % 400 == 0) Spawners.tick(server);
+            if (ticks % 600 == 0) { save(); Spawners.saveIfDirty(); }
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> { dirty = true; save(); Spawners.saveIfDirty(); });
     }

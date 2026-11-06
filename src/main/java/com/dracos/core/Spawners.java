@@ -76,6 +76,8 @@ public final class Spawners {
 
     private static final Gson GSON = new Gson();
     private static Map<String, String> PLACED = new HashMap<>(); // "world|pos" -> entity id
+    private static Map<String, Integer> STACKS = new HashMap<>(); // "world|pos" -> spawners in this block (2+)
+    static final int MAX_STACK = 64;
     private static boolean dirty;
 
     private static Path file() {
@@ -88,6 +90,11 @@ public final class Spawners {
                 Map<String, String> m = GSON.fromJson(Files.readString(file()), new TypeToken<Map<String, String>>() {}.getType());
                 if (m != null) PLACED = new HashMap<>(m);
             }
+            Path sf = file().resolveSibling("spawner_stacks.json");
+            if (Files.exists(sf)) {
+                Map<String, Integer> m = GSON.fromJson(Files.readString(sf), new TypeToken<Map<String, Integer>>() {}.getType());
+                if (m != null) STACKS = new HashMap<>(m);
+            }
         } catch (Exception e) {
             DracosCore.LOGGER.warn("spawners.json unreadable", e);
         }
@@ -99,6 +106,7 @@ public final class Spawners {
         try {
             Files.createDirectories(file().getParent());
             Files.writeString(file(), GSON.toJson(PLACED));
+            Files.writeString(file().resolveSibling("spawner_stacks.json"), GSON.toJson(STACKS));
         } catch (Exception e) {
             DracosCore.LOGGER.warn("spawners.json save failed", e);
         }
@@ -120,7 +128,7 @@ public final class Spawners {
         s.set(DataComponentTypes.ITEM_NAME, Text.literal(name + " Spawner").formatted(Formatting.GOLD, Formatting.BOLD));
         s.set(DataComponentTypes.LORE, new LoreComponent(List.of(
                 Text.literal("Place it to spawn " + name + "s").styled(st -> st.withColor(Formatting.GRAY).withItalic(false)),
-                Text.literal("Mine it with any pickaxe to pick it up").styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false)))));
+                Text.literal("Right-click a placed one to stack it").styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false)))));
         s.set(DataComponentTypes.RARITY, Rarity.EPIC);
         NbtCompound nbt = new NbtCompound();
         nbt.putString(TAG, entityId);
@@ -145,6 +153,23 @@ public final class Spawners {
                     && !player.isCreative()) return ActionResult.FAIL;
             String id = idOf(held);
             if (id == null) return ActionResult.PASS;
+            String hitKey = key(world, hit.getBlockPos());
+            if (!player.isSneaking() && id.equals(PLACED.get(hitKey))) {
+                int have = STACKS.getOrDefault(hitKey, 1);
+                if (have >= MAX_STACK) {
+                    sp.sendMessage(Text.literal("This spawner is full (" + MAX_STACK + ")!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                }
+                int add = player.isCreative() ? 1 : Math.min(held.getCount(), MAX_STACK - have);
+                STACKS.put(hitKey, have + add);
+                dirty = true;
+                if (!player.isCreative()) held.decrement(add);
+                Offer of = offer(id);
+                sp.sendMessage(Text.literal((of != null ? of.name : id) + " Spawner x" + (have + add)).formatted(Formatting.GOLD, Formatting.BOLD)
+                        .append(Text.literal("  (sneak + click to place a new one)").formatted(Formatting.GRAY)), true);
+                world.playSound(null, hit.getBlockPos(), SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 0.4f, 1.6f);
+                return ActionResult.SUCCESS;
+            }
             EntityType<?> type = Registries.ENTITY_TYPE.containsId(Identifier.of(id)) ? Registries.ENTITY_TYPE.get(Identifier.of(id)) : null;
             if (type == null) return ActionResult.FAIL;
             BlockPos pos = hit.getBlockPos();
@@ -175,12 +200,45 @@ public final class Spawners {
                 player.sendMessage(Text.literal("Use a pickaxe to pick up this spawner!").formatted(Formatting.RED), true);
                 return false;
             }
+            int n = Math.max(1, STACKS.getOrDefault(key(world, pos), 1));
+            STACKS.remove(key(world, pos));
             PLACED.remove(key(world, pos));
             dirty = true;
             world.breakBlock(pos, false, player); // no XP, no vanilla drops
-            if (!player.isCreative()) player.getInventory().offerOrDrop(item(id));
+            if (!player.isCreative()) { ItemStack drop = item(id); drop.setCount(n); player.getInventory().offerOrDrop(drop); }
             return false;
         });
+    }
+
+    /** Stacked spawners: every 20 s each extra spawner adds 2 mobs (while a player is within 16 blocks). */
+    static void tick(net.minecraft.server.MinecraftServer server) {
+        if (STACKS.isEmpty()) return;
+        var it = STACKS.entrySet().iterator();
+        while (it.hasNext()) {
+            var e = it.next();
+            int n = e.getValue();
+            String k = e.getKey();
+            int bar = k.lastIndexOf('|');
+            ServerWorld w = server.getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD, Identifier.of(k.substring(0, bar))));
+            if (w == null || n < 2) continue;
+            BlockPos pos = BlockPos.fromLong(Long.parseLong(k.substring(bar + 1)));
+            if (!w.isChunkLoaded(pos.getX() >> 4, pos.getZ() >> 4)) continue;
+            if (!w.getBlockState(pos).isOf(Blocks.SPAWNER)) { it.remove(); PLACED.remove(k); dirty = true; continue; }
+            if (!w.isPlayerInRange(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5, 16)) continue;
+            String id = PLACED.get(k);
+            if (id == null || !Registries.ENTITY_TYPE.containsId(Identifier.of(id))) continue;
+            EntityType<?> type = Registries.ENTITY_TYPE.get(Identifier.of(id));
+            int cap = Math.min(40, 6 + n * 2);
+            int near = w.getOtherEntities(null, new net.minecraft.util.math.Box(pos).expand(8, 4, 8), en -> en.getType() == type).size();
+            int want = Math.min((n - 1) * 2, cap - near);
+            var rnd = w.getRandom();
+            for (int i = 0, tries = 0; i < want && tries < want * 6; tries++) {
+                BlockPos at = pos.add(rnd.nextInt(9) - 4, rnd.nextInt(3) - 1, rnd.nextInt(9) - 4);
+                if (!w.getBlockState(at).isAir() || !w.getBlockState(at.up()).isAir() || w.getBlockState(at.down()).isAir()) continue;
+                var mob = type.spawn(w, at, net.minecraft.entity.SpawnReason.SPAWNER);
+                if (mob != null) i++;
+            }
+        }
     }
 
     // ------------------------------------------------------------------ shop
