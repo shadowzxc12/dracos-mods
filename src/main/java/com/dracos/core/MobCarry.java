@@ -27,8 +27,8 @@ import java.util.UUID;
 public final class MobCarry {
     private MobCarry() {}
 
-    private static final Set<EntityType<?>> BLOCKED = Set.of(EntityType.ENDER_DRAGON, EntityType.WITHER, EntityType.WARDEN,
-            EntityType.ELDER_GUARDIAN, EntityType.GHAST, EntityType.HAPPY_GHAST, EntityType.RAVAGER);
+    // the dragon is a multi-part boss and breaks the End fight if moved; everything else can be carried
+    private static final Set<EntityType<?>> BLOCKED = Set.of(EntityType.ENDER_DRAGON);
     private static final Map<UUID, Boolean> AI_BEFORE = new HashMap<>();
 
     static MobEntity carried(ServerPlayerEntity p) {
@@ -64,8 +64,9 @@ public final class MobCarry {
                 p.sendMessage(Text.literal("You are already carrying a mob! Sneak + right-click a block to put it down.").formatted(Formatting.RED), true);
                 return ActionResult.FAIL;
             }
-            if (!(entity instanceof MobEntity m) || BLOCKED.contains(m.getType()) || m.hasPassengers() || m.hasVehicle()
-                    || m.getWidth() > 2.0f || m.getHeight() > 3.0f) return ActionResult.PASS;
+            if (!(entity instanceof MobEntity m) || BLOCKED.contains(m.getType())) return ActionResult.PASS;
+            if (m.hasVehicle()) m.stopRiding();
+            if (m.hasPassengers()) m.removeAllPassengers();
             if (Combat.inCombat(p)) {
                 p.sendMessage(Text.literal("You can't pick up mobs in combat!").formatted(Formatting.RED), true);
                 return ActionResult.FAIL;
@@ -74,8 +75,10 @@ public final class MobCarry {
             m.setAiDisabled(true);
             if (!m.startRiding(p, true, false)) {
                 m.setAiDisabled(AI_BEFORE.remove(m.getUuid()));
+                DracosCore.LOGGER.info("[MobCarry] {} could not pick up {}", p.getName().getString(), m.getType());
                 return ActionResult.FAIL;
             }
+            m.setTarget(null);
             sync(p);
             p.sendMessage(Text.literal("Picked up! Sneak + right-click a block to put it down.").formatted(Formatting.GREEN), true);
             world.playSound(null, p.getBlockPos(), SoundEvents.ENTITY_ITEM_PICKUP, SoundCategory.PLAYERS, 0.7f, 1.4f);
