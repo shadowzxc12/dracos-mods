@@ -52,6 +52,7 @@ public class DracosCore implements ModInitializer {
         Clans.register();
         Spawners.register();
         Quests.register();
+        Admin.register();
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -63,6 +64,7 @@ public class DracosCore implements ModInitializer {
             Clans.load();
             Spawners.load();
             Quests.load();
+            Admin.load();
             takeOverSettings(server);
         });
 
@@ -197,6 +199,12 @@ public class DracosCore implements ModInitializer {
                                 .formatted(Formatting.GREEN), true);
                         return 1;
                     }))
+                    .then(CommandManager.literal("lastpos").then(CommandManager.argument("player", StringArgumentType.word())
+                            .executes(ctx -> Admin.lastpos(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
+                    .then(CommandManager.literal("kill").then(CommandManager.argument("player", StringArgumentType.word())
+                            .executes(ctx -> Admin.kill(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
+                    .then(CommandManager.literal("unkill").then(CommandManager.argument("player", StringArgumentType.word())
+                            .executes(ctx -> Admin.unkill(ctx.getSource(), StringArgumentType.getString(ctx, "player")))))
                     .then(CommandManager.literal("homes")
                             .then(CommandManager.argument("player", StringArgumentType.word())
                                     .then(CommandManager.argument("limit", IntegerArgumentType.integer(0, 10000))
