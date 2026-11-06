@@ -50,6 +50,7 @@ public class DracosCore implements ModInitializer {
         RandomRespawn.register();
         StoreBridge.register();
         Heads.register();
+        Gamble.register();
         Clans.register();
         Spawners.register();
         Quests.register();
@@ -72,6 +73,7 @@ public class DracosCore implements ModInitializer {
             Quests.load();
             Admin.load();
             AutoSell.load();
+            Gamble.load();
             takeOverSettings(server);
         });
 
@@ -159,6 +161,7 @@ public class DracosCore implements ModInitializer {
                 return 1;
             }));
             Clans.commands(dispatcher);
+            Gamble.commands(dispatcher);
             dispatcher.register(CommandManager.literal("autosell").executes(ctx -> {
                 AutoSell.open(ctx.getSource().getPlayerOrThrow(), 0);
                 return 1;

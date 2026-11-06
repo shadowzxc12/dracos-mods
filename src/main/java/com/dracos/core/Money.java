@@ -30,6 +30,12 @@ public final class Money {
         }
     }
 
+    /** For refunds to players who may be offline. */
+    public static void addUuid(java.util.UUID uuid, long amount) {
+        BalanceManager.add(uuid, amount);
+        BalanceManager.save();
+    }
+
     public static String fmt(long amount) {
         return "$" + String.format("%,d", amount);
     }
