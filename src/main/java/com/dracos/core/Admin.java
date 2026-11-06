@@ -37,6 +37,7 @@ public final class Admin {
     static final class Data {
         Map<String, Pos> last = new HashMap<>();
         Set<String> killOnJoin = new HashSet<>();
+        Set<String> god = new HashSet<>();
     }
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -54,6 +55,7 @@ public final class Admin {
                 if (d != null) {
                     if (d.last == null) d.last = new HashMap<>();
                     if (d.killOnJoin == null) d.killOnJoin = new HashSet<>();
+                    if (d.god == null) d.god = new HashSet<>();
                     DATA = d;
                 }
             }
@@ -80,7 +82,36 @@ public final class Admin {
         DATA.last.put(pos.name.toLowerCase(), pos);
     }
 
+    /** /god - owner only: no damage at all (except /kill), mobs stop targeting you. */
+    public static int god(ServerPlayerEntity p) {
+        if (Ranks.of(p) != Ranks.Rank.OWNER) {
+            p.sendMessage(Text.literal("Unknown command.").formatted(Formatting.RED), false);
+            return 0;
+        }
+        String u = p.getUuidAsString();
+        boolean on = DATA.god.add(u);
+        if (!on) DATA.god.remove(u);
+        save();
+        p.sendMessage(Text.literal(on ? "God mode ON - nothing can hurt you." : "God mode OFF.").formatted(on ? Formatting.GREEN : Formatting.YELLOW), false);
+        return 1;
+    }
+
+    static boolean isGod(net.minecraft.entity.Entity e) {
+        return e instanceof ServerPlayerEntity p && DATA.god.contains(p.getUuidAsString());
+    }
+
     public static void register() {
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+                !isGod(entity) || source.isOf(net.minecraft.entity.damage.DamageTypes.GENERIC_KILL));
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (DATA.god.isEmpty() || server.getTicks() % 20 != 0) return;
+            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                if (!isGod(p)) continue;
+                p.getHungerManager().setFoodLevel(20);
+                p.setAir(p.getMaxAir());
+                p.extinguish();
+            }
+        });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             remember(handler.player);
             save();
