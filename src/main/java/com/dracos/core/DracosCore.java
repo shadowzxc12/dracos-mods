@@ -53,6 +53,11 @@ public class DracosCore implements ModInitializer {
         Spawners.register();
         Quests.register();
         Admin.register();
+        MobCarry.register();
+        AutoSell.register();
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polymer-core")) {
+            try { SellTooltips.register(); } catch (Throwable t) { LOGGER.warn("Sell tooltips disabled", t); }
+        }
 
         // load /sell prices and put the Legendary category into /shop
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -65,6 +70,7 @@ public class DracosCore implements ModInitializer {
             Spawners.load();
             Quests.load();
             Admin.load();
+            AutoSell.load();
             takeOverSettings(server);
         });
 
@@ -152,6 +158,10 @@ public class DracosCore implements ModInitializer {
                 return 1;
             }));
             Clans.commands(dispatcher);
+            dispatcher.register(CommandManager.literal("autosell").executes(ctx -> {
+                AutoSell.open(ctx.getSource().getPlayerOrThrow(), 0);
+                return 1;
+            }));
             dispatcher.register(CommandManager.literal("spawners").executes(ctx -> {
                 Spawners.open(ctx.getSource().getPlayerOrThrow());
                 return 1;

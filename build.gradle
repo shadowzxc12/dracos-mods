@@ -6,7 +6,9 @@ version = project.mod_version
 group = project.maven_group
 base { archivesName = project.archives_base_name }
 
-repositories { }
+repositories {
+    maven { url = 'https://maven.nucleoid.xyz' }
+}
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -15,6 +17,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
     // Burger Economy (stiahnute v CI do libs/) - len na kompilaciu, na serveri uz je
     modCompileOnly files("libs/burger-economy-1.0.0.jar")
+    // Polymer (polymer-bundled is on the server) - only for sell-value tooltips
+    modCompileOnly "eu.pb4:polymer-core:0.15.2+1.21.11"
 }
 
 processResources {
