@@ -1,5 +1,6 @@
 package com.dracos.core;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -196,6 +197,17 @@ public class DracosCore implements ModInitializer {
                                 .formatted(Formatting.GREEN), true);
                         return 1;
                     }))
+                    .then(CommandManager.literal("homes")
+                            .then(CommandManager.argument("player", StringArgumentType.word())
+                                    .then(CommandManager.argument("limit", IntegerArgumentType.integer(0, 10000))
+                                            .executes(ctx -> {
+                                                String n = StringArgumentType.getString(ctx, "player");
+                                                int l = IntegerArgumentType.getInteger(ctx, "limit");
+                                                Homes.setLimit(n, l);
+                                                ctx.getSource().sendFeedback(() -> Text.literal(l <= 0 ? n + " now uses the rank home limit"
+                                                        : n + " can now set " + l + " homes").formatted(Formatting.GREEN), true);
+                                                return 1;
+                                            }))))
                     .then(CommandManager.literal("rank")
                             .then(CommandManager.argument("player", StringArgumentType.word())
                                     .then(CommandManager.argument("rank", StringArgumentType.word())

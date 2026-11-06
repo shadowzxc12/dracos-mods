@@ -86,7 +86,7 @@ public final class Homes {
         if (cmd.equals("sethome") || (cmd.equals("home") && a.length >= 3 && a[1].equalsIgnoreCase("set"))) {
             String name = (cmd.equals("sethome") ? (a.length >= 2 ? a[1] : "home") : a[2]).toLowerCase();
             Set<String> set = of(p);
-            int limit = Ranks.of(p).homes;
+            int limit = limit(p);
             if (!set.contains(name) && set.size() >= limit) {
                 p.sendMessage(Text.literal("You reached your home limit (" + limit + ")! ").formatted(Formatting.RED)
                         .append(Text.literal("Delete one with /delhome <name> or get a better rank: /ranks").formatted(Formatting.GRAY)), false);
@@ -106,7 +106,48 @@ public final class Homes {
     public static void info(ServerPlayerEntity p) {
         Set<String> set = of(p);
         Ranks.Rank r = Ranks.of(p);
-        p.sendMessage(Text.literal("Homes: " + set.size() + "/" + r.homes + " ").formatted(Formatting.GOLD)
+        p.sendMessage(Text.literal("Homes: " + set.size() + "/" + limit(p) + " ").formatted(Formatting.GOLD)
                 .append(Text.literal(set.isEmpty() ? "(none)" : String.join(", ", new HashSet<>(set))).formatted(Formatting.GRAY)), false);
+    }
+    // ---- per-player extra home limit: config/dracos/home_limits.json {"name": limit}
+    private static Map<String, Integer> LIMITS;
+
+    private static Path limitsFile() {
+        return FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("home_limits.json");
+    }
+
+    private static synchronized Map<String, Integer> limits() {
+        if (LIMITS == null) {
+            LIMITS = new ConcurrentHashMap<>();
+            try {
+                if (Files.exists(limitsFile())) {
+                    JsonObject o = JsonParser.parseString(Files.readString(limitsFile())).getAsJsonObject();
+                    for (var e : o.entrySet()) LIMITS.put(e.getKey().toLowerCase(), e.getValue().getAsInt());
+                }
+            } catch (Exception e) {
+                DracosCore.LOGGER.warn("home_limits.json unreadable", e);
+            }
+        }
+        return LIMITS;
+    }
+
+    /** Rank limit, or a bigger per-player limit set by the owner. */
+    public static int limit(ServerPlayerEntity p) {
+        Integer own = limits().get(p.getName().getString().toLowerCase());
+        int rank = Ranks.of(p).homes;
+        return own == null ? rank : Math.max(rank, own);
+    }
+
+    public static synchronized void setLimit(String name, int limit) {
+        if (limit <= 0) limits().remove(name.toLowerCase());
+        else limits().put(name.toLowerCase(), limit);
+        try {
+            JsonObject o = new JsonObject();
+            limits().forEach(o::addProperty);
+            Files.createDirectories(limitsFile().getParent());
+            Files.writeString(limitsFile(), GSON.toJson(o));
+        } catch (Exception e) {
+            DracosCore.LOGGER.warn("home_limits.json save failed", e);
+        }
     }
 }
