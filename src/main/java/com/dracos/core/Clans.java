@@ -66,6 +66,18 @@ public final class Clans {
     private static final Map<UUID, String[]> INVITES = new HashMap<>(); // player -> {clanKey, expiresMs}
     private static final Set<UUID> CLAN_CHAT = new java.util.HashSet<>();
 
+    // ---- clan wars (in memory; a restart cancels a running war)
+    static final long WAR_MS = 60 * 60_000L;
+    static final int WAR_PRIZE_PERCENT = 25;
+    static final class War { String a, b; int ka, kb; long ends; }
+    private static final Map<String, String> WAR_REQUESTS = new HashMap<>(); // target clan -> challenger clan
+    private static final List<War> WARS = new ArrayList<>();
+
+    static War warOf(String key) {
+        for (War w : WARS) if (w.a.equals(key) || w.b.equals(key)) return w;
+        return null;
+    }
+
     private static Path file() {
         return FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("clans.json");
     }
@@ -112,6 +124,33 @@ public final class Clans {
             if (!CLAN_CHAT.contains(sender.getUuid()) || of(sender.getUuid()) == null) return true;
             clanChat(sender, msg.getSignedContent());
             return false;
+        });
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (!(entity instanceof ServerPlayerEntity dead) || !(source.getAttacker() instanceof ServerPlayerEntity killer)) return;
+            String kk = BY_PLAYER.get(killer.getUuid()), dk = BY_PLAYER.get(dead.getUuid());
+            if (kk == null || dk == null || kk.equals(dk)) return;
+            War w = warOf(kk);
+            if (w == null || !(w.a.equals(dk) || w.b.equals(dk))) return;
+            if (w.a.equals(kk)) w.ka++; else w.kb++;
+            Clan ca = CLANS.get(w.a), cb = CLANS.get(w.b);
+            if (ca == null || cb == null) return;
+            Text t = Text.literal("⚔ WAR ").formatted(Formatting.RED, Formatting.BOLD).append(tag(ca))
+                    .append(Text.literal(" " + w.ka + " : " + w.kb + " ").formatted(Formatting.WHITE, Formatting.BOLD)).append(tag(cb))
+                    .append(Text.literal("  (" + killer.getName().getString() + " killed " + dead.getName().getString() + ")").formatted(Formatting.GRAY));
+            MinecraftServer server = killer.getEntityWorld().getServer();
+            toClan(server, ca, t);
+            toClan(server, cb, t);
+        });
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (WARS.isEmpty() || server.getTicks() % 20 != 0) return;
+            long now = System.currentTimeMillis();
+            var it = WARS.iterator();
+            while (it.hasNext()) {
+                War w = it.next();
+                if (now < w.ends) continue;
+                it.remove();
+                endWar(server, w);
+            }
         });
         // no friendly fire inside a clan
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
@@ -176,6 +215,11 @@ public final class Clans {
                         .executes(ctx -> deposit(ctx.getSource().getPlayerOrThrow(), LongArgumentType.getLong(ctx, "amount")))))
                 .then(CommandManager.literal("withdraw").then(CommandManager.argument("amount", LongArgumentType.longArg(1))
                         .executes(ctx -> withdraw(ctx.getSource().getPlayerOrThrow(), LongArgumentType.getLong(ctx, "amount")))))
+                .then(CommandManager.literal("war").executes(ctx -> warStatus(ctx.getSource().getPlayerOrThrow()))
+                        .then(CommandManager.literal("accept").then(CommandManager.argument("name", StringArgumentType.word())
+                                .executes(ctx -> warAccept(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "name")))))
+                        .then(CommandManager.argument("name", StringArgumentType.word())
+                                .executes(ctx -> warDeclare(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "name")))))
                 .then(CommandManager.literal("chat").executes(ctx -> toggleChat(ctx.getSource().getPlayerOrThrow()))
                         .then(CommandManager.argument("message", StringArgumentType.greedyString())
                                 .executes(ctx -> { clanChat(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "message")); return 1; })));
@@ -196,6 +240,7 @@ public final class Clans {
                 {"/clan deposit <$>", "put money in the bank"},
                 {"/clan withdraw <$>", "take money (leader)"},
                 {"/cc <message>", "clan chat (/clan chat = toggle)"},
+                {"/clan war <clan>", "challenge a clan to a 1h war"},
                 {"/clan kick <name>", "kick a member (leader)"},
                 {"/clan leave", "leave your clan"},
                 {"/clan disband", "delete the clan (leader)"},
@@ -399,6 +444,73 @@ public final class Clans {
         toClan(p.getEntityWorld().getServer(), c, pre().append(Text.literal(p.getName().getString() + " withdrew " + Money.fmt(amt)
                 + " (bank: " + Money.fmt(c.bank) + ")").formatted(Formatting.GOLD)));
         return 1;
+    }
+
+    private static int warDeclare(ServerPlayerEntity p, String name) {
+        Clan c = of(p.getUuid());
+        if (!leader(p, c)) return 0;
+        String me = c.name.toLowerCase(Locale.ROOT), them = name.toLowerCase(Locale.ROOT);
+        Clan t = CLANS.get(them);
+        if (t == null || t == c) { msg(p, "No clan with that name.", Formatting.RED); return 0; }
+        if (warOf(me) != null || warOf(them) != null) { msg(p, "One of the clans is already in a war.", Formatting.RED); return 0; }
+        WAR_REQUESTS.put(them, me);
+        MinecraftServer server = p.getEntityWorld().getServer();
+        msg(p, "War declared on " + t.name + "! Their leader must accept.", Formatting.GOLD);
+        String cmd = "/clan war accept " + c.name;
+        toClan(server, t, pre().append(tag(c)).append(Text.literal(" declared WAR on your clan! 1 hour, most kills wins "
+                        + WAR_PRIZE_PERCENT + "% of the loser's bank. ").formatted(Formatting.RED))
+                .append(Text.literal("[ACCEPT]").styled(s -> s.withColor(Formatting.GREEN).withBold(true)
+                        .withClickEvent(new ClickEvent.RunCommand(cmd)).withHoverEvent(new HoverEvent.ShowText(Text.literal(cmd))))));
+        return 1;
+    }
+
+    private static int warAccept(ServerPlayerEntity p, String name) {
+        Clan c = of(p.getUuid());
+        if (!leader(p, c)) return 0;
+        String me = c.name.toLowerCase(Locale.ROOT), them = name.toLowerCase(Locale.ROOT);
+        if (!them.equals(WAR_REQUESTS.get(me)) || !CLANS.containsKey(them)) { msg(p, "That clan did not challenge you.", Formatting.RED); return 0; }
+        if (warOf(me) != null || warOf(them) != null) { msg(p, "One of the clans is already in a war.", Formatting.RED); return 0; }
+        WAR_REQUESTS.remove(me);
+        War w = new War();
+        w.a = them; w.b = me; w.ends = System.currentTimeMillis() + WAR_MS;
+        WARS.add(w);
+        MinecraftServer server = p.getEntityWorld().getServer();
+        server.getPlayerManager().broadcast(Text.literal("⚔ CLAN WAR! ").formatted(Formatting.DARK_RED, Formatting.BOLD)
+                .append(tag(CLANS.get(them))).append(Text.literal(" vs ").formatted(Formatting.WHITE)).append(tag(c))
+                .append(Text.literal("  - 1 hour, most kills wins " + WAR_PRIZE_PERCENT + "% of the loser's clan bank!").formatted(Formatting.GRAY)), false);
+        for (ServerPlayerEntity o : server.getPlayerManager().getPlayerList())
+            o.getEntityWorld().playSound(null, o.getBlockPos(), SoundEvents.EVENT_RAID_HORN.value(), SoundCategory.PLAYERS, 0.6f, 1f);
+        return 1;
+    }
+
+    private static int warStatus(ServerPlayerEntity p) {
+        Clan c = of(p.getUuid());
+        if (c == null) { msg(p, "You are not in a clan.", Formatting.RED); return 0; }
+        War w = warOf(c.name.toLowerCase(Locale.ROOT));
+        if (w == null) { msg(p, "No war right now. Leader: /clan war <clan>", Formatting.YELLOW); return 1; }
+        long min = Math.max(0, (w.ends - System.currentTimeMillis()) / 60_000);
+        Clan ca = CLANS.get(w.a), cb = CLANS.get(w.b);
+        if (ca == null || cb == null) return 0;
+        p.sendMessage(pre().append(tag(ca)).append(Text.literal(" " + w.ka + " : " + w.kb + " ").formatted(Formatting.WHITE, Formatting.BOLD))
+                .append(tag(cb)).append(Text.literal("  " + min + " min left").formatted(Formatting.GRAY)), false);
+        return 1;
+    }
+
+    private static void endWar(MinecraftServer server, War w) {
+        Clan ca = CLANS.get(w.a), cb = CLANS.get(w.b);
+        if (ca == null || cb == null) return;
+        MutableText t = Text.literal("⚔ WAR OVER ").formatted(Formatting.DARK_RED, Formatting.BOLD).append(tag(ca))
+                .append(Text.literal(" " + w.ka + " : " + w.kb + " ").formatted(Formatting.WHITE, Formatting.BOLD)).append(tag(cb));
+        if (w.ka == w.kb) t.append(Text.literal("  - it's a draw!").formatted(Formatting.YELLOW));
+        else {
+            Clan win = w.ka > w.kb ? ca : cb, lose = w.ka > w.kb ? cb : ca;
+            long prize = lose.bank * WAR_PRIZE_PERCENT / 100;
+            lose.bank -= prize;
+            win.bank += prize;
+            save();
+            t.append(Text.literal("  ").append(tag(win)).append(Text.literal(" wins " + Money.fmt(prize) + "!").formatted(Formatting.GOLD, Formatting.BOLD)));
+        }
+        server.getPlayerManager().broadcast(t, false);
     }
 
     private static int toggleChat(ServerPlayerEntity p) {

@@ -53,6 +53,8 @@ public final class SellMenu {
      * Returns null only for things that must not be sold (legendary items, filled shulkers/bundles).
      */
     static Double priceOf(ItemStack stack, Map<String, Double> prices) {
+        Long head = Heads.valueOf(stack);
+        if (head != null) return (double) head;
         if (stack.isEmpty() || LegendaryItems.idOf(stack) != null) return null;
         var container = stack.get(DataComponentTypes.CONTAINER);
         if (container != null && container.stream().anyMatch(s -> !s.isEmpty())) return null;

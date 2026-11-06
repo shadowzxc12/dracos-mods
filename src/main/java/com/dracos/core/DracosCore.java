@@ -49,6 +49,7 @@ public class DracosCore implements ModInitializer {
         Combat.register();
         RandomRespawn.register();
         StoreBridge.register();
+        Heads.register();
         Clans.register();
         Spawners.register();
         Quests.register();
