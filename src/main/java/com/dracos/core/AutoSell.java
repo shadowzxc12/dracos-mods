@@ -74,18 +74,27 @@ public final class AutoSell {
         return DATA.computeIfAbsent(p.getUuidAsString(), k -> new PData());
     }
 
-    /** Items players can choose: everything with a price in sell_prices.json, sorted by value. */
+    private static final java.util.Set<String> NOT_SELLABLE = java.util.Set.of("minecraft:barrier", "minecraft:structure_block",
+            "minecraft:structure_void", "minecraft:jigsaw", "minecraft:light", "minecraft:debug_stick", "minecraft:knowledge_book",
+            "minecraft:bedrock", "minecraft:end_portal_frame", "minecraft:reinforced_deepslate", "minecraft:petrified_oak_slab",
+            "minecraft:spawner", "minecraft:trial_spawner", "minecraft:vault", "minecraft:test_block", "minecraft:test_instance_block",
+            "minecraft:budding_amethyst", "minecraft:farmland", "minecraft:dirt_path", "minecraft:frogspawn");
+
+    /** Every obtainable item: ones with a /sell price first (most valuable on top), then the rest A-Z. */
     static List<Item> choices() {
-        List<Map.Entry<String, Double>> list = new ArrayList<>(SellPrices.get().entrySet());
-        list.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
-        List<Item> out = new ArrayList<>();
-        for (var e : list) {
-            Identifier id = Identifier.tryParse(e.getKey());
-            if (id == null || !Registries.ITEM.containsId(id)) continue;
-            Item it = Registries.ITEM.get(id);
-            if (it != Items.AIR) out.add(it);
+        Map<String, Double> prices = SellPrices.get();
+        List<Item> listed = new ArrayList<>(), rest = new ArrayList<>();
+        for (Item it : Registries.ITEM) {
+            if (it == Items.AIR) continue;
+            String id = Registries.ITEM.getId(it).toString();
+            if (NOT_SELLABLE.contains(id) || id.endsWith("_spawn_egg") || id.contains("command_block")) continue;
+            if (SellMenu.priceOf(new ItemStack(it), prices) == null) continue;
+            (prices.containsKey(id) ? listed : rest).add(it);
         }
-        return out;
+        listed.sort((a, b) -> Double.compare(prices.get(Registries.ITEM.getId(b).toString()), prices.get(Registries.ITEM.getId(a).toString())));
+        rest.sort(java.util.Comparator.comparing(i -> Registries.ITEM.getId(i).getPath()));
+        listed.addAll(rest);
+        return listed;
     }
 
     public static void register() {
@@ -154,8 +163,9 @@ public final class AutoSell {
         ItemStack pane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
         pane.set(DataComponentTypes.ITEM_NAME, Text.literal(" "));
         for (int i = 45; i < 54; i++) inv.setStack(i, pane.copy());
-        if (pg > 0) inv.setStack(45, named(Items.ARROW, "← Previous page", Formatting.YELLOW));
-        if (pg < pages - 1) inv.setStack(53, named(Items.ARROW, "Next page →", Formatting.YELLOW));
+        if (pg > 0) inv.setStack(45, named(Items.ARROW, "← Previous page (right-click: -5)", Formatting.YELLOW));
+        if (pg < pages - 1) inv.setStack(53, named(Items.ARROW, "Next page → (right-click: +5)", Formatting.YELLOW));
+        inv.setStack(47, named(Items.HOPPER, "Select whole page", Formatting.AQUA));
         ItemStack master = named(d.on ? Items.LIME_DYE : Items.GRAY_DYE, d.on ? "Auto-sell: ON" : "Auto-sell: OFF",
                 d.on ? Formatting.GREEN : Formatting.RED);
         master.set(DataComponentTypes.LORE, new LoreComponent(List.of(
@@ -195,8 +205,12 @@ public final class AutoSell {
                 reopen = page;
             } else if (slot == 49) { d.on = !d.on; reopen = page; }
             else if (slot == 51) { d.items.clear(); reopen = page; }
-            else if (slot == 45 && page > 0) reopen = page - 1;
-            else if (slot == 53) reopen = page + 1;
+            else if (slot == 45 && page > 0) reopen = Math.max(0, page - (button == 1 ? 5 : 1));
+            else if (slot == 53) reopen = page + (button == 1 ? 5 : 1);
+            else if (slot == 47) {  // select every item on this page
+                for (Item it : map.values()) d.items.add(Registries.ITEM.getId(it).toString());
+                reopen = page;
+            }
             if (reopen >= 0) {
                 save();
                 sp.getEntityWorld().playSound(null, sp.getBlockPos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.PLAYERS, 0.5f, 1.2f);
