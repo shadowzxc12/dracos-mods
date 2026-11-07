@@ -229,7 +229,7 @@ public final class Spawners {
             if (id == null || !Registries.ENTITY_TYPE.containsId(Identifier.of(id))) continue;
             EntityType<?> type = Registries.ENTITY_TYPE.get(Identifier.of(id));
             int cap = Math.min(40, 6 + n * 2);
-            int near = w.getOtherEntities(null, new net.minecraft.util.math.Box(pos).expand(8, 4, 8), en -> en.getType() == type).size();
+            int near = w.getOtherEntities(null, new net.minecraft.util.math.Box(pos).expand(8, 4, 8), en -> en.getType() == type).stream().mapToInt(MobStacker::count).sum();
             int want = Math.min((n - 1) * 2, cap - near);
             var rnd = w.getRandom();
             for (int i = 0, tries = 0; i < want && tries < want * 6; tries++) {
