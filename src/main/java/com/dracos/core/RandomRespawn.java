@@ -56,6 +56,7 @@ public final class RandomRespawn {
         }
         LAST_RTP.put(p.getUuid(), now);
         p.sendMessage(Text.literal("Finding a safe spot...").formatted(Formatting.GRAY), true);
+        DracosCore.LOGGER.info("[RTP] {} started /rtp", p.getName().getString());
         attempt(p, p.getEntityWorld().getServer().getOverworld(), 0);
     }
 
@@ -74,13 +75,20 @@ public final class RandomRespawn {
                     BlockPos pos = check(world, x, z);
                     if (pos == null) { retry(p, world, tries); return; }
                     p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, Set.of(), p.getYaw(), p.getPitch(), true);
+                    DracosCore.LOGGER.info("[RTP] {} -> {} {} {} (try {})", p.getName().getString(), pos.getX(), pos.getY(), pos.getZ(), tries + 1);
                     p.sendMessage(Text.literal("Teleported to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "!").formatted(Formatting.GREEN), false);
-                }, server);
+                }, server)
+                .exceptionally(ex -> {
+                    DracosCore.LOGGER.warn("[RTP] chunk load failed for {}: {}", p.getName().getString(), ex.toString());
+                    server.execute(() -> retry(p, world, tries));
+                    return null;
+                });
     }
 
     private static void retry(net.minecraft.server.network.ServerPlayerEntity p, ServerWorld world, int tries) {
         if (tries >= 12) {
             LAST_RTP.remove(p.getUuid());
+            DracosCore.LOGGER.info("[RTP] {} found no safe spot", p.getName().getString());
             p.sendMessage(Text.literal("No safe spot found, try again.").formatted(Formatting.RED), false);
             return;
         }

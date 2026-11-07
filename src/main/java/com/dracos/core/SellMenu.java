@@ -57,6 +57,9 @@ public final class SellMenu {
         Long head = Heads.valueOf(stack);
         if (head != null) return (double) head;
         if (stack.isEmpty() || LegendaryItems.idOf(stack) != null) return null;
+        // only plain vanilla items: never modded items (backpacks...) or items with custom data (spawners, quest items...)
+        if (!"minecraft".equals(Registries.ITEM.getId(stack.getItem()).getNamespace())) return null;
+        if (stack.get(DataComponentTypes.CUSTOM_DATA) != null) return null;
         var container = stack.get(DataComponentTypes.CONTAINER);
         if (container != null && container.stream().anyMatch(s -> !s.isEmpty())) return null;
         var bundle = stack.get(DataComponentTypes.BUNDLE_CONTENTS);

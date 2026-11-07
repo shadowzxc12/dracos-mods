@@ -15,8 +15,10 @@ final class SellTooltips {
     private SellTooltips() {}
 
     static void register() {
-        PolymerItemUtils.ITEM_CHECK.register(stack -> value(stack) != null);
+        // only touch plain vanilla items - modded/Polymer items (backpacks...) keep their own look
+        PolymerItemUtils.ITEM_CHECK.register(stack -> !(stack.getItem() instanceof eu.pb4.polymer.core.api.item.PolymerItem) && value(stack) != null);
         PolymerItemUtils.ITEM_MODIFICATION_EVENT.register((original, client, context) -> {
+            if (original.getItem() instanceof eu.pb4.polymer.core.api.item.PolymerItem) return client;
             Double each = value(original);
             if (each == null) return client;
             LoreComponent old = client.getOrDefault(DataComponentTypes.LORE, LoreComponent.DEFAULT);
