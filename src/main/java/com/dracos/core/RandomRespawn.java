@@ -54,17 +54,37 @@ public final class RandomRespawn {
             p.sendMessage(Text.literal("Wait " + ((RTP_COOLDOWN_MS - (now - last)) / 1000 + 1) + "s before using /rtp again.").formatted(Formatting.RED), false);
             return;
         }
-        ServerWorld world = p.getEntityWorld().getServer().getOverworld();
+        LAST_RTP.put(p.getUuid(), now);
+        p.sendMessage(Text.literal("Finding a safe spot...").formatted(Formatting.GRAY), true);
+        attempt(p, p.getEntityWorld().getServer().getOverworld(), 0);
+    }
+
+    /** Loads the target chunk in the background (no lag spike), then checks it on the server thread. */
+    private static void attempt(net.minecraft.server.network.ServerPlayerEntity p, ServerWorld world, int tries) {
+        var server = world.getServer();
         BlockPos spawn = world.getSpawnPoint().getPos();
-        for (int i = 0; i < 10; i++) {
-            BlockPos pos = pick(world, spawn, RTP_MIN, RTP_MAX);
-            if (pos == null) continue;
-            LAST_RTP.put(p.getUuid(), now);
-            p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, Set.of(), p.getYaw(), p.getPitch(), true);
-            p.sendMessage(Text.literal("Teleported to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "!").formatted(Formatting.GREEN), false);
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        double angle = r.nextDouble() * Math.PI * 2;
+        int dist = r.nextInt(RTP_MIN, RTP_MAX + 1);
+        int x = spawn.getX() + (int) (Math.cos(angle) * dist), z = spawn.getZ() + (int) (Math.sin(angle) * dist);
+        if (!world.getWorldBorder().contains(x, z)) { retry(p, world, tries); return; }
+        world.getChunkManager().getChunkFutureSyncOnMainThread(x >> 4, z >> 4, net.minecraft.world.chunk.ChunkStatus.FULL, true)
+                .thenAcceptAsync(res -> {
+                    if (p.isRemoved() || server.getPlayerManager().getPlayer(p.getUuid()) == null) return;
+                    BlockPos pos = check(world, x, z);
+                    if (pos == null) { retry(p, world, tries); return; }
+                    p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, Set.of(), p.getYaw(), p.getPitch(), true);
+                    p.sendMessage(Text.literal("Teleported to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "!").formatted(Formatting.GREEN), false);
+                }, server);
+    }
+
+    private static void retry(net.minecraft.server.network.ServerPlayerEntity p, ServerWorld world, int tries) {
+        if (tries >= 12) {
+            LAST_RTP.remove(p.getUuid());
+            p.sendMessage(Text.literal("No safe spot found, try again.").formatted(Formatting.RED), false);
             return;
         }
-        p.sendMessage(Text.literal("No safe spot found, try again.").formatted(Formatting.RED), false);
+        attempt(p, world, tries + 1);
     }
 
     private static BlockPos pick(ServerWorld world, BlockPos center) {
@@ -78,6 +98,10 @@ public final class RandomRespawn {
         int x = center.getX() + (int) (Math.cos(angle) * dist);
         int z = center.getZ() + (int) (Math.sin(angle) * dist);
         if (!world.getWorldBorder().contains(x, z)) return null;
+        return check(world, x, z);
+    }
+
+    private static BlockPos check(ServerWorld world, int x, int z) {
         // load (or generate) the chunk first - getTopY returns the bottom of the world for unloaded chunks
         var chunk = world.getChunk(x >> 4, z >> 4);
         int y = chunk.sampleHeightmap(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15) + 1;
