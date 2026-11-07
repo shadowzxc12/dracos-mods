@@ -42,7 +42,8 @@ public final class RankShop {
         // rarer items cost a lot more; no elytra (must be found in the End)
         row(1, V, o(V, Items.GOLDEN_APPLE, 16, 20_000), o(V, Items.EXPERIENCE_BOTTLE, 64, 15_000),
                 o(V, Items.SHULKER_BOX, 1, 35_000), o(V, Items.ENDER_PEARL, 16, 10_000),
-                o(V, Items.DIAMOND_BLOCK, 4, 50_000), o(V, Items.FIREWORK_ROCKET, 64, 15_000));
+                o(V, Items.DIAMOND_BLOCK, 4, 50_000), o(V, Items.FIREWORK_ROCKET, 64, 15_000),
+                o(V, Items.EMERALD, 64, 60_000));
         row(2, M, o(M, Items.ENCHANTED_GOLDEN_APPLE, 1, 90_000), o(M, Items.TOTEM_OF_UNDYING, 1, 60_000),
                 o(M, Items.NETHERITE_INGOT, 1, 90_000), o(M, Items.WIND_CHARGE, 32, 35_000),
                 o(M, Items.SHULKER_BOX, 4, 130_000), o(M, Items.EXPERIENCE_BOTTLE, 256, 55_000));

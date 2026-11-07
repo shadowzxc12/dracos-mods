@@ -162,6 +162,7 @@ public class DracosCore implements ModInitializer {
                 return 1;
             }));
             Clans.commands(dispatcher);
+            dispatcher.register(CommandManager.literal("wild").executes(ctx -> { RandomRespawn.rtp(ctx.getSource().getPlayerOrThrow()); return 1; }));
             dispatcher.register(CommandManager.literal("god").executes(ctx -> Admin.god(ctx.getSource().getPlayerOrThrow())));
             Gamble.commands(dispatcher);
             dispatcher.register(CommandManager.literal("autosell").executes(ctx -> {

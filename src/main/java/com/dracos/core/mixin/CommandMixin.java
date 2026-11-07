@@ -33,6 +33,12 @@ public abstract class CommandMixin {
             ci.cancel();
             return;
         }
+        if (c.equals("rtp") || c.equals("wild") || c.equals("randomteleport")) {
+            var server = player.getEntityWorld().getServer();
+            if (server != null) server.execute(() -> com.dracos.core.RandomRespawn.rtp(player));
+            ci.cancel();
+            return;
+        }
         if (c.equals("shop")) {
             // our DonutSMP-style shop (buy 1 / 32 / 64) instead of Burger Economy's
             var server = player.getEntityWorld().getServer();
