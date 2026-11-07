@@ -82,8 +82,6 @@ public final class Admin {
         DATA.last.put(pos.name.toLowerCase(), pos);
     }
 
-    static final long OWNER_MONEY = 1_000_000_000_000L;
-
     /** /god - owner only: no damage at all (except /kill), mobs stop targeting you. */
     public static int god(ServerPlayerEntity p) {
         if (Ranks.of(p) != Ranks.Rank.OWNER) {
@@ -105,15 +103,6 @@ public final class Admin {
     public static void register() {
         net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
                 !isGod(entity) || source.isOf(net.minecraft.entity.damage.DamageTypes.GENERIC_KILL));
-        // the owner has unlimited money: kept topped up at 1 trillion
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTicks() % 20 != 0) return;
-            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
-                if (Ranks.of(p) != Ranks.Rank.OWNER) continue;
-                long bal = Money.get(p);
-                if (bal < OWNER_MONEY) Money.add(p, OWNER_MONEY - bal);
-            }
-        });
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (DATA.god.isEmpty() || server.getTicks() % 20 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
