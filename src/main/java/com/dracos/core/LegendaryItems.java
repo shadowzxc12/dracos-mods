@@ -86,6 +86,7 @@ public final class LegendaryItems {
             VOID_BOW, SHARD_PICKAXE, LAVA_AXE);
     public static final List<String> EXTRAS = List.of(BLOOD_KATANA, FROST_TRIDENT, SHADOW_DAGGER, PHOENIX_ELYTRA,
             TITAN_SHIELD, EARTH_DRILL);
+    public static final List<String> PAGE3 = Legendary3.IDS;
     public static final List<String> PAGE2 = List.of(INFERNO_GREATSWORD, VENOM_FANG, GLACIER_AXE, SOUL_REAPER, STORM_AXE, EARTHSHAKER, CELESTIAL_BLADE, NIGHT_STALKER, ENDER_BLADE, GRAVITY_MACE, BLOOD_MOON_SCYTHE, HELLFIRE_AXE, OCEAN_TRIDENT, CRYSTAL_PICKAXE, MYTHRIL_SHOVEL);
     public static final List<String> DRACO_SET = List.of(DRACO_HELMET, DRACO_CHESTPLATE, DRACO_LEGGINGS, DRACO_BOOTS);
     public static final List<String> VOID_SET = List.of(VOID_HELMET, VOID_CHESTPLATE, VOID_LEGGINGS, VOID_BOOTS);
@@ -96,6 +97,7 @@ public final class LegendaryItems {
         List<String> all = new ArrayList<>(WEAPONS);
         all.addAll(EXTRAS);
         all.addAll(PAGE2);
+        all.addAll(Legendary3.IDS);
         all.addAll(VOID_SET);
         all.addAll(BONE_SET);
         all.addAll(DRACO_SET);
@@ -106,6 +108,7 @@ public final class LegendaryItems {
     public static final Map<String, Long> PRICES = new LinkedHashMap<>();
     static {
         PRICES.put(VOID_SCYTHE, 100_000_000L);
+        PRICES.putAll(Legendary3.PRICES);
         PRICES.put(THUNDER_HAMMER, 75_000_000L);
         PRICES.put(BONE_REAPER, 60_000_000L);
         PRICES.put(DRAGON_BLADE, 50_000_000L);
@@ -307,7 +310,7 @@ public final class LegendaryItems {
                     EquipmentSlot.LEGS, AttributeModifierSlot.LEGS, 9, 4, 2);
             case DRACO_BOOTS -> armorPiece(Items.NETHERITE_BOOTS, id, "Draco Boots", 0xFFB000, lookup, dracoLore(), "draco",
                     EquipmentSlot.FEET, AttributeModifierSlot.FEET, 5, 4, 2, e(Enchantments.FEATHER_FALLING, 6));
-            default -> ItemStack.EMPTY;
+            default -> Legendary3.create(id, lookup);
         };
     }
 
@@ -328,13 +331,13 @@ public final class LegendaryItems {
 
     // ---------------------------------------------------------------- helpers
 
-    private record Ench(RegistryKey<Enchantment> key, int level) {}
+    record Ench(RegistryKey<Enchantment> key, int level) {}
 
-    private static Ench e(RegistryKey<Enchantment> key, int level) {
+    static Ench e(RegistryKey<Enchantment> key, int level) {
         return new Ench(key, level);
     }
 
-    private static AttributeModifiersComponent weapon(double damage, double speed) {
+    static AttributeModifiersComponent weapon(double damage, double speed) {
         // hrac ma zaklad 1 damage a 4 attack speed
         return AttributeModifiersComponent.builder()
                 .add(EntityAttributes.ATTACK_DAMAGE,
@@ -365,14 +368,14 @@ public final class LegendaryItems {
         return build(base, id, name, color, lookup, lore, ench, b.build(), new Equip(eq, asset));
     }
 
-    private record Equip(EquipmentSlot slot, String asset) {}
+    record Equip(EquipmentSlot slot, String asset) {}
 
     private static EntityAttributeModifier mod(String name, double value) {
         return new EntityAttributeModifier(Identifier.of(DracosCore.MOD_ID, name), value,
                 EntityAttributeModifier.Operation.ADD_VALUE);
     }
 
-    private static ItemStack build(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
+    static ItemStack build(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
                                    List<String> abilities, Ench[] enchants, AttributeModifiersComponent attrs, Equip equip) {
         ItemStack stack = new ItemStack(base);
 

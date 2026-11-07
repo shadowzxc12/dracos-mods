@@ -44,6 +44,17 @@ public final class LegendaryShop {
         for (int i = 0; i < LegendaryItems.PAGE2.size() && i < slots.length; i++) LAYOUT2.put(slots[i], LegendaryItems.PAGE2.get(i));
     }
 
+    private static Map<Integer, String> pageLayout(List<String> ids) {
+        Map<Integer, String> m = new HashMap<>();
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 31};
+        for (int i = 0; i < ids.size() && i < slots.length; i++) m.put(slots[i], ids.get(i));
+        return m;
+    }
+
+    private static final Map<Integer, String> LAYOUT3 = pageLayout(Legendary3.page(0));
+    private static final Map<Integer, String> LAYOUT4 = pageLayout(Legendary3.page(1));
+    static final int PAGES = 4;
+
     private static void putSet(int rowStart, List<String> set) {
         int[] off = {1, 2, 4, 5};
         for (int i = 0; i < 4; i++) LAYOUT.put(rowStart + off[i], set.get(i));
@@ -51,7 +62,9 @@ public final class LegendaryShop {
 
     public static void open(ServerPlayerEntity player) { open(player, 1); }
 
-    private static Map<Integer, String> layout(int page) { return page == 2 ? LAYOUT2 : LAYOUT; }
+    private static Map<Integer, String> layout(int page) {
+        return switch (page) { case 2 -> LAYOUT2; case 3 -> LAYOUT3; case 4 -> LAYOUT4; default -> LAYOUT; };
+    }
 
     public static void open(ServerPlayerEntity player, int page) {
         SimpleInventory inv = new SimpleInventory(54);
@@ -76,13 +89,19 @@ public final class LegendaryShop {
             inv.setStack(en.getKey(), display);
         }
 
-        ItemStack arrow = new ItemStack(Items.ARROW);
-        arrow.set(DataComponentTypes.ITEM_NAME, Text.literal(page == 1 ? "Next page ➜" : "⬅ Previous page")
-                .styled(st -> st.withColor(Formatting.YELLOW).withBold(true).withItalic(false)));
-        inv.setStack(page == 1 ? 53 : 45, arrow);
+        if (page > 1) {
+            ItemStack prev = new ItemStack(Items.ARROW);
+            prev.set(DataComponentTypes.ITEM_NAME, Text.literal("⬅ Previous page").styled(st -> st.withColor(Formatting.YELLOW).withBold(true).withItalic(false)));
+            inv.setStack(45, prev);
+        }
+        if (page < PAGES) {
+            ItemStack next = new ItemStack(Items.ARROW);
+            next.set(DataComponentTypes.ITEM_NAME, Text.literal("Next page ➜").styled(st -> st.withColor(Formatting.YELLOW).withBold(true).withItalic(false)));
+            inv.setStack(53, next);
+        }
         player.openHandledScreen(new SimpleNamedScreenHandlerFactory(
                 (syncId, playerInv, p) -> new Handler(syncId, playerInv, inv, page),
-                Text.literal("Legendary Shop " + page + "/2").formatted(Formatting.DARK_PURPLE, Formatting.BOLD)));
+                Text.literal("Legendary Shop " + page + "/" + PAGES).formatted(Formatting.DARK_PURPLE, Formatting.BOLD)));
     }
 
     private static String idAtSlot(int page, int slot) {
@@ -112,8 +131,8 @@ public final class LegendaryShop {
             // nic sa neda vybrat z okna - len kupit
             if (player instanceof ServerPlayerEntity sp && slotIndex >= 0 && slotIndex < 54
                     && actionType == SlotActionType.PICKUP) {
-                if ((page == 1 && slotIndex == 53) || (page == 2 && slotIndex == 45)) {
-                    int to = page == 1 ? 2 : 1;
+                if ((slotIndex == 53 && page < PAGES) || (slotIndex == 45 && page > 1)) {
+                    int to = slotIndex == 53 ? page + 1 : page - 1;
                     sp.getEntityWorld().getServer().execute(() -> open(sp, to));
                     return;
                 }
