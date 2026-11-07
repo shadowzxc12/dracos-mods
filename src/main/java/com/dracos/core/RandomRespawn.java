@@ -44,6 +44,7 @@ public final class RandomRespawn {
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
 
     public static void rtp(net.minecraft.server.network.ServerPlayerEntity p) {
+        DracosCore.LOGGER.info("[RTP] {} used /rtp", p.getName().getString());
         if (Combat.inCombat(p)) {
             p.sendMessage(Text.literal("You can't /rtp in combat!").formatted(Formatting.RED), false);
             return;

@@ -23,8 +23,16 @@ public class DracosCore implements ModInitializer {
             for (String field : new String[]{"children", "literals", "arguments"}) {
                 java.lang.reflect.Field f = com.mojang.brigadier.tree.CommandNode.class.getDeclaredField(field);
                 f.setAccessible(true);
-                ((java.util.Map<String, ?>) f.get(root)).remove("settings");
+                java.util.Map<String, ?> m = (java.util.Map<String, ?>) f.get(root);
+                m.remove("settings");
+                for (String c : new String[]{"rtp", "wild", "randomteleport"}) m.remove(c); // Essential Commands' own /rtp
             }
+            // our /rtp for everyone (no permission needed)
+            for (String c : new String[]{"rtp", "wild", "randomteleport"})
+                dispatcher.register(net.minecraft.server.command.CommandManager.literal(c).executes(ctx -> {
+                    RandomRespawn.rtp(ctx.getSource().getPlayerOrThrow());
+                    return 1;
+                }));
             for (var p : server.getPlayerManager().getPlayerList()) server.getCommandManager().sendCommandTree(p);
             LOGGER.info("Removed server /settings; Dracos settings menu is /menu (Minehut proxy owns /settings and /setting)");
         } catch (Exception e) {

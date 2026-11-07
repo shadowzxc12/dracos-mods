@@ -33,7 +33,7 @@ public abstract class CommandMixin {
             ci.cancel();
             return;
         }
-        if (c.equals("rtp") || c.equals("wild") || c.equals("randomteleport")) {
+        if (c.equals("rtp") || c.equals("wild") || c.equals("randomteleport") || c.startsWith("rtp ") || c.startsWith("wild ")) {
             var server = player.getEntityWorld().getServer();
             if (server != null) server.execute(() -> com.dracos.core.RandomRespawn.rtp(player));
             ci.cancel();
