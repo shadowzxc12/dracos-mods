@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  * Mob stacking: same-type mobs close together merge into one ("Zombie x24").
- * Killing a stack kills one mob - the rest stay as a stack with one less. Cuts lag from farms and spawners a lot.
+ * Killing a stack kills the whole stack (all drops + XP). Cuts lag from farms and spawners a lot.
  */
 public final class MobStacker {
     private MobStacker() {}
@@ -67,15 +67,19 @@ public final class MobStacker {
             if (world.getTime() % 100 != 0) return;
             merge(world);
         });
+        // killing a stack kills the whole stack: every mob drops its own loot and XP
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
             if (!(entity instanceof MobEntity m) || !(m.getEntityWorld() instanceof ServerWorld w)) return;
             int n = count(m);
             if (n <= 1) return;
-            Entity next = m.getType().create(w, SpawnReason.NATURAL);
-            if (!(next instanceof MobEntity nm)) return;
-            nm.refreshPositionAndAngles(m.getX(), m.getY(), m.getZ(), m.getYaw(), m.getPitch());
-            w.spawnEntity(nm);
-            setCount(nm, n - 1);
+            for (int i = 1; i < n; i++) {
+                Entity next = m.getType().create(w, SpawnReason.NATURAL);
+                if (!(next instanceof MobEntity nm)) return;
+                nm.refreshPositionAndAngles(m.getX(), m.getY(), m.getZ(), m.getYaw(), m.getPitch());
+                w.spawnEntity(nm);
+                nm.damage(w, source, Float.MAX_VALUE);
+                if (nm.isAlive()) nm.kill(w);
+            }
         });
     }
 
