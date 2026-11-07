@@ -3,6 +3,6 @@
   "minVersion": "0.8",
   "package": "com.dracos.core.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["CommandMixin", "FarmlandMixin"],
+  "mixins": ["CommandMixin", "FarmlandMixin", "AnvilMixin", "CropRainMixin"],
   "injectors": { "defaultRequire": 0 }
 }

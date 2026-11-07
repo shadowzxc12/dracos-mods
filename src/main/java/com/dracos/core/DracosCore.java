@@ -56,6 +56,7 @@ public class DracosCore implements ModInitializer {
         Quests.register();
         Admin.register();
         MobCarry.register();
+        Fishing.register();
         AutoSell.register();
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polymer-core")) {
             try { SellTooltips.register(); } catch (Throwable t) { LOGGER.warn("Sell tooltips disabled", t); }
