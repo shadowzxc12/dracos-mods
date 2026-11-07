@@ -39,6 +39,19 @@ jobs:
         run: |
           pip install --quiet pillow
           PYTHONHASHSEED=1 python3 pack/gen.py /tmp/ref /tmp/pack
+          # textures/models of the Polymer mods on the server (backpacks, polydex, polymer) - otherwise they show as purple cubes
+          mkdir -p /tmp/modjars /tmp/modassets
+          for slug in serverbackpacks:1.5.5 polydex:1.8.1 polymer:0.15.2; do
+            P=${slug%%:*}; V=${slug##*:}
+            URL=$(curl -sS "https://api.modrinth.com/v2/project/$P/version?game_versions=%5B%221.21.11%22%5D&loaders=%5B%22fabric%22%5D" | python3 -c "import sys,json;v=[x for x in json.load(sys.stdin) if x['version_number'].startswith('$V')];print(v[0]['files'][0]['url'] if v else '')")
+            [ -n "$URL" ] && curl -sSL -o /tmp/modjars/$P.jar "$URL" || echo "no jar for $P"
+          done
+          cd /tmp/modjars
+          for j in *.jar; do unzip -q -o "$j" 'META-INF/jars/*' -d /tmp/modjars/nested_$j 2>/dev/null || true; done
+          for j in $(find /tmp/modjars -name '*.jar'); do unzip -q -o "$j" 'assets/*' -x 'assets/minecraft/*' -d /tmp/modassets 2>/dev/null || true; done
+          if [ -d /tmp/modassets/assets ]; then cp -rn /tmp/modassets/assets/* /tmp/pack/assets/ ; fi
+          ls /tmp/pack/assets
+          cd -
           cd /tmp/pack && find . -exec touch -t 202601010000 {} + && zip -qrX9 /tmp/dracos-pack.zip pack.mcmeta pack.png assets
           SHA=$(sha1sum /tmp/dracos-pack.zip | cut -d' ' -f1)
           curl -sS -o /tmp/up.html -F "file=@/tmp/dracos-pack.zip" https://mc-packs.net/ || true
