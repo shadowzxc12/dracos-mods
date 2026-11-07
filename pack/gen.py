@@ -416,7 +416,10 @@ def hd_frames(base16, accent16, accent, aura=True, n=FRAMES, seed=0, outline=Non
     S = 32
     big = base16.resize((S, S), Image.NEAREST)
     filled = lambda x, y: 0 <= x < S and 0 <= y < S and big.getpixel((x, y))[3] > 0
-    acc_big = {(x * 2 + i, y * 2 + j) for (x, y) in accent16 for i in (0, 1) for j in (0, 1)}
+    if base16.size[0] == S:
+        acc_big = set(accent16)          # already 32x32 (procedural shapes)
+    else:
+        acc_big = {(x * 2 + i, y * 2 + j) for (x, y) in accent16 for i in (0, 1) for j in (0, 1)}
     # distance to shape for aura
     dist = {}
     for y in range(S):
@@ -489,6 +492,31 @@ def sprite_frames(name):
     return hd_frames(base, acc, pal["A"], seed=hash(name) & 0xff, outline=pal["o"])
 
 
+def shape_frames(name):
+    """Unique 32x32 silhouette from shapes.py, coloured with the item's palette."""
+    import shapes
+    st = SETS[RECOLORED[name][1]]
+    pal = {"4": hx(st["stops"][3]), "3": hx(st["stops"][2]), "2": hx(st["stops"][1]), "A": hx(st["accent"]),
+           "g": mix(hx("#e0b040"), hx(st["stops"][3]), 0.35), "G": mix(hx("#8a6420"), hx(st["stops"][1]), 0.35),
+           "h": mix(hx("#3a2416"), hx(st["stops"][0]), 0.4), "H": mix(hx("#6e4428"), hx(st["stops"][1]), 0.3)}
+    outline = bright(hx(st["stops"][0]), 0.55)
+    rows = shapes.grid(name)
+    base = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    acc = set()
+    for y in range(32):
+        for x in range(32):
+            ch = rows[y][x]
+            if ch == ".":
+                if any(0 <= x + dx < 32 and 0 <= y + dy < 32 and rows[y + dy][x + dx] != "."
+                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    base.putpixel((x, y), outline)
+                continue
+            base.putpixel((x, y), pal[ch])
+            if ch == "A":
+                acc.add((x, y))
+    return hd_frames(base, acc, pal["A"], seed=len(name), outline=outline)
+
+
 # --------------------------------------------------------------------------- build
 def item_model(name, parent="minecraft:item/handheld", tex=None):
     wjson({"parent": parent, "textures": {"layer0": f"{NS}:item/{tex or name}"}},
@@ -512,8 +540,10 @@ def main():
         item_model(name, parent)
         item_def(name)
 
+    import shapes
     for name, (_, _, parent) in RECOLORED.items():
-        save(recolored_frames(name), f"assets/{NS}/textures/item/{name}.png")
+        frames = shape_frames(name) if name in shapes.SHAPES else recolored_frames(name)
+        save(frames, f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         item_model(name, parent)
         item_def(name)
