@@ -66,6 +66,7 @@ public class DracosCore implements ModInitializer {
         MobCarry.register();
         Fishing.register();
         MobStacker.register();
+        Skills.register();
         AutoSell.register();
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polymer-core")) {
             try { SellTooltips.register(); } catch (Throwable t) { LOGGER.warn("Sell tooltips disabled", t); }
@@ -84,6 +85,9 @@ public class DracosCore implements ModInitializer {
             Admin.load();
             AutoSell.load();
             Gamble.load();
+            Skills.load();
+            PlayerWarps.load();
+            Bank.load();
             takeOverSettings(server);
         });
 
@@ -174,6 +178,9 @@ public class DracosCore implements ModInitializer {
             dispatcher.register(CommandManager.literal("wild").executes(ctx -> { RandomRespawn.rtp(ctx.getSource().getPlayerOrThrow()); return 1; }));
             dispatcher.register(CommandManager.literal("god").executes(ctx -> Admin.god(ctx.getSource().getPlayerOrThrow())));
             Gamble.commands(dispatcher);
+            PlayerWarps.commands(dispatcher);
+            Bank.commands(dispatcher);
+            dispatcher.register(CommandManager.literal("skills").executes(ctx -> { Skills.open(ctx.getSource().getPlayerOrThrow()); return 1; }));
             dispatcher.register(CommandManager.literal("autosell").executes(ctx -> {
                 AutoSell.open(ctx.getSource().getPlayerOrThrow(), 0);
                 return 1;
