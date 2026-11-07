@@ -66,7 +66,7 @@ public final class Bank {
         return a;
     }
 
-    private static Text pre() { return Text.literal("Bank » ").formatted(Formatting.GOLD, Formatting.BOLD); }
+    private static net.minecraft.text.MutableText pre() { return Text.literal("Bank » ").formatted(Formatting.GOLD, Formatting.BOLD); }
 
     private static void msg(ServerPlayerEntity p, String s, Formatting f) {
         p.sendMessage(Text.empty().append(pre()).append(Text.literal(s).formatted(f)), false);
