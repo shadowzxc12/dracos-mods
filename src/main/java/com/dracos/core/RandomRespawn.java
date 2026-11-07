@@ -40,7 +40,7 @@ public final class RandomRespawn {
 
     // ---- /rtp for everyone
     // inside the pre-generated area (Chunky did 6000) chunks load from disk almost instantly
-    public static final int RTP_MIN = 1_000, RTP_MAX = 6_000;
+    public static final int RTP_MIN = 1_000, RTP_MAX = 19_500; // whole 40k world (border is 20 000)
     private static final long RTP_COOLDOWN_MS = 20_000;
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
 
