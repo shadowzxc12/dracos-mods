@@ -40,7 +40,7 @@ public final class RandomRespawn {
 
     // ---- /rtp for everyone
     public static final int RTP_MIN = 1_000, RTP_MAX = 18_000;
-    private static final long RTP_COOLDOWN_MS = 60_000;
+    private static final long RTP_COOLDOWN_MS = 20_000;
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
 
     public static void rtp(net.minecraft.server.network.ServerPlayerEntity p) {
