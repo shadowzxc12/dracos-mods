@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** No crop trampling: jumping on farmland (players or mobs) never turns it back to dirt. */
 @Mixin(FarmlandBlock.class)
 public abstract class FarmlandMixin {
-    @Inject(method = "setToDirt", at = @At("HEAD"), cancellable = true, require = 1)
+    @Inject(method = "setToDirt", at = @At("HEAD"), cancellable = true)
     private static void dracos$noTrample(Entity entity, BlockState state, World world, BlockPos pos, CallbackInfo ci) {
         if (entity != null) ci.cancel();
     }
