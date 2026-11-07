@@ -59,6 +59,7 @@ public class DracosCore implements ModInitializer {
         StoreBridge.register();
         Heads.register();
         Gamble.register();
+        GambleAnim.register();
         Clans.register();
         Spawners.register();
         Quests.register();

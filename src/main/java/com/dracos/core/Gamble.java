@@ -195,17 +195,15 @@ public final class Gamble {
         MinecraftServer server = p.getEntityWorld().getServer();
         String winName = creatorWins ? f.name : p.getName().getString();
         String loseName = creatorWins ? p.getName().getString() : f.name;
-        if (creatorWins) Money.addUuid(UUID.fromString(f.uuid), prize); else Money.add(p, prize);
-        broadcast(server, pre("Coinflip").append(Text.literal(winName).formatted(Formatting.GREEN, Formatting.BOLD))
-                .append(Text.literal(" won ").formatted(Formatting.GRAY)).append(Text.literal(Money.fmt(prize)).formatted(Formatting.GOLD, Formatting.BOLD))
-                .append(Text.literal(" against " + loseName + "!").formatted(Formatting.GRAY)));
-        for (String u : new String[]{f.uuid, p.getUuidAsString()}) {
-            ServerPlayerEntity o = server.getPlayerManager().getPlayer(UUID.fromString(u));
-            if (o == null) continue;
-            boolean won = o.getName().getString().equals(winName);
-            o.getEntityWorld().playSound(null, o.getBlockPos(), won ? SoundEvents.UI_TOAST_CHALLENGE_COMPLETE : SoundEvents.ENTITY_VILLAGER_NO,
-                    SoundCategory.PLAYERS, 0.8f, 1f);
-        }
+        UUID creator = UUID.fromString(f.uuid), acceptor = p.getUuid();
+        p.closeHandledScreen();
+        GambleAnim.coinflip(server, new GambleAnim.Who(creator, f.name, f.amount),
+                new GambleAnim.Who(acceptor, p.getName().getString(), f.amount), creatorWins, () -> {
+            Money.addUuid(creatorWins ? creator : acceptor, prize);
+            broadcast(server, pre("Coinflip").append(Text.literal(winName).formatted(Formatting.GREEN, Formatting.BOLD))
+                    .append(Text.literal(" won ").formatted(Formatting.GRAY)).append(Text.literal(Money.fmt(prize)).formatted(Formatting.GOLD, Formatting.BOLD))
+                    .append(Text.literal(" against " + loseName + "!").formatted(Formatting.GRAY)));
+        });
     }
 
     static void openFlips(ServerPlayerEntity p) {
@@ -326,14 +324,18 @@ public final class Gamble {
             return;
         }
         long roll = (long) (RNG.nextDouble() * pot), acc = 0;
-        Entry win = entries.get(entries.size() - 1);
-        for (Entry e : entries) { acc += e.amount; if (roll < acc) { win = e; break; } }
-        long prize = pot - tax(pot);
-        Money.addUuid(UUID.fromString(win.uuid), prize);
-        broadcast(server, pre("Jackpot").append(Text.literal(win.name).formatted(Formatting.GREEN, Formatting.BOLD))
-                .append(Text.literal(" won the jackpot: ").formatted(Formatting.GRAY)).append(Text.literal(Money.fmt(prize)).formatted(Formatting.GOLD, Formatting.BOLD))
-                .append(Text.literal(" with a " + chance(win.amount, pot) + " chance!").formatted(Formatting.GRAY)));
-        for (ServerPlayerEntity o : server.getPlayerManager().getPlayerList())
-            o.getEntityWorld().playSound(null, o.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.5f, 1.4f);
+        int winIdx = entries.size() - 1;
+        for (int i = 0; i < entries.size(); i++) { acc += entries.get(i).amount; if (roll < acc) { winIdx = i; break; } }
+        Entry win = entries.get(winIdx);
+        long prize = pot - tax(pot), fPot = pot;
+        List<GambleAnim.Who> who = new ArrayList<>();
+        for (Entry e : entries) who.add(new GambleAnim.Who(UUID.fromString(e.uuid), e.name, e.amount));
+        broadcast(server, pre("Jackpot").append(Text.literal("Spinning the wheel for " + Money.fmt(pot) + "...").formatted(Formatting.YELLOW)));
+        GambleAnim.jackpot(server, who, winIdx, () -> {
+            Money.addUuid(UUID.fromString(win.uuid), prize);
+            broadcast(server, pre("Jackpot").append(Text.literal(win.name).formatted(Formatting.GREEN, Formatting.BOLD))
+                    .append(Text.literal(" won the jackpot: ").formatted(Formatting.GRAY)).append(Text.literal(Money.fmt(prize)).formatted(Formatting.GOLD, Formatting.BOLD))
+                    .append(Text.literal(" with a " + chance(win.amount, fPot) + " chance!").formatted(Formatting.GRAY)));
+        });
     }
 }
