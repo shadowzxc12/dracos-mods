@@ -155,12 +155,16 @@ public final class RankShop {
             for (String perk : t.perks()) lore.add(line("• " + perk, Formatting.GRAY));
             lore.add(Text.empty());
             lore.add(line(t.offers().size() + " items", Formatting.DARK_GRAY));
-            lore.add(line(ok ? "✔ Unlocked - click to open" : "✘ Locked - click to preview", ok ? Formatting.GREEN : Formatting.RED));
-            ItemStack s = named(t.icon(), t.rank().title.toUpperCase() + " ITEMS", t.rank().color, lore);
+            lore.add(line(ok ? "✔ Unlocked - click to open" : "✘ Locked - you need the " + t.rank().title + " rank", ok ? Formatting.GREEN : Formatting.RED));
+            ItemStack s = named(ok ? t.icon() : Items.BARRIER, t.rank().title.toUpperCase() + " ITEMS", ok ? t.rank().color : Formatting.DARK_GRAY, lore);
             if (ok) s.set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true);
             v.inv.setStack(slots[i], s);
             int idx = i;
-            v.clicks.put(slots[i], pl -> { sound(pl, SoundEvents.UI_BUTTON_CLICK.value(), 1.2f); tier(pl, idx); });
+            v.clicks.put(slots[i], pl -> {
+                if (!Ranks.of(pl).atLeast(t.rank())) { locked(pl, t); return; }
+                sound(pl, SoundEvents.UI_BUTTON_CLICK.value(), 1.2f);
+                tier(pl, idx);
+            });
         }
         v.inv.setStack(48, named(Items.EMERALD, "Shop", Formatting.GREEN, List.of(line("Back to /shop", Formatting.GRAY))));
         v.clicks.put(48, Shop::open);
@@ -175,8 +179,17 @@ public final class RankShop {
         v.done();
     }
 
+    private static void locked(ServerPlayerEntity p, Tier t) {
+        sound(p, SoundEvents.ENTITY_VILLAGER_NO, 1f);
+        p.closeHandledScreen();
+        p.sendMessage(Text.literal("✘ The " + t.rank().title + " items need the " + t.rank().title + " rank. ").formatted(Formatting.RED)
+                .append(Text.literal("[GET IT]").styled(s -> s.withColor(Formatting.GREEN).withBold(true)
+                        .withClickEvent(new ClickEvent.OpenUrl(java.net.URI.create(Store.url()))))), false);
+    }
+
     static void tier(ServerPlayerEntity p, int idx) {
         Tier t = TIERS.get(idx);
+        if (!Ranks.of(p).atLeast(t.rank())) { locked(p, t); return; }
         View v = view(p);
         v.reset(t.pane());
         v.inv.setStack(4, head(p));
@@ -221,11 +234,16 @@ public final class RankShop {
         List<Text> perks = new ArrayList<>();
         for (String perk : t.perks()) perks.add(line("• " + perk, Formatting.GRAY));
         v.inv.setStack(40, named(t.icon(), t.rank().title + " perks", t.rank().color, perks));
-        int prev = (idx + TIERS.size() - 1) % TIERS.size(), next = (idx + 1) % TIERS.size();
-        v.inv.setStack(45, named(Items.ARROW, "← " + TIERS.get(prev).rank().title, Formatting.YELLOW, List.of()));
-        v.clicks.put(45, pl -> tier(pl, prev));
-        v.inv.setStack(53, named(Items.ARROW, TIERS.get(next).rank().title + " →", Formatting.YELLOW, List.of()));
-        v.clicks.put(53, pl -> tier(pl, next));
+        if (idx > 0) {
+            int prev = idx - 1;
+            v.inv.setStack(45, named(Items.ARROW, "← " + TIERS.get(prev).rank().title, Formatting.YELLOW, List.of()));
+            v.clicks.put(45, pl -> tier(pl, prev));
+        }
+        if (idx < TIERS.size() - 1 && Ranks.of(p).atLeast(TIERS.get(idx + 1).rank())) {
+            int next = idx + 1;
+            v.inv.setStack(53, named(Items.ARROW, TIERS.get(next).rank().title + " →", Formatting.YELLOW, List.of()));
+            v.clicks.put(53, pl -> tier(pl, next));
+        }
         v.inv.setStack(49, named(Items.OAK_DOOR, "Back", Formatting.RED, List.of()));
         v.clicks.put(49, RankShop::open);
         v.done();
