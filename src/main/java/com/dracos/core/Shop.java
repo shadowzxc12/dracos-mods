@@ -116,23 +116,52 @@ public final class Shop {
 
     interface Click { void run(ServerPlayerEntity p, int button); }
 
-    private static void show(ServerPlayerEntity p, SimpleInventory inv, int rows, Text title, Map<Integer, Click> clicks) {
-        p.openHandledScreen(new SimpleNamedScreenHandlerFactory((sync, pi, pl) -> new Handler(sync, pi, inv, rows, clicks), title));
+    /** One 6-row window for the whole shop; pages are redrawn in place so the cursor never jumps. */
+    static final class View {
+        final SimpleInventory inv = new SimpleInventory(54);
+        final Map<Integer, Click> clicks = new HashMap<>();
+        Handler handler;
+
+        void reset() {
+            clicks.clear();
+            ItemStack pane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
+            pane.set(DataComponentTypes.ITEM_NAME, Text.literal(" "));
+            for (int i = 0; i < 54; i++) inv.setStack(i, pane.copy());
+        }
+
+        void done() {
+            if (handler != null) handler.syncState();
+        }
+    }
+
+    private static View view(ServerPlayerEntity p) {
+        if (p.currentScreenHandler instanceof Handler h) return h.view;
+        View v = new View();
+        v.reset();
+        p.openHandledScreen(new SimpleNamedScreenHandlerFactory((sync, pi, pl) -> {
+            Handler h = new Handler(sync, pi, v);
+            v.handler = h;
+            return h;
+        }, Text.literal("Shop").formatted(Formatting.DARK_GREEN, Formatting.BOLD)));
+        return v;
     }
 
     // ------------------------------------------------------------------ screens
     public static void open(ServerPlayerEntity p) {
         List<Category> cats = cats();
-        SimpleInventory inv = frame(27);
-        Map<Integer, Click> clicks = new HashMap<>();
-        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25};
+        View v = view(p);
+        v.reset();
+        SimpleInventory inv = v.inv;
+        Map<Integer, Click> clicks = v.clicks;
+        int[] slots = {19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34};
         for (int i = 0; i < cats.size() && i < slots.length; i++) {
             Category c = cats.get(i);
             int idx = i;
             inv.setStack(slots[i], named(c.icon, c.name, Formatting.GOLD, c.items.size() + " items", "Click to open"));
             clicks.put(slots[i], (pl, b) -> category(pl, idx, 0));
         }
-        show(p, inv, 3, Text.literal("Shop").formatted(Formatting.DARK_GREEN, Formatting.BOLD), clicks);
+        inv.setStack(4, named(Items.SUNFLOWER, "Balance: " + Money.fmt(Money.get(p)), Formatting.GOLD));
+        v.done();
     }
 
     static void category(ServerPlayerEntity p, int catIdx, int page) {
@@ -141,9 +170,11 @@ public final class Shop {
         Category c = cats.get(catIdx);
         int pages = Math.max(1, (c.items.size() + 44) / 45);
         int pg = Math.max(0, Math.min(page, pages - 1));
-        SimpleInventory inv = frame(54);
+        View v = view(p);
+        v.reset();
+        SimpleInventory inv = v.inv;
         for (int i = 0; i < 45; i++) inv.setStack(i, ItemStack.EMPTY);
-        Map<Integer, Click> clicks = new HashMap<>();
+        Map<Integer, Click> clicks = v.clicks;
         for (int i = 0; i < 45 && pg * 45 + i < c.items.size(); i++) {
             Entry e = c.items.get(pg * 45 + i);
             ItemStack s = stackOf(p, e, 1);
@@ -160,18 +191,21 @@ public final class Shop {
         clicks.put(49, (pl, b) -> open(pl));
         if (pg > 0) { inv.setStack(45, named(Items.ARROW, "← Previous page", Formatting.YELLOW)); clicks.put(45, (pl, b) -> category(pl, catIdx, pg - 1)); }
         if (pg < pages - 1) { inv.setStack(53, named(Items.ARROW, "Next page →", Formatting.YELLOW)); clicks.put(53, (pl, b) -> category(pl, catIdx, pg + 1)); }
-        show(p, inv, 6, Text.literal(c.name + (pages > 1 ? " " + (pg + 1) + "/" + pages : "")).formatted(Formatting.DARK_GREEN, Formatting.BOLD), clicks);
+        inv.setStack(48, named(Items.PAPER, c.name + (pages > 1 ? "  " + (pg + 1) + "/" + pages : ""), Formatting.WHITE));
+        v.done();
     }
 
     static void amount(ServerPlayerEntity p, int catIdx, int page, Entry e) {
-        SimpleInventory inv = frame(36);
-        Map<Integer, Click> clicks = new HashMap<>();
+        View v = view(p);
+        v.reset();
+        SimpleInventory inv = v.inv;
+        Map<Integer, Click> clicks = v.clicks;
         ItemStack shown = stackOf(p, e, 1);
         inv.setStack(13, shown.copy());
         int max = Math.max(1, shown.getMaxCount());
         int[] amounts = max >= 64 ? new int[]{1, 32, 64} : max >= 16 ? new int[]{1, 8, 16} : new int[]{1};
-        int[] buySlots = amounts.length == 3 ? new int[]{19, 20, 21} : new int[]{20};
-        int[] sellSlots = amounts.length == 3 ? new int[]{23, 24, 25} : new int[]{24};
+        int[] buySlots = amounts.length == 3 ? new int[]{28, 29, 30} : new int[]{29};
+        int[] sellSlots = amounts.length == 3 ? new int[]{32, 33, 34} : new int[]{33};
         for (int i = 0; i < amounts.length; i++) {
             int n = amounts[i];
             if (e.canBuy) {
@@ -179,19 +213,24 @@ public final class Shop {
                 ItemStack b = named(Items.LIME_STAINED_GLASS_PANE, "Buy " + n, Formatting.GREEN, "Price: " + Money.fmt(cost), "Click to buy");
                 b.setCount(n);
                 inv.setStack(buySlots[i], b);
-                clicks.put(buySlots[i], (pl, btn) -> { buy(pl, e, n); amount(pl, catIdx, page, e); });
+                clicks.put(buySlots[i], (pl, btn) -> { buy(pl, e, n); balance(pl, v); });
             }
             if (e.canSell) {
                 long gain = (long) Math.floor(e.sellEach() * n);
                 ItemStack s = named(Items.RED_STAINED_GLASS_PANE, "Sell " + n, Formatting.RED, "You get: " + Money.fmt(gain), "Click to sell");
                 s.setCount(n);
                 inv.setStack(sellSlots[i], s);
-                clicks.put(sellSlots[i], (pl, btn) -> { sell(pl, e, n); amount(pl, catIdx, page, e); });
+                clicks.put(sellSlots[i], (pl, btn) -> { sell(pl, e, n); balance(pl, v); });
             }
         }
-        inv.setStack(31, named(Items.BARRIER, "Back", Formatting.RED, "Balance: " + Money.fmt(Money.get(p))));
-        clicks.put(31, (pl, b) -> category(pl, catIdx, page));
-        show(p, inv, 4, Text.literal("Choose amount").formatted(Formatting.DARK_GREEN, Formatting.BOLD), clicks);
+        inv.setStack(49, named(Items.BARRIER, "Back", Formatting.RED));
+        clicks.put(49, (pl, b) -> category(pl, catIdx, page));
+        balance(p, v);
+    }
+
+    private static void balance(ServerPlayerEntity p, View v) {
+        v.inv.setStack(4, named(Items.SUNFLOWER, "Balance: " + Money.fmt(Money.get(p)), Formatting.GOLD));
+        v.done();
     }
 
     private static void buy(ServerPlayerEntity p, Entry e, int n) {
@@ -246,20 +285,17 @@ public final class Shop {
     }
 
     static class Handler extends GenericContainerScreenHandler {
-        final Map<Integer, Click> clicks;
+        final View view;
 
-        Handler(int sync, PlayerInventory pi, SimpleInventory inv, int rows, Map<Integer, Click> clicks) {
-            super(rows == 3 ? ScreenHandlerType.GENERIC_9X3 : rows == 4 ? ScreenHandlerType.GENERIC_9X4 : ScreenHandlerType.GENERIC_9X6,
-                    sync, pi, inv, rows);
-            this.clicks = clicks;
+        Handler(int sync, PlayerInventory pi, View view) {
+            super(ScreenHandlerType.GENERIC_9X6, sync, pi, view.inv, 6);
+            this.view = view;
         }
 
         @Override
         public void onSlotClick(int slot, int button, SlotActionType type, PlayerEntity player) {
-            if (player instanceof ServerPlayerEntity sp && type == SlotActionType.PICKUP && clicks.containsKey(slot)) {
-                Click c = clicks.get(slot);
-                sp.getEntityWorld().getServer().execute(() -> c.run(sp, button));
-                return;
+            if (player instanceof ServerPlayerEntity sp && type == SlotActionType.PICKUP && view.clicks.containsKey(slot)) {
+                view.clicks.get(slot).run(sp, button);
             }
             this.syncState();
         }

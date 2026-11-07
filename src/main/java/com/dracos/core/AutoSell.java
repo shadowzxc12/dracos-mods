@@ -136,13 +136,26 @@ public final class AutoSell {
     private static final int PER_PAGE = 45;
 
     public static void open(ServerPlayerEntity p, int page) {
+        if (p.currentScreenHandler instanceof Handler h) { fill(p, h, page); h.syncState(); return; }
+        SimpleInventory inv = new SimpleInventory(54);
+        Map<Integer, Item> map = new HashMap<>();
+        p.openHandledScreen(new SimpleNamedScreenHandlerFactory((sync, pi, pl) -> new Handler(sync, pi, inv, map, 0),
+                Text.literal("Auto Sell").formatted(Formatting.DARK_GREEN, Formatting.BOLD)));
+        if (p.currentScreenHandler instanceof Handler h) { fill(p, h, page); h.syncState(); }
+    }
+
+    /** Redraws the open window in place (no reopen, so the cursor stays where it is). */
+    static void fill(ServerPlayerEntity p, Handler h, int page) {
+        SimpleInventory inv = h.inv;
+        Map<Integer, Item> map = h.map;
+        map.clear();
+        for (int i = 0; i < 54; i++) inv.setStack(i, ItemStack.EMPTY);
         List<Item> all = choices();
         int pages = Math.max(1, (all.size() + PER_PAGE - 1) / PER_PAGE);
         int pg = Math.max(0, Math.min(page, pages - 1));
         PData d = of(p);
         Map<String, Double> prices = SellPrices.get();
-        SimpleInventory inv = new SimpleInventory(54);
-        Map<Integer, Item> map = new HashMap<>();
+        h.page = pg;
         for (int i = 0; i < PER_PAGE && pg * PER_PAGE + i < all.size(); i++) {
             Item it = all.get(pg * PER_PAGE + i);
             String id = Registries.ITEM.getId(it).toString();
@@ -174,8 +187,7 @@ public final class AutoSell {
                 Text.literal("Click to turn " + (d.on ? "off" : "on")).styled(st -> st.withColor(Formatting.DARK_GRAY).withItalic(false)))));
         inv.setStack(49, master);
         inv.setStack(51, named(Items.BARRIER, "Clear selection", Formatting.RED));
-        p.openHandledScreen(new SimpleNamedScreenHandlerFactory((sync, pi, pl) -> new Handler(sync, pi, inv, map, pg),
-                Text.literal("Auto Sell " + (pg + 1) + "/" + pages).formatted(Formatting.DARK_GREEN, Formatting.BOLD)));
+        inv.setStack(48, named(Items.PAPER, "Page " + (pg + 1) + "/" + pages, Formatting.WHITE));
     }
 
     private static ItemStack named(Item item, String name, Formatting f) {
@@ -186,11 +198,13 @@ public final class AutoSell {
 
     static class Handler extends GenericContainerScreenHandler {
         final Map<Integer, Item> map;
-        final int page;
+        final SimpleInventory inv;
+        int page;
 
         Handler(int sync, PlayerInventory pi, SimpleInventory inv, Map<Integer, Item> map, int page) {
             super(ScreenHandlerType.GENERIC_9X6, sync, pi, inv, 6);
             this.map = map;
+            this.inv = inv;
             this.page = page;
         }
 
@@ -214,9 +228,9 @@ public final class AutoSell {
             if (reopen >= 0) {
                 save();
                 sp.getEntityWorld().playSound(null, sp.getBlockPos(), SoundEvents.UI_BUTTON_CLICK.value(), SoundCategory.PLAYERS, 0.5f, 1.2f);
-                int pg = reopen;
-                sp.getEntityWorld().getServer().execute(() -> open(sp, pg));
-            } else this.syncState();
+                fill(sp, this, reopen);
+            }
+            this.syncState();
         }
 
         @Override
