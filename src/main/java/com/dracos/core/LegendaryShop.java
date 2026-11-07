@@ -51,9 +51,8 @@ public final class LegendaryShop {
         return m;
     }
 
-    private static final Map<Integer, String> LAYOUT3 = pageLayout(Legendary3.page(0));
-    private static final Map<Integer, String> LAYOUT4 = pageLayout(Legendary3.page(1));
-    static final int PAGES = 4;
+    static final int PAGES = 2 + (Legendary3.IDS.size() + 14) / 15;
+    private static final Map<Integer, Map<Integer, String>> EXTRA_PAGES = new HashMap<>();
 
     private static void putSet(int rowStart, List<String> set) {
         int[] off = {1, 2, 4, 5};
@@ -63,7 +62,9 @@ public final class LegendaryShop {
     public static void open(ServerPlayerEntity player) { open(player, 1); }
 
     private static Map<Integer, String> layout(int page) {
-        return switch (page) { case 2 -> LAYOUT2; case 3 -> LAYOUT3; case 4 -> LAYOUT4; default -> LAYOUT; };
+        if (page == 1) return LAYOUT;
+        if (page == 2) return LAYOUT2;
+        return EXTRA_PAGES.computeIfAbsent(page, pg -> pageLayout(Legendary3.page(pg - 3)));
     }
 
     public static void open(ServerPlayerEntity player, int page) {

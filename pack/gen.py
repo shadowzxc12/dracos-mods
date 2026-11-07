@@ -258,6 +258,24 @@ RECOLORED = {
     "royal_blade": ("golden_sword", "sun", "minecraft:item/handheld"),
     "voidwalker_dagger": ("netherite_sword", "void", "minecraft:item/handheld"),
     "nether_king_axe": ("golden_axe", "bloodmoon", "minecraft:item/handheld"),
+    "inferno_staff": ("golden_hoe", "inferno", "minecraft:item/handheld"),
+    "frost_staff": ("golden_hoe", "frost", "minecraft:item/handheld"),
+    "storm_staff": ("golden_hoe", "storm", "minecraft:item/handheld"),
+    "staff_of_life": ("golden_hoe", "emerald", "minecraft:item/handheld"),
+    "void_staff": ("golden_hoe", "void", "minecraft:item/handheld"),
+    "wither_staff": ("golden_hoe", "shadow", "minecraft:item/handheld"),
+    "nature_staff": ("golden_hoe", "venom", "minecraft:item/handheld"),
+    "wind_blade": ("diamond_sword", "celestial", "minecraft:item/handheld"),
+    "meteor_hammer": ("mace", "inferno", "minecraft:item/handheld_mace"),
+    "eclipse_scythe": ("netherite_hoe", "obsidian", "minecraft:item/handheld"),
+    "jumper_blade": ("netherite_sword", "sapphire", "minecraft:item/handheld"),
+    "solar_greatsword": ("golden_sword", "sun", "minecraft:item/handheld"),
+    "berserker_axe": ("netherite_axe", "blood", "minecraft:item/handheld"),
+    "guardian_blade": ("netherite_sword", "crystal", "minecraft:item/handheld"),
+    "hunter_dagger": ("diamond_sword", "earth", "minecraft:item/handheld"),
+    "crimson_rapier": ("netherite_sword", "ruby", "minecraft:item/handheld"),
+    "thunder_spear": ("trident", "storm", "minecraft:item/handheld"),
+    "executioner_axe": ("netherite_axe", "bloodmoon", "minecraft:item/handheld"),
 }
 
 
@@ -565,7 +583,7 @@ def main():
                     "fallback": m("void_bow_pulling_0")}})
 
     # armor sets
-    for s in ("void", "bone", "draco"):
+    for s in ("void", "bone", "draco", "frost", "inferno", "storm"):
         save(armor_layer(s, "humanoid"), f"assets/{NS}/textures/entity/equipment/humanoid/{s}.png")
         save(armor_layer(s, "humanoid_leggings"), f"assets/{NS}/textures/entity/equipment/humanoid_leggings/{s}.png")
         wjson({"layers": {"humanoid": [{"texture": f"{NS}:{s}"}],

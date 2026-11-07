@@ -255,7 +255,50 @@ def hoe(p):
     return f
 
 
-ARCH = {"sword": sword, "axe": axe, "scythe": scythe, "mace": mace, "trident": trident,
+def staff(p):
+    top = L - 7.5
+    kind = p.get("kind", "orb")
+    def f(u, v):
+        if kind == "orb":
+            if disc(u, v, top, 0, 6.0):
+                r = math.hypot(u - top, v)
+                return "A" if r < 3.3 else ("4" if v < -2.0 else "3")
+            ang = math.atan2(v, u - top)
+            r = math.hypot(u - top, v)
+            if 6.0 < r < 7.6 and (ang % (math.pi / 2)) < 0.5:            # cage prongs
+                return "g"
+        if kind == "crystal":
+            if top - 5.5 <= u <= top + 7.5 and abs(v) <= 4.6 * (1 - abs(u - top - 1.0) / 6.6):
+                return "A" if abs(v) < 1.4 else shade(v, 0, 4.4)
+            if top - 7.5 <= u <= top - 5.0 and abs(v) <= 4.6:
+                return "g"
+        if kind == "flame":
+            t = (u - (top - 4)) / 12
+            if 0 <= t <= 1 and abs(v) <= 5.2 * math.sin(math.pi * t) * (1 - 0.35 * t):
+                return "A" if abs(v) < 1.9 * (1 - t) + 0.4 else ("4" if t > 0.55 else "3")
+            if top - 6 <= u <= top - 4 and abs(v) <= 4.2:
+                return "g"
+        if kind == "skull":
+            if disc(u, v, top, 0, 5.6):
+                if (abs(v + 2.3) < 1.2 or abs(v - 2.3) < 1.2) and abs(u - top - 0.9) < 1.2:
+                    return "A"
+                return "4" if u > top - 2.0 else "3"
+        if kind == "leaf":
+            for side in (-1, 1):
+                cu, cv = top + 1.0, side * 3.6
+                if ((u - cu) / 7.0) ** 2 + ((v - cv) / 3.4) ** 2 <= 1:
+                    return "A" if abs(v - cv) < 0.5 else "3"
+        if kind == "moon":
+            if disc(u, v, top, 0, 6.4) and not disc(u, v, top + 2.2, -2.2, 5.0):
+                return "A" if math.hypot(u - top, v) > 5.3 else "4"
+        if kind == "cross":
+            if (abs(v) <= 1.6 and top - 4.5 <= u <= top + 6.5) or (abs(u - top - 1.5) <= 1.6 and abs(v) <= 5.2):
+                return "A" if abs(v) < 0.7 or abs(u - top - 1.5) < 0.7 else "4"
+        return handle(u, v, 0.8, top - 4, w=1.25, wrap=p.get("wrap", True)) or pommel(u, v, 1.2, 1.6, gem=True)
+    return f
+
+
+ARCH = {"staff": staff, "sword": sword, "axe": axe, "scythe": scythe, "mace": mace, "trident": trident,
         "pickaxe": pickaxe, "shovel": shovel, "hoe": hoe}
 
 W = lambda a, b=None: (lambda t: a) if b is None else (lambda t: a + (b - a) * t)
@@ -314,6 +357,25 @@ SHAPES = {
     "royal_blade": ("sword", dict(width=W(2.3, 1.7), guard=6.0, gcurve=-2.0, fuller=True, pommel=2.0)),
     "voidwalker_dagger": ("sword", dict(handle=8.5, width=W(2.0, 1.1), center=CURVE(-1.0), guard=3.2, tip=0.5, edge_glow=True)),
     "nether_king_axe": ("axe", dict(kind="crescent", back=True, spike=True)),
+    # staffs + new weapons
+    "inferno_staff": ("staff", dict(kind="flame")),
+    "frost_staff": ("staff", dict(kind="crystal")),
+    "storm_staff": ("staff", dict(kind="orb")),
+    "staff_of_life": ("staff", dict(kind="cross")),
+    "void_staff": ("staff", dict(kind="moon")),
+    "wither_staff": ("staff", dict(kind="skull")),
+    "nature_staff": ("staff", dict(kind="leaf", wrap=False)),
+    "wind_blade": ("sword", dict(width=W(1.4, 2.0), center=CURVE(1.4), guard=3.6, gcurve=-1.4, tip=0.3, edge_glow=True)),
+    "meteor_hammer": ("mace", dict(kind="spiked")),
+    "eclipse_scythe": ("scythe", dict(curve=1.4, double=True)),
+    "jumper_blade": ("sword", dict(width=W(1.9, 1.3), guard=5.2, gcurve=1.8, fuller=True, tip=0.28)),
+    "solar_greatsword": ("sword", dict(handle=4.5, width=W(3.2, 2.6), guard=6.8, gcurve=-1.5, fuller=True, edge_glow=True, tip=0.18)),
+    "berserker_axe": ("axe", dict(kind="double", spike=True)),
+    "guardian_blade": ("sword", dict(width=W(2.4), guard=6.5, fuller=True, tip=0.22, pommel=2.0)),
+    "hunter_dagger": ("sword", dict(handle=9.5, width=W(1.6, 1.2), center=CURVE(0.8), guard=2.6, tip=0.55)),
+    "crimson_rapier": ("sword", dict(width=W(0.9, 0.55), guard=3.0, gcurve=2.6, tip=0.35, edge_glow=True, pommel=1.7)),
+    "thunder_spear": ("trident", dict(prongs=1, wrap=True)),
+    "executioner_axe": ("axe", dict(kind="cleaver", back=True, len=15.0)),
 }
 
 

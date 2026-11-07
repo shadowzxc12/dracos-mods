@@ -351,7 +351,7 @@ public final class LegendaryItems {
                 .build();
     }
 
-    private static ItemStack armorPiece(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
+    static ItemStack armorPiece(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
                                         List<String> lore, String asset, EquipmentSlot eq, AttributeModifierSlot slot,
                                         double armor, double toughness, double hearts, Ench... extra) {
         Ench[] ench = new Ench[2 + extra.length];
