@@ -56,7 +56,7 @@ public final class RandomRespawn {
         }
         ServerWorld world = p.getEntityWorld().getServer().getOverworld();
         BlockPos spawn = world.getSpawnPoint().getPos();
-        for (int i = 0; i < 25; i++) {
+        for (int i = 0; i < 10; i++) {
             BlockPos pos = pick(world, spawn, RTP_MIN, RTP_MAX);
             if (pos == null) continue;
             LAST_RTP.put(p.getUuid(), now);
@@ -78,7 +78,9 @@ public final class RandomRespawn {
         int x = center.getX() + (int) (Math.cos(angle) * dist);
         int z = center.getZ() + (int) (Math.sin(angle) * dist);
         if (!world.getWorldBorder().contains(x, z)) return null;
-        int y = world.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        // load (or generate) the chunk first - getTopY returns the bottom of the world for unloaded chunks
+        var chunk = world.getChunk(x >> 4, z >> 4);
+        int y = chunk.sampleHeightmap(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x & 15, z & 15) + 1;
         if (y <= world.getBottomY() + 1) return null;
         BlockPos feet = new BlockPos(x, y, z);
         BlockState ground = world.getBlockState(feet.down());
