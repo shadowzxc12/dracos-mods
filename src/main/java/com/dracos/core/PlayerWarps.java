@@ -73,6 +73,14 @@ public final class PlayerWarps {
         return null;
     }
 
+    /** The warp whose protected area contains this spot (whoever is acting), or null. */
+    static Warp zoneAt(net.minecraft.world.World w, double x, double z) {
+        String wid = w.getRegistryKey().getValue().toString();
+        for (Warp wp : WARPS.values())
+            if (wid.equals(wp.world) && Math.abs(wp.x - x) <= PROTECT && Math.abs(wp.z - z) <= PROTECT) return wp;
+        return null;
+    }
+
     static void deny(net.minecraft.entity.player.PlayerEntity p, Warp w) {
         p.sendMessage(Text.literal("This area is protected by " + w.ownerName + "'s warp.").formatted(Formatting.RED), true);
     }
@@ -90,12 +98,17 @@ public final class PlayerWarps {
             deny(player, w);
             return net.minecraft.util.ActionResult.FAIL;
         });
-        // arrows, tridents, potions... thrown by a visitor
+        // villagers, animals, golems... inside a warp can't be killed by anything except the warp's owner:
+        // no visitors (melee, arrows, potions, TNT), no zombies, fire, lava, explosions or fall traps.
         net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
-            if (!protectedEntity(entity) || !(source.getAttacker() instanceof net.minecraft.entity.player.PlayerEntity att)) return true;
-            Warp w = protector(att, entity.getEntityWorld(), entity.getX(), entity.getZ());
-            if (w == null) return true;
-            deny(att, w);
+            if (!protectedEntity(entity) || source.isIn(net.minecraft.registry.tag.DamageTypeTags.BYPASSES_INVULNERABILITY)) return true;
+            Warp zone = zoneAt(entity.getEntityWorld(), entity.getX(), entity.getZ());
+            if (zone == null) return true;
+            if (source.getAttacker() instanceof net.minecraft.entity.player.PlayerEntity att) {
+                Warp w = protector(att, entity.getEntityWorld(), entity.getX(), entity.getZ());
+                if (w == null) return true;                     // the owner (or staff) may
+                deny(att, w);
+            }
             return false;
         });
         net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> {
