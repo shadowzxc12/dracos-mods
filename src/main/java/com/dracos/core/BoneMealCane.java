@@ -37,7 +37,6 @@ final class BoneMealCane {
         public net.minecraft.item.ItemStack dispense(net.minecraft.util.math.BlockPointer pointer, net.minecraft.item.ItemStack stack) {
             BlockPos cane = caneFor(pointer.world(), pointer.pos());
             if (cane != null) {
-                track(pointer.world(), pointer.pos());
                 if (work(pointer.world(), cane)) {
                     stack.decrement(1);
                     pointer.world().syncWorldEvent(1000, pointer.pos(), 0);   // dispenser click
@@ -71,44 +70,29 @@ final class BoneMealCane {
         return grow(w, cane);
     }
 
-    // ---- dispensers that keep working while they stay powered (torch, lever...) - vanilla only fires on a new signal
-    static final java.util.Set<String> FARMS = new java.util.HashSet<>();
-    static boolean farmsDirty;
-
-    static java.nio.file.Path farmsFile() {
-        return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("cane_dispensers.json");
-    }
-
-    static void track(ServerWorld w, BlockPos p) {
-        if (FARMS.add(w.getRegistryKey().getValue() + "|" + p.asLong())) farmsDirty = true;
-    }
-
+    /** Every powered dispenser with bone meal that faces cane/cactus near a player keeps working - no new redstone
+     *  signal needed (vanilla only fires on a rising edge, so a torch would fire it just once). */
     static void tickFarms(net.minecraft.server.MinecraftServer server) {
-        if (FARMS.isEmpty()) return;
-        var it = FARMS.iterator();
-        while (it.hasNext()) {
-            String k = it.next();
-            int bar = k.lastIndexOf('|');
-            ServerWorld w = server.getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD,
-                    net.minecraft.util.Identifier.of(k.substring(0, bar))));
-            BlockPos p = BlockPos.fromLong(Long.parseLong(k.substring(bar + 1)));
-            if (w == null) { it.remove(); farmsDirty = true; continue; }
-            if (!w.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) continue;
-            if (!w.getBlockState(p).isOf(Blocks.DISPENSER)) { it.remove(); farmsDirty = true; continue; }
-            if (!w.isReceivingRedstonePower(p)) continue;
-            BlockPos cane = caneFor(w, p);
-            if (cane == null || !(w.getBlockEntity(p) instanceof net.minecraft.block.entity.DispenserBlockEntity be)) continue;
-            int slot = -1;
-            for (int i = 0; i < be.size(); i++) if (be.getStack(i).isOf(Items.BONE_MEAL)) { slot = i; break; }
-            if (slot < 0) continue;
-            if (work(w, cane)) { be.getStack(slot).decrement(1); be.markDirty(); }
-        }
-        if (farmsDirty) {
-            farmsDirty = false;
-            try {
-                java.nio.file.Files.createDirectories(farmsFile().getParent());
-                java.nio.file.Files.writeString(farmsFile(), new com.google.gson.Gson().toJson(FARMS));
-            } catch (Exception ignored) {}
+        for (ServerWorld w : server.getWorlds()) {
+            java.util.Set<Long> seen = new java.util.HashSet<>();
+            for (var pl : w.getPlayers()) {
+                int pcx = pl.getBlockX() >> 4, pcz = pl.getBlockZ() >> 4;
+                for (int dx = -4; dx <= 4; dx++) for (int dz = -4; dz <= 4; dz++) {
+                    int cx = pcx + dx, cz = pcz + dz;
+                    if (!w.isChunkLoaded(cx, cz) || !seen.add(net.minecraft.util.math.ChunkPos.toLong(cx, cz))) continue;
+                    for (var be0 : new java.util.ArrayList<>(w.getChunk(cx, cz).getBlockEntities().values())) {
+                        if (!(be0 instanceof net.minecraft.block.entity.DispenserBlockEntity be)
+                                || be0 instanceof net.minecraft.block.entity.DropperBlockEntity) continue;
+                        BlockPos p = be.getPos();
+                        BlockPos cane = caneFor(w, p);
+                        if (cane == null || !w.isReceivingRedstonePower(p)) continue;
+                        int slot = -1;
+                        for (int i = 0; i < be.size(); i++) if (be.getStack(i).isOf(Items.BONE_MEAL)) { slot = i; break; }
+                        if (slot < 0) continue;
+                        if (work(w, cane)) { be.getStack(slot).decrement(1); be.markDirty(); }
+                    }
+                }
+            }
         }
     }
 
@@ -118,6 +102,10 @@ final class BoneMealCane {
     }
 
     static void register() {
+        // powered bone meal dispensers work every 1.5 s
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (server.getTicks() % 30 == 0) tickFarms(server);
+        });
         // dispensers with bone meal grow cane/cactus in front of them too; everything else keeps the vanilla behaviour
         // registered once the server is up, so it wraps (and isn't overwritten by) vanilla's bone meal behaviour
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(server -> {
