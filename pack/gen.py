@@ -522,6 +522,28 @@ def shape_frames(name):
     return hq.frames(name, SETS[RECOLORED[name][1]], seed=len(name))
 
 
+# --------------------------------------------------------------------------- 3D model display (same as vanilla handheld)
+HANDHELD = {
+    "thirdperson_righthand": {"rotation": [0, -90, 55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "thirdperson_lefthand": {"rotation": [0, 90, -55], "translation": [0, 4.0, 0.5], "scale": [0.85, 0.85, 0.85]},
+    "firstperson_righthand": {"rotation": [0, -90, 25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
+    "firstperson_lefthand": {"rotation": [0, 90, -25], "translation": [1.13, 3.2, 1.13], "scale": [0.68, 0.68, 0.68]},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+    "head": {"rotation": [0, 180, 0], "translation": [0, 13, 7], "scale": [1, 1, 1]},
+    "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]},
+}
+
+
+def display_for(parent):
+    d = json.loads(json.dumps(HANDHELD))
+    vanilla = os.path.join(REF, "assets/minecraft/models/item", parent.split("/")[-1] + ".json")
+    try:
+        d.update(json.load(open(vanilla)).get("display", {}))     # e.g. handheld_mace has its own transforms
+    except Exception:
+        pass
+    return d
+
+
 # --------------------------------------------------------------------------- build
 def item_model(name, parent="minecraft:item/handheld", tex=None):
     wjson({"parent": parent, "textures": {"layer0": f"{NS}:item/{tex or name}"}},
@@ -553,7 +575,19 @@ def main():
         save(frames, f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         item_model(name, parent)
-        item_def(name)
+        if name in shapes.SHAPES:
+            # real 3D model in hand / on the ground / in frames; the inventory keeps the flat icon
+            import models3d
+            models3d.atlas(SETS[RECOLORED[name][1]]).save(os.path.join(OUT, f"assets/{NS}/textures/item/{name}_3d.png"))
+            m3 = models3d.model(name, f"{NS}:item/{name}_3d", None)
+            m3.pop("parent")
+            m3["display"] = display_for(parent)
+            wjson(m3, f"assets/{NS}/models/item/{name}_3d.json")
+            item_def(name, {"type": "minecraft:select", "property": "minecraft:display_context",
+                            "cases": [{"when": ["gui"], "model": {"type": "minecraft:model", "model": f"{NS}:item/{name}"}}],
+                            "fallback": {"type": "minecraft:model", "model": f"{NS}:item/{name}_3d"}})
+        else:
+            item_def(name)
 
     # void bow (keeps vanilla pulling animation)
     for n, img in bow_textures().items():

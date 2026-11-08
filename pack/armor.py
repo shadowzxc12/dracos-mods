@@ -241,8 +241,8 @@ def pal(set_name, st):
     """OP-armor look: bright silver plates lightly tinted with the set colour; the set colour itself
     goes into the dark trims and the glowing details."""
     base = PAL.get(set_name, st)
-    stops = [hq.mixhex(STEEL4[i], base["stops"][min(3, i + 1)], 0.28 if i else 0.55) for i in range(4)]
-    return dict(stops=stops, dark=base["stops"], accent=base["accent"], spark=base.get("spark", "#ffffff"), tint=0.18)
+    # dark set-coloured plates with glowing seams (the silver version looked bad in game)
+    return dict(stops=base["stops"], dark=base["stops"], accent=base["accent"], spark=base.get("spark", "#ffffff"), tint=0.9)
 
 
 def paint_face(set_name, layer, part, kind, w, h, rnd):
