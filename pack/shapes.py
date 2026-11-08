@@ -38,7 +38,7 @@ def shade(v, c, w):
 # ------------------------------------------------------------------ parts
 def handle(u, v, u0, u1, w=1.1, wrap=True):
     if u0 <= u <= u1 and abs(v) <= w:
-        if wrap and int((u - u0) / 1.6) % 2 == 0:
+        if wrap and int((u - u0 + v * 0.7) / 1.3) % 2 == 0:   # diagonal leather wrap
             return "H"
         return "h"
     return None
@@ -207,7 +207,7 @@ def trident(p):
         if prongs == 1 and base <= u <= top and abs(v) <= 4.0 * (top - u) / 11:
             return "A" if abs(v) < 0.6 else shade(v, 0, 4.0)
         return handle(u, v, 0.8, base - 2, w=1.15, wrap=p.get("wrap", False)) or (
-            "A" if (int(u) % 5 == 0 and abs(v) <= 1.15 and u < base - 2) else None)
+            "A" if (int(u) % 5 == 0 and abs(v) <= 1.15 and 1.5 < u < base - 2) else None)
     return f
 
 
@@ -391,6 +391,9 @@ SHAPES = {
 }
 
 
+ZOOM = 1.14   # draw a little smaller than the canvas so big heads never get cut off
+
+
 def grid(name, res=64):
     """res x res list of strings with material chars ('.' = empty). Shapes are defined on a 32 grid
     and sampled at a higher resolution for smooth, detailed textures."""
@@ -401,7 +404,9 @@ def grid(name, res=64):
     for y in range(res):
         row = ""
         for x in range(res):
-            u, v = uv((x + 0.5) * k - 0.5, (y + 0.5) * k - 0.5)
+            px = S / 2 + ((x + 0.5) * k - S / 2) * ZOOM
+            py = S / 2 + ((y + 0.5) * k - S / 2) * ZOOM
+            u, v = uv(px - 0.5, py - 0.5)
             row += f(u, v) or "."
         rows.append(row)
     return rows

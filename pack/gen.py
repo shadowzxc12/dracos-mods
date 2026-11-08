@@ -517,30 +517,9 @@ def sprite_frames(name):
 
 
 def shape_frames(name):
-    """Unique 32x32 silhouette from shapes.py, coloured with the item's palette."""
-    import shapes
-    st = SETS[RECOLORED[name][1]]
-    R = 64
-    pal = {"5": mix(hx(st["stops"][3]), (255, 255, 255, 255), 0.3), "4": hx(st["stops"][3]), "3": hx(st["stops"][2]),
-           "2": mix(hx(st["stops"][2]), hx(st["stops"][1]), 0.55), "1": hx(st["stops"][1]), "A": hx(st["accent"]),
-           "g": mix(hx("#e0b040"), hx(st["stops"][3]), 0.35), "G": mix(hx("#8a6420"), hx(st["stops"][1]), 0.35),
-           "h": mix(hx("#3a2416"), hx(st["stops"][0]), 0.4), "H": mix(hx("#6e4428"), hx(st["stops"][1]), 0.3)}
-    outline = bright(hx(st["stops"][0]), 0.5)
-    rows = shapes.grid(name, R)
-    base = Image.new("RGBA", (R, R), (0, 0, 0, 0))
-    acc = set()
-    for y in range(R):
-        for x in range(R):
-            ch = rows[y][x]
-            if ch == ".":
-                if any(0 <= x + dx < R and 0 <= y + dy < R and rows[y + dy][x + dx] != "."
-                       for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                    base.putpixel((x, y), outline)
-                continue
-            base.putpixel((x, y), pal[ch])
-            if ch == "A":
-                acc.add((x, y))
-    return hd_frames(base, acc, pal["A"], seed=len(name), outline=outline)
+    """Unique lit, bevelled 64x64 legendary from shapes.py + hq.py."""
+    import hq
+    return hq.frames(name, SETS[RECOLORED[name][1]], seed=len(name))
 
 
 # --------------------------------------------------------------------------- build
@@ -594,14 +573,16 @@ def main():
 
     # armor sets
     for s in ("void", "bone", "draco", "frost", "inferno", "storm"):
-        save(armor_layer(s, "humanoid"), f"assets/{NS}/textures/entity/equipment/humanoid/{s}.png")
-        save(armor_layer(s, "humanoid_leggings"), f"assets/{NS}/textures/entity/equipment/humanoid_leggings/{s}.png")
+        import armor
+        for lay in ("humanoid", "humanoid_leggings"):
+            save(armor.worn(s, lay, SETS[s], os.path.join(VT, "entity/equipment", lay, "netherite.png")),
+                 f"assets/{NS}/textures/entity/equipment/{lay}/{s}.png")
         wjson({"layers": {"humanoid": [{"texture": f"{NS}:{s}"}],
                           "humanoid_leggings": [{"texture": f"{NS}:{s}"}]}},
               f"assets/{NS}/equipment/{s}.json")
         for piece in ("helmet", "chestplate", "leggings", "boots"):
             name = f"{s}_{piece}"
-            save(armor_icon(s, piece), f"assets/{NS}/textures/item/{name}.png")
+            save(armor.icon(s, piece, SETS[s]), f"assets/{NS}/textures/item/{name}.png")
             wjson(anim_meta(3), f"assets/{NS}/textures/item/{name}.png.mcmeta")
             item_model(name, "minecraft:item/generated")
             item_def(name)

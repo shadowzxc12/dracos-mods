@@ -190,6 +190,7 @@ public final class Skills {
 
     /** Called by the fishing mixin when a player reels in a catch. */
     public static void onFish(ServerPlayerEntity p) {
+        Quests.onFish(p);
         give(p, Skill.FISHING, 15);
         if (ThreadLocalRandom.current().nextDouble() < chance(p, Skill.FISHING)) {
             Item[] fish = {Items.COD, Items.SALMON, Items.TROPICAL_FISH, Items.COD, Items.SALMON};

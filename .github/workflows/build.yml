@@ -37,7 +37,7 @@ jobs:
           find . -type f | sort
       - name: Build & upload resource pack
         run: |
-          pip install --quiet pillow
+          pip install --quiet pillow numpy scipy
           PYTHONHASHSEED=1 python3 pack/gen.py /tmp/ref /tmp/pack
           # textures/models of the Polymer mods on the server (backpacks, polydex, polymer) - otherwise they show as purple cubes
           mkdir -p /tmp/modjars /tmp/modassets
