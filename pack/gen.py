@@ -520,8 +520,10 @@ def shape_frames(name):
     """Unique lit, bevelled 64x64 legendary from shapes.py + hq.py."""
     import hq
     st = SETS[RECOLORED[name][1]]
+    if "katana" in name:   # polished steel blade, the set colour only on the glowing edge and the guard
+        st = dict(st, stops=["#14161c", "#4a5262", "#aeb8c8", "#eef2f8"])
     g, wrap = hq.material(name)
-    return hq.pixel_art2(hq.lit_map(g, wrap, st, out_res=hq.PIX, want_shade=True), st, seed=len(name))
+    return hq.pixel_art2(hq.lit_map(g, wrap, st, out_res=hq.PIX, want_shade=True), st, seed=len(name), use_halo="katana" not in name)
 
 
 # --------------------------------------------------------------------------- 3D model display (same as vanilla handheld)

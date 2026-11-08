@@ -283,7 +283,7 @@ def hue_ramp(dark, mid, light, accent_shadow="#160c2c", warm="#fff1cf", n=6):
     return keys[:n]
 
 
-def pixel_art2(litres, st, seed=0, n_frames=16, guard_cols=None):
+def pixel_art2(litres, st, seed=0, n_frames=16, guard_cols=None, use_halo=True):
     """Vivid hand-pixelled legendary (crate/server style): hue-shifted ramps, coloured selective outline,
     spine highlight, shimmer band, glowing accent with a coloured halo and sparkle stars around the item."""
     _, alpha, grp, shade = litres
@@ -362,9 +362,10 @@ def pixel_art2(litres, st, seed=0, n_frames=16, guard_cols=None):
         img[acc_core, :3] = mixc(P[ACCENT][2], P[ACCENT][3], ph)
         img[alpha, 3] = 255
         img[outl, :3] = out_col[outl]
-        img[near_acc, :3] = mixc(P[ACCENT][0], P[ACCENT][1], 0.3 + 0.5 * ph)
+        if use_halo:
+            img[near_acc, :3] = mixc(P[ACCENT][0], P[ACCENT][1], 0.3 + 0.5 * ph)
         img[outl, 3] = 255
-        if ph > 0.55:
+        if use_halo and ph > 0.55:
             img[halo_acc, :3] = P[ACCENT][0]
             img[halo_acc, 3] = 255
         for sf, (sy, sx) in stars:

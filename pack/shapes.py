@@ -102,6 +102,40 @@ def sword(p):
     return f
 
 
+def katana(p):
+    """Japanese katana: long slim single-edged blade with a gentle curve (sori), angled tip (kissaki),
+    small gold collar (habaki), round guard (tsuba) and a long handle with diamond wrap (tsuka-ito)."""
+    hl = p.get("handle", 10.5)
+    sori = p.get("sori", 2.4)
+    b0, b1 = hl + 1.6, L - 0.6
+
+    def f(u, v):
+        if b0 <= u <= b1:
+            t = (u - b0) / (b1 - b0)
+            c = -sori * math.sin(t * math.pi * 0.5) ** 2          # curve grows towards the tip
+            w = 1.05 - 0.12 * t
+            lo, hi = c - w, c + w                                   # -v = spine (back), +v = cutting edge
+            if t > 0.86:                                            # kissaki: the edge sweeps up to the point
+                k = (t - 0.86) / 0.14
+                hi = c + w - 2 * w * k ** 0.8
+            if lo <= v <= hi:
+                if v > hi - 0.5:
+                    return "A"                                      # glowing hamon / edge
+                if v < lo + 0.45:
+                    return "2"                                      # spine
+                return "4" if v < c else "3"
+        if hl + 0.3 <= u <= b0 and abs(v) <= 1.5:
+            return "G"                                              # habaki collar
+        if hl - 0.8 <= u <= hl + 0.8 and abs(v) <= 3.4:
+            return "G" if abs(v) > 2.4 else "g"                     # tsuba (round guard, seen edge-on)
+        if 1.2 <= u <= hl and abs(v) <= 1.2:
+            if 1.2 <= u <= 2.0:
+                return "g"                                          # kashira cap
+            return "H" if (int((u + v) * 1.1) + int((u - v) * 1.1)) % 2 == 0 else "h"   # diamond wrap
+        return None
+    return f
+
+
 def axe(p):
     """A real axe: shaft along the diagonal, the head sits at the top and sticks out sideways
     (to the upper-left like vanilla), narrow at the eye and flaring out to a curved cutting edge."""
@@ -372,7 +406,7 @@ def staff(p):
     return f
 
 
-ARCH = {"staff": staff, "sword": sword, "axe": axe, "scythe": scythe, "mace": mace, "trident": trident,
+ARCH = {"katana": katana, "staff": staff, "sword": sword, "axe": axe, "scythe": scythe, "mace": mace, "trident": trident,
         "pickaxe": pickaxe, "shovel": shovel, "hoe": hoe}
 
 W = lambda a, b=None: (lambda t: a) if b is None else (lambda t: a + (b - a) * t)
@@ -381,7 +415,7 @@ CURVE = lambda amt: (lambda t: amt * math.sin(t * math.pi * 0.9))
 # id -> (archetype, params)
 SHAPES = {
     # page 1/2 extras that used vanilla shapes
-    "blood_katana": ("sword", dict(width=W(1.3), center=CURVE(-1.6), guard=2.6, tip=0.18, edge_glow=True, pommel=1.1)),
+    "blood_katana": ("katana", dict()),
     "shadow_dagger": ("sword", dict(handle=8, width=W(2.3, 1.2), guard=3.6, gcurve=1.5, tip=0.45)),
     "frost_trident": ("trident", dict(prongs=3, hooks=True)),
     "earth_drill": ("pickaxe", dict(kind="drill")),

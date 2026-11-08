@@ -148,18 +148,23 @@ def chestplate(c, s):
 
 
 def leggings(c, s):
-    c.poly([(42, 30), (150, 30), (150, 90), (104, 96), (100, 178), (128, 178), (128, 100)], METAL)
-    c.poly([(42, 30), (150, 30), (148, 96), (128, 104), (126, 178), (100, 178), (96, 104), (92, 178), (66, 178), (64, 104),
-            (44, 96)], METAL)
-    c.rect((40, 26, 151, 50), GUARD)                                 # belt
-    c.rect((86, 28, 105, 48), ACCENT)                                # buckle
-    c.ell((52, 110, 90, 146), GUARD); c.ell((101, 110, 139, 146), GUARD)   # knee guards
-    c.ell((60, 118, 82, 138), METAL); c.ell((109, 118, 131, 138), METAL)
-    c.ell((67, 124, 75, 132), ACCENT); c.ell((116, 124, 124, 132), ACCENT)
-    c.line([(58, 60), (62, 100)], 3, groove=True, mirror=True)
-    c.line([(80, 54), (82, 100)], 3, groove=True, mirror=True)
-    if s in ("storm", "inferno", "frost", "void"):
-        c.line([(70, 152), (78, 172)], 4, ACCENT, mirror=True)
+    """Armoured trousers: waistband, hip plates, then two clearly separate legs with knee cops."""
+    c.rect((44, 28, 148, 48), GUARD)                                     # waistband
+    c.rect((88, 30, 104, 46), ACCENT)                                    # buckle
+    c.poly([(46, 46), (146, 46), (146, 70), (110, 74), (96, 62), (82, 74), (46, 70)], METAL)   # hips, crotch notch
+    for side in (-1, 1):
+        cx = 96 + side * 29                                              # each leg is its own column
+        pts = [(cx - 20, 60), (cx + 20, 60), (cx + 16 + side * 4, 176), (cx - 14 + side * 4, 176)]
+        c.poly(pts, METAL)
+        c.rect((cx - 16 + side * 4, 168, cx + 18 + side * 4, 178), GUARD)                   # ankle cuff
+        c.poly([(cx - 15, 66), (cx + 15, 66), (cx + 13, 104), (cx - 13, 104)], GUARD)       # thigh plate
+        c.poly([(cx - 10, 72), (cx + 10, 72), (cx + 8, 98), (cx - 8, 98)], METAL)
+        c.ell((cx - 15 + side, 108, cx + 15 + side, 140), GUARD)                            # knee cop
+        c.ell((cx - 10 + side, 115, cx + 10 + side, 133), METAL)
+        c.ell((cx - 4 + side, 120, cx + 4 + side, 128), ACCENT)
+        c.line([(cx + side * 2, 146), (cx + side * 3, 164)], 3, groove=True)              # shin ridge
+        if s in ("storm", "inferno", "frost", "void"):
+            c.line([(cx + side * 17, 66), (cx + side * 18, 164)], 3, ACCENT)                # glowing side stripe
 
 
 def boots(c, s):
