@@ -56,6 +56,7 @@ public final class Hub {
         public Map<String, int[]> crates = new HashMap<>();
         public int[] arena;                          // centre x,y,z
         public int[] arenaA, arenaB;                 // duel spawn points
+        public int arenaR;                           // arena radius (0 = old 11-block square arena)
         public Map<String, double[]> boards = new HashMap<>();
         public int[] portal;                         // RTP portal x1,y1,z1,x2,y2,z2 (walk in -> /rtp)
     }
@@ -227,6 +228,14 @@ public final class Hub {
                 .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                 .executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; })
                 .then(CommandManager.literal("border").executes(ctx -> { border(world(ctx.getSource().getServer())); ctx.getSource().sendFeedback(() -> Text.literal("Invisible border placed around spawn."), false); return 1; }))
+                .then(CommandManager.literal("arena").executes(ctx -> {
+                    if (CFG.radius <= 0) { ctx.getSource().sendError(Text.literal("No spawn yet - use /buildspawn")); return 0; }
+                    if (Duels.CURRENT != null) { ctx.getSource().sendError(Text.literal("A duel is running, try again after it.")); return 0; }
+                    ServerWorld w = world(ctx.getSource().getServer());
+                    arena(w); save(); border(w); labels(ctx.getSource().getServer());
+                    ctx.getSource().sendFeedback(() -> Text.literal("New duel arena built."), false);
+                    return 1;
+                }))
                 .then(CommandManager.literal("rebuild").executes(ctx -> {
                     ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
                     if (CFG.radius <= 0) { p.sendMessage(Text.literal("No spawn yet - use /buildspawn").formatted(Formatting.RED), false); return 0; }
@@ -302,8 +311,8 @@ public final class Hub {
         MinecraftServer server = w.getServer();
         int cx = p.getBlockX(), cy = p.getBlockY(), cz = p.getBlockZ();
         int R = 30;                      // plaza half-size
-        int ax = cx + 48;                // arena centre (east of the plaza)
-        int AR = 11;                     // arena half-size
+        int AR = ARENA_R;                // arena radius
+        int ax = cx + ARENA_OFF;         // arena centre (east of the plaza)
         cmd(server, "execute in " + w.getRegistryKey().getValue() + " run kill @e[type=minecraft:text_display,tag=dracos_hub]");
 
         BlockState air = Blocks.AIR.getDefaultState();
@@ -377,22 +386,9 @@ public final class Hub {
         CFG.afk = new int[]{cx - 3, cy, az - 3, cx + 3, cy, az + 3};
 
         // ---- duel arena (east, at the end of the path)
-        for (int x = -AR - 1; x <= AR + 1; x++) for (int z = -AR - 1; z <= AR + 1; z++) {
-            boolean wall = Math.abs(x) == AR + 1 || Math.abs(z) == AR + 1;
-            if (!wall) continue;
-            boolean door = x == -AR - 1 && Math.abs(z) <= 1;
-            for (int y = cy; y <= cy + 6; y++) {
-                BlockState s = y <= cy + 3 ? Blocks.STONE_BRICKS.getDefaultState()
-                        : y == cy + 4 ? Blocks.CHISELED_STONE_BRICKS.getDefaultState() : Blocks.BARRIER.getDefaultState();
-                if (door && y <= cy + 2) s = Blocks.IRON_BARS.getDefaultState();
-                set(w, ax + x, y, cz + z, s);
-            }
-            if (!door && (Math.abs(x) + Math.abs(z)) % 6 == 0) set(w, ax + x, cy + 5, cz + z, Blocks.SOUL_LANTERN.getDefaultState());
-        }
-        CFG.arena = new int[]{ax, cy, cz};
-        CFG.arenaA = new int[]{ax - 8, cy, cz};
-        CFG.arenaB = new int[]{ax + 8, cy, cz};
-        for (int[] s : new int[][]{CFG.arenaA, CFG.arenaB}) set(w, s[0], cy - 1, s[2], Blocks.REDSTONE_BLOCK.getDefaultState());
+        CFG.cx = cx; CFG.cy = cy; CFG.cz = cz;
+        CFG.arena = null;          // the plaza loop above already cleared this area
+        arena(w);
 
         // ---- leaderboards (west wall)
         CFG.boards.clear();
@@ -470,7 +466,7 @@ public final class Hub {
     /** Invisible barrier walls around the plaza, the path and the arena so nobody falls off spawn. */
     static void border(ServerWorld w) {
         if (CFG.radius <= 0) return;
-        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz, R = 30, ax = cx + 48, AR = 11;
+        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz, R = 30, AR = arenaR(), ax = CFG.arena != null ? CFG.arena[0] : cx + 48;
         BlockState b = Blocks.BARRIER.getDefaultState();
         for (int i = -R - 1; i <= R + 1; i++) {
             for (int y = cy; y <= cy + 4; y++) {
@@ -482,9 +478,16 @@ public final class Hub {
         }
         for (int x = cx + R + 1; x <= ax - AR - 1; x++)
             for (int y = cy; y <= cy + 4; y++) { set(w, x, y, cz - 3, b); set(w, x, y, cz + 3, b); }
-        // arena: walls exist; close the top so you can't climb out
-        for (int x = ax - AR - 1; x <= ax + AR + 1; x++) for (int z = cz - AR - 1; z <= cz + AR + 1; z++)
-            if (Math.abs(x - ax) == AR + 1 || Math.abs(z - cz) == AR + 1) for (int y = cy + 5; y <= cy + 8; y++) set(w, x, y, z, b);
+        // arena: walls exist; make them high enough that nobody climbs or jumps out
+        if (CFG.arenaR > 0) {
+            for (int x = -AR - 3; x <= AR + 3; x++) for (int z = -AR - 3; z <= AR + 3; z++) {
+                double d = Math.sqrt(x * x + z * z);
+                if (d > AR + 0.5 && d <= AR + 2.5) for (int y = cy + 8; y <= cy + 14; y++) set(w, ax + x, y, cz + z, b);
+            }
+        } else {
+            for (int x = ax - AR - 1; x <= ax + AR + 1; x++) for (int z = cz - AR - 1; z <= cz + AR + 1; z++)
+                if (Math.abs(x - ax) == AR + 1 || Math.abs(z - cz) == AR + 1) for (int y = cy + 5; y <= cy + 8; y++) set(w, x, y, z, b);
+        }
     }
 
     /** Removes the hub that was built last (blocks, holograms, NPCs) and forgets it. */
@@ -493,9 +496,10 @@ public final class Hub {
         ServerWorld w = world(server);
         cmd(server, "execute in " + CFG.world + " run kill @e[tag=dracos_hub]");
         int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz;
-        for (int x = cx - 31; x <= cx + 61; x++) for (int z = cz - 31; z <= cz + 31; z++) {
-            boolean plaza = Math.abs(x - cx) <= 31;
-            boolean arena = Math.abs(x - (cx + 48)) <= 13 && Math.abs(z - cz) <= 13;
+        int ax = CFG.arena != null ? CFG.arena[0] : cx + 48, ar = arenaR() + 3;
+        for (int x = cx - 31; x <= ax + ar; x++) for (int z = cz - Math.max(31, ar); z <= cz + Math.max(31, ar); z++) {
+            boolean plaza = Math.abs(x - cx) <= 31 && Math.abs(z - cz) <= 31;
+            boolean arena = Math.abs(x - ax) <= ar && Math.abs(z - cz) <= ar;
             boolean path = Math.abs(z - cz) <= 2;
             if (!plaza && !arena && !path) continue;
             for (int y = cy - 2; y <= cy + 14; y++) set(w, x, y, z, Blocks.AIR.getDefaultState());
@@ -531,8 +535,96 @@ public final class Hub {
         return ((x + z) & 1) == 0 ? Blocks.DEEPSLATE_TILES.getDefaultState() : Blocks.DEEPSLATE_BRICKS.getDefaultState();
     }
 
+    static int arenaR() { return CFG.arenaR > 0 ? CFG.arenaR : 11; }
+
     static Box arenaBox() {
         int[] a = CFG.arena;
-        return new Box(a[0] - 12, a[1] - 3, a[2] - 12, a[0] + 13, a[1] + 8, a[2] + 13);
+        int r = arenaR() + 1;
+        return new Box(a[0] - r, a[1] - 3, a[2] - r, a[0] + r + 1, a[1] + 14, a[2] + r + 1);
+    }
+
+    static final int ARENA_R = 22, ARENA_OFF = 30 + 8 + ARENA_R;
+
+    /** Big round colosseum east of the plaza: patterned floor, tall wall with pillars and lights, cover pillars,
+     *  red/blue spawn pads. Replaces whatever arena was there before (old square one included). */
+    static void arena(ServerWorld w) {
+        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz, R = 30, AR = ARENA_R, ax = cx + ARENA_OFF;
+        BlockState air = Blocks.AIR.getDefaultState(), base = Blocks.STONE_BRICKS.getDefaultState(), b = Blocks.BARRIER.getDefaultState();
+        // remove the old arena (square, 11 radius at +48) and its barriers
+        if (CFG.arena != null) {
+            int ox = CFG.arena[0], or = arenaR() + 2;
+            for (int x = ox - or; x <= ox + or; x++) for (int z = cz - or; z <= cz + or; z++) {
+                if (Math.abs(x - cx) <= R && Math.abs(z - cz) <= R) continue;
+                for (int y = cy; y <= cy + 14; y++) set(w, x, y, z, air);
+                if (!(Math.abs(x - ax) <= AR + 3 && Math.abs(z - cz) <= AR + 3)) {
+                    set(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
+                }
+            }
+        }
+        // path from the plaza to the arena gate
+        for (int x = cx + R + 1; x < ax - AR - 1; x++) for (int z = -3; z <= 3; z++) {
+            for (int y = cy; y <= cy + 14; y++) set(w, x, y, cz + z, air);
+            for (int y = cy - 4; y <= cy - 2; y++) set(w, x, y, cz + z, base);
+            if (Math.abs(z) <= 2) set(w, x, cy - 1, cz + z, Math.abs(z) == 2 ? Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState());
+        }
+        for (int x = -AR - 3; x <= AR + 3; x++) for (int z = -AR - 3; z <= AR + 3; z++) {
+            double d = Math.sqrt(x * x + z * z);
+            int X = ax + x, Z = cz + z;
+            for (int y = cy; y <= cy + 14; y++) set(w, X, y, Z, air);
+            if (d > AR + 2.5) continue;
+            for (int y = cy - 4; y <= cy - 2; y++) set(w, X, y, Z, base);
+            // floor
+            BlockState f;
+            int ring = (int) Math.round(d);
+            if (d <= 2.5) f = (x == 0 && z == 0) ? Blocks.CHISELED_RED_SANDSTONE.getDefaultState() : Blocks.RED_NETHER_BRICKS.getDefaultState();
+            else if (d <= 3.5) f = Blocks.GILDED_BLACKSTONE.getDefaultState();
+            else if (ring % 7 == 0) f = Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
+            else if (Math.abs(x) <= 0 && d < AR) f = Blocks.QUARTZ_BRICKS.getDefaultState();                       // centre line
+            else f = ((x + z) & 1) == 0 ? Blocks.POLISHED_DEEPSLATE.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState();
+            if (ring % 7 == 0 && Math.floorMod((int) Math.round(Math.toDegrees(Math.atan2(z, x))), 30) < 4 && d > 4) f = Blocks.SEA_LANTERN.getDefaultState();
+            if (d > AR + 0.5) f = Blocks.POLISHED_DEEPSLATE.getDefaultState();
+            set(w, X, cy - 1, Z, f);
+            // wall: 2 thick, 7 high, pillars every 30 degrees, lights on top, barrier above
+            if (d > AR + 0.5) {
+                int ang = (int) Math.round(Math.toDegrees(Math.atan2(z, x)) + 360) % 360;
+                boolean gate = x < 0 && Math.abs(z) <= 2;
+                boolean pillar = ang % 30 <= 3;
+                for (int y = cy; y <= cy + 7; y++) {
+                    BlockState s;
+                    if (gate && y <= cy + 3) s = d > AR + 1.5 ? air : Blocks.IRON_BARS.getDefaultState();
+                    else if (pillar) s = y == cy + 7 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
+                    else if (y == cy + 5) s = Blocks.CHISELED_STONE_BRICKS.getDefaultState();
+                    else if (y == cy + 6) s = Blocks.STONE_BRICK_WALL.getDefaultState();
+                    else if (y == cy + 7) s = b;
+                    else s = ((x * 3 + y + z) % 5 == 0) ? Blocks.CRACKED_STONE_BRICKS.getDefaultState() : Blocks.STONE_BRICKS.getDefaultState();
+                    set(w, X, y, Z, s);
+                }
+                if (pillar && d <= AR + 1.5) set(w, X, cy + 8, Z, Blocks.SOUL_LANTERN.getDefaultState());
+                for (int y = cy + 8; y <= cy + 14; y++) if (!(pillar && y == cy + 8 && d <= AR + 1.5)) set(w, X, y, Z, b);
+            }
+        }
+        // cover: 4 broken pillars and 4 low walls
+        int[][] cover = {{8, 8}, {-8, 8}, {8, -8}, {-8, -8}};
+        for (int[] c : cover) for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) {
+            int h = 3 + ((c[0] + c[1] + dx * 2 + dz) & 1);
+            for (int y = cy; y < cy + h; y++) set(w, ax + c[0] + dx, y, cz + c[1] + dz,
+                    y == cy + h - 1 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+        }
+        int[][] walls = {{0, 13}, {0, -13}, {13, 0}, {-13, 0}};
+        for (int[] c : walls) for (int i = -2; i <= 2; i++) {
+            int x = c[0] == 0 ? i : c[0], z = c[0] == 0 ? c[1] : i;
+            set(w, ax + x, cy, cz + z, Blocks.DEEPSLATE_BRICK_WALL.getDefaultState());
+        }
+        // spawn pads
+        int pd = 16;
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            set(w, ax - pd + dx, cy - 1, cz + dz, (dx == 0 && dz == 0) ? Blocks.REDSTONE_BLOCK.getDefaultState() : Blocks.RED_CONCRETE.getDefaultState());
+            set(w, ax + pd + dx, cy - 1, cz + dz, (dx == 0 && dz == 0) ? Blocks.LAPIS_BLOCK.getDefaultState() : Blocks.BLUE_CONCRETE.getDefaultState());
+        }
+        CFG.arena = new int[]{ax, cy, cz};
+        CFG.arenaA = new int[]{ax - pd, cy, cz};
+        CFG.arenaB = new int[]{ax + pd, cy, cz};
+        CFG.arenaR = AR;
+        CFG.radius = Math.max(CFG.radius, ax + AR + 3 - cx);
     }
 }

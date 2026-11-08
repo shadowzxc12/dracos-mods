@@ -55,7 +55,7 @@ public final class Duels {
     }
 
     private static final Map<UUID, Request> REQUESTS = new HashMap<>();   // key = target
-    private static Duel CURRENT;
+    static Duel CURRENT;
     static final int MAX_TICKS = 20 * 60 * 3;
 
     public static boolean inDuel(ServerPlayerEntity p) {
