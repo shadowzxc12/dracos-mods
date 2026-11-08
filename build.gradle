@@ -8,6 +8,7 @@ base { archivesName = project.archives_base_name }
 
 repositories {
     maven { url = 'https://maven.nucleoid.xyz' }
+    maven { url = 'https://api.modrinth.com/maven' }
 }
 
 dependencies {
@@ -19,6 +20,8 @@ dependencies {
     modCompileOnly files("libs/burger-economy-1.0.0.jar")
     // Polymer (polymer-bundled is on the server) - only for sell-value tooltips
     modCompileOnly "eu.pb4:polymer-core:0.15.2+1.21.11"
+    // Polydex (on the server) - custom item recipes show up in /polydex
+    modCompileOnly "maven.modrinth:polydex:1.8.1+1.21.11"
 }
 
 processResources {
