@@ -57,6 +57,10 @@ public final class MobCarry {
             if (world.isClient() || !(player instanceof ServerPlayerEntity p) || hand != Hand.MAIN_HAND || !p.isSneaking()
                     || !p.getMainHandStack().isEmpty()) return ActionResult.PASS;
             if (!(entity instanceof MobEntity m) || BLOCKED.contains(m.getType()) || !m.isAlive()) return ActionResult.PASS;
+            // no stealing villagers/animals from someone else's warp or from spawn
+            if (!p.isCreative() && Hub.inHubPublic((ServerWorld) world, m.getBlockPos())) return ActionResult.FAIL;
+            PlayerWarps.Warp owner = PlayerWarps.protector(p, world, m.getX(), m.getZ());
+            if (owner != null) { PlayerWarps.deny(p, owner); return ActionResult.FAIL; }
             if (Combat.inCombat(p)) {
                 p.sendMessage(Text.literal("You can't pick up mobs in combat!").formatted(Formatting.RED), true);
                 return ActionResult.FAIL;
@@ -98,6 +102,9 @@ public final class MobCarry {
             BlockPos at = hit.getBlockPos().offset(hit.getSide());
             ServerWorld sw = (ServerWorld) world;
             if (!sw.getWorldBorder().contains(at) || !p.canModifyAt(sw, at)) return ActionResult.FAIL;
+            if (!p.isCreative() && Hub.inHubPublic(sw, at)) return ActionResult.FAIL;
+            PlayerWarps.Warp zone = PlayerWarps.protector(p, world, at.getX() + 0.5, at.getZ() + 0.5);
+            if (zone != null) { PlayerWarps.deny(p, zone); return ActionResult.FAIL; }
             Vec3d pos = Vec3d.ofBottomCenter(at);
             Entity e = EntityType.loadEntityWithPassengers(NbtReadView.create(ErrorReporter.EMPTY, world.getRegistryManager(), data),
                     world, SpawnReason.LOAD, ent -> {

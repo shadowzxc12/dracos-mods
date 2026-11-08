@@ -112,7 +112,12 @@ public final class PlayerWarps {
             var b = world.getBlockState(pos).getBlock();
             boolean harmless = b instanceof net.minecraft.block.DoorBlock || b instanceof net.minecraft.block.TrapdoorBlock
                     || b instanceof net.minecraft.block.FenceGateBlock || b instanceof net.minecraft.block.ButtonBlock
-                    || b instanceof net.minecraft.block.CraftingTableBlock || b instanceof net.minecraft.block.EnderChestBlock;
+                    || b instanceof net.minecraft.block.CraftingTableBlock || b instanceof net.minecraft.block.EnderChestBlock
+                    // work blocks visitors may use (nothing to steal from them)
+                    || b instanceof net.minecraft.block.AnvilBlock || b instanceof net.minecraft.block.EnchantingTableBlock
+                    || b instanceof net.minecraft.block.GrindstoneBlock || b instanceof net.minecraft.block.SmithingTableBlock
+                    || b instanceof net.minecraft.block.StonecutterBlock || b instanceof net.minecraft.block.LoomBlock
+                    || b instanceof net.minecraft.block.CartographyTableBlock || b instanceof net.minecraft.block.BellBlock;
             if (harmless && !player.isSneaking()) return net.minecraft.util.ActionResult.PASS;
             deny(player, w);
             return net.minecraft.util.ActionResult.FAIL;
