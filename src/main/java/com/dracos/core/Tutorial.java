@@ -23,7 +23,7 @@ public final class Tutorial {
             {"#Money", "", "Sell what you farm", "and mine:", "", "/sell", " open sell window", "/sell hand", " sell held item", "/shop  buy items", "/ah  auction house", "/daily  free money"},
             {"#Homes", "", "/sethome <name>", "/home <name>", "/delhome <name>", "/homelimit", "", "Members get 5", "homes. Ranks get", "up to 50."},
             {"#Travel", "", "/spawn", "/tpa <player>", "/rtp", " random teleport", "", "!No teleporting", "!in combat!"},
-            {"#Legendary", "", "/legendary", "", "40 weapons, tools", "and armor sets.", "They never break", "and have powers.", "Right-click swords", "for abilities.", "Full armor sets", "give bonus effects."},
+            {"#Legendary", "", "/legendary", "", "100 weapons, tools,", "staffs and armor.", "They never break", "and have powers.", "Right-click swords", "for abilities.", "Full armor sets", "give bonus effects."},
             {"#Ranks", "", "Monthly ranks:", "VIP  MVP", "LEGEND  DRACO", "", "More homes, more", "sell money, /kit", "and more.", "", "/ranks  all perks", "/store  buy a rank"},
             {"#Commands", "", "/menu", " effects on/off", "/rankshop", "/kit  free kit (1h)", "/backpack  storage", "/hat  wear a block", "/bounty <player> <$>", "/clan  make a clan", "/quests  daily", "/spawners", "/tutorial", " this book again"},
             {"#Rules", "", "1. No cheats", "2. No griefing", "3. No stealing", "4. Be respectful", "5. No spam or ads", "6. Combat logging", "   = death", "", "Have fun!", "- Dracos team"}

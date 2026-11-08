@@ -42,7 +42,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static com.dracos.core.LegendaryItems.e;
 
-/** Legendary items 41-70: data-driven, with on-hit and held abilities. */
+/** Legendary items 41-100: data-driven, with on-hit and held abilities. */
 public final class Legendary3 {
     private Legendary3() {}
 
