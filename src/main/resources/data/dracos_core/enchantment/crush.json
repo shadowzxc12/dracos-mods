@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Crush",
+  "color": "gray"
+ },
+ "supported_items": "#minecraft:enchantable/sharp_weapon",
+ "weight": 2,
+ "max_level": 3,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ],
+ "effects": {
+  "minecraft:armor_effectiveness": [
+   {
+    "effect": {
+     "type": "minecraft:add",
+     "value": {
+      "type": "minecraft:linear",
+      "base": -0.1,
+      "per_level_above_first": -0.1
+     }
+    }
+   }
+  ]
+ }
+}

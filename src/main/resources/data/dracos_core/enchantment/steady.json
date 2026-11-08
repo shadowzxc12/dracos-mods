@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Steady",
+  "color": "green"
+ },
+ "supported_items": "#minecraft:enchantable/foot_armor",
+ "weight": 2,
+ "max_level": 1,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "feet"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.steady",
+    "attribute": "minecraft:step_height",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.5,
+     "per_level_above_first": 0.5
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}

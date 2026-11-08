@@ -17,6 +17,26 @@
   "dracos_core:nourish",
   "dracos_core:telekinesis",
   "dracos_core:autosmelt",
-  "dracos_core:wisdom"
+  "dracos_core:wisdom",
+  "dracos_core:slayer",
+  "dracos_core:berserk",
+  "dracos_core:quickstrike",
+  "dracos_core:reach",
+  "dracos_core:crush",
+  "dracos_core:confusion",
+  "dracos_core:enfeeble",
+  "dracos_core:uplift",
+  "dracos_core:poison_arrows",
+  "dracos_core:frost_arrows",
+  "dracos_core:fortress",
+  "dracos_core:titan",
+  "dracos_core:gills",
+  "dracos_core:steady",
+  "dracos_core:rejuvenate",
+  "dracos_core:retribution",
+  "dracos_core:frozen_shell",
+  "dracos_core:haste",
+  "dracos_core:long_arm",
+  "dracos_core:lucky"
  ]
 }

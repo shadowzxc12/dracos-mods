@@ -1,0 +1,45 @@
+{
+ "description": {
+  "text": "Gills",
+  "color": "dark_aqua"
+ },
+ "supported_items": "#minecraft:enchantable/head_armor",
+ "weight": 2,
+ "max_level": 3,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "head"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.gills",
+    "attribute": "minecraft:oxygen_bonus",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 1.0,
+     "per_level_above_first": 1.0
+    },
+    "operation": "add_value"
+   },
+   {
+    "id": "dracos_core:enchantment.gills_mine",
+    "attribute": "minecraft:submerged_mining_speed",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.3,
+     "per_level_above_first": 0.3
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}

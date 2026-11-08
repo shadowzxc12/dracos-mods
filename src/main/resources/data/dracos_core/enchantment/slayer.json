@@ -1,0 +1,42 @@
+{
+ "description": {
+  "text": "Slayer",
+  "color": "dark_red"
+ },
+ "supported_items": "#minecraft:enchantable/sharp_weapon",
+ "weight": 2,
+ "max_level": 5,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ],
+ "effects": {
+  "minecraft:damage": [
+   {
+    "effect": {
+     "type": "minecraft:add",
+     "value": {
+      "type": "minecraft:linear",
+      "base": 1.0,
+      "per_level_above_first": 1.0
+     }
+    },
+    "requirements": {
+     "condition": "minecraft:entity_properties",
+     "entity": "this",
+     "predicate": {
+      "type": "minecraft:player"
+     }
+    }
+   }
+  ]
+ }
+}

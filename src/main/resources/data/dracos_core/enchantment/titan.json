@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Titan",
+  "color": "dark_gray"
+ },
+ "supported_items": "#minecraft:enchantable/leg_armor",
+ "weight": 2,
+ "max_level": 2,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "legs"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.titan",
+    "attribute": "minecraft:knockback_resistance",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.1,
+     "per_level_above_first": 0.1
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}

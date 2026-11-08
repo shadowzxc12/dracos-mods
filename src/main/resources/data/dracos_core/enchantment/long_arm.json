@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Long Arm",
+  "color": "aqua"
+ },
+ "supported_items": "#minecraft:enchantable/mining",
+ "weight": 2,
+ "max_level": 2,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.long_arm",
+    "attribute": "minecraft:block_interaction_range",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 1.0,
+     "per_level_above_first": 1.0
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}

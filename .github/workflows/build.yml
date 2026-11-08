@@ -32,7 +32,7 @@ jobs:
           echo '{"pack":{"description":"dracos test","min_format":[82,0],"max_format":[999,0]}}' > world/datapacks/dracos/pack.mcmeta
           echo eula=true > eula.txt
           printf 'online-mode=false\nspawn-protection=0\n' > server.properties
-          (sleep 90; echo "datapack list enabled"; sleep 3; echo "give @a minecraft:diamond_sword[enchantments={'dracos_core:lifesteal':3,'dracos_core:telekinesis':1}]"; sleep 3; echo stop) | timeout 200 java -Xmx2G -jar server.jar nogui > log.txt 2>&1 || true
+          (sleep 90; echo "datapack list enabled"; sleep 3; echo "give @a minecraft:diamond_sword[enchantments={'dracos_core:lifesteal':3,'dracos_core:telekinesis':1,'dracos_core:slayer':5,'dracos_core:crush':3}]"; sleep 3; echo stop) | timeout 200 java -Xmx2G -jar server.jar nogui > log.txt 2>&1 || true
           grep -iE "error|exception|failed|warn.*(enchant|datapack|pack)" log.txt | grep -v "Failed to save" | head -40 || true
           grep -q "Done (" log.txt || { echo "SERVER DID NOT START"; tail -60 log.txt; exit 1; }
           if grep -qiE "Failed to load|Errors in registry|Couldn't parse|Error loading registry|Couldn't load file/dracos" log.txt; then tail -80 log.txt; exit 1; fi

@@ -42,7 +42,9 @@ public final class Enchants {
     private Enchants() {}
 
     public static final List<String> ALL = List.of("lifesteal", "venom", "thunderlord", "frostbite", "blinding", "withering",
-            "thunder_arrows", "hunter", "swift", "leaper", "vitality", "molten", "clarity", "nourish", "telekinesis", "autosmelt", "wisdom");
+            "thunder_arrows", "hunter", "swift", "leaper", "vitality", "molten", "clarity", "nourish", "telekinesis", "autosmelt", "wisdom",
+            "slayer", "berserk", "quickstrike", "reach", "crush", "confusion", "enfeeble", "uplift", "poison_arrows", "frost_arrows",
+            "fortress", "titan", "gills", "steady", "rejuvenate", "retribution", "frozen_shell", "haste", "long_arm", "lucky");
 
     static final Map<Item, Item> SMELT = Map.ofEntries(
             Map.entry(Items.RAW_IRON, Items.IRON_INGOT), Map.entry(Items.RAW_GOLD, Items.GOLD_INGOT), Map.entry(Items.RAW_COPPER, Items.COPPER_INGOT),

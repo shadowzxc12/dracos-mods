@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Reach",
+  "color": "aqua"
+ },
+ "supported_items": "#minecraft:enchantable/sharp_weapon",
+ "weight": 2,
+ "max_level": 2,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.reach",
+    "attribute": "minecraft:entity_interaction_range",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.5,
+     "per_level_above_first": 0.5
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}
