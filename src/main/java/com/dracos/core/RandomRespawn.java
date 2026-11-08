@@ -40,6 +40,7 @@ public final class RandomRespawn {
 
     // ---- /rtp for everyone
     // inside the pre-generated area (Chunky did 6000) chunks load from disk almost instantly
+    public static final int RTP_MAX = 1_000_000;
     public static final int RTP_MIN = 1_000; // max = the whole world inside the border
     private static final long RTP_COOLDOWN_MS = 20_000;
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
@@ -69,7 +70,9 @@ public final class RandomRespawn {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         // plain random spot anywhere inside the world border (every place equally likely)
         var wb = world.getWorldBorder();
-        int half = (int) Math.max(RTP_MIN + 1000, Math.min(Integer.MAX_VALUE / 2 - 1, wb.getSize() / 2 - 1_000));
+        // capped at 1,000,000: past a few million blocks Minecraft's number precision breaks (jittery mobs/players,
+        // glitchy hitboxes and rendering), even though the border itself is bigger
+        int half = (int) Math.max(RTP_MIN + 1000, Math.min(RTP_MAX, wb.getSize() / 2 - 1_000));
         int cx = (int) wb.getCenterX(), cz = (int) wb.getCenterZ();
         int rx, rz;
         do {

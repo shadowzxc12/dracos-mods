@@ -62,6 +62,7 @@ public class DracosCore implements ModInitializer {
         Leaderboards.register();
         PlayerWarps.register();
         InfiniteTrades.register();
+        BossRewards.register();
         Abilities.register();
         Abilities.registerExtras();
         Effects.register();
