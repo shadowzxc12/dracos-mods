@@ -35,15 +35,80 @@ final class BoneMealCane {
     record CaneBehavior(net.minecraft.block.dispenser.DispenserBehavior vanilla) implements net.minecraft.block.dispenser.DispenserBehavior {
         @Override
         public net.minecraft.item.ItemStack dispense(net.minecraft.util.math.BlockPointer pointer, net.minecraft.item.ItemStack stack) {
-            BlockPos target = pointer.pos().offset(pointer.state().get(net.minecraft.block.DispenserBlock.FACING));
-            // aimed at the cane itself, or at the block it grows on (e.g. dispenser pointing at the sand under it)
-            BlockPos cane = grows(pointer.world(), target) ? target : grows(pointer.world(), target.up()) ? target.up() : null;
-            if (cane != null && grow(pointer.world(), cane)) {
-                stack.decrement(1);
-                pointer.world().syncWorldEvent(1000, pointer.pos(), 0);   // dispenser click
+            BlockPos cane = caneFor(pointer.world(), pointer.pos());
+            if (cane != null) {
+                track(pointer.world(), pointer.pos());
+                if (work(pointer.world(), cane)) {
+                    stack.decrement(1);
+                    pointer.world().syncWorldEvent(1000, pointer.pos(), 0);   // dispenser click
+                }
                 return stack;
             }
             return vanilla != null ? vanilla.dispense(pointer, stack) : stack;
+        }
+    }
+
+    /** The cane/cactus this dispenser feeds: in front of it, or standing on the block in front of it. */
+    static BlockPos caneFor(ServerWorld w, BlockPos dispenser) {
+        var st = w.getBlockState(dispenser);
+        if (!st.isOf(Blocks.DISPENSER)) return null;
+        BlockPos t = dispenser.offset(st.get(net.minecraft.block.DispenserBlock.FACING));
+        return grows(w, t) ? t : grows(w, t.up()) ? t.up() : null;
+    }
+
+    /** One farm step: grow the plant by a block, or - once it is fully grown - cut it (drops fall as items).
+     *  Returns true when bone meal was used. */
+    static boolean work(ServerWorld w, BlockPos cane) {
+        var block = w.getBlockState(cane).getBlock();
+        BlockPos bottom = cane;
+        while (w.getBlockState(bottom.down()).isOf(block)) bottom = bottom.down();
+        BlockPos top = bottom;
+        while (w.getBlockState(top.up()).isOf(block)) top = top.up();
+        if (top.getY() - bottom.getY() + 1 >= MAX) {
+            w.breakBlock(bottom.up(), true);                     // harvest everything above the base block
+            return false;
+        }
+        return grow(w, cane);
+    }
+
+    // ---- dispensers that keep working while they stay powered (torch, lever...) - vanilla only fires on a new signal
+    static final java.util.Set<String> FARMS = new java.util.HashSet<>();
+    static boolean farmsDirty;
+
+    static java.nio.file.Path farmsFile() {
+        return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("cane_dispensers.json");
+    }
+
+    static void track(ServerWorld w, BlockPos p) {
+        if (FARMS.add(w.getRegistryKey().getValue() + "|" + p.asLong())) farmsDirty = true;
+    }
+
+    static void tickFarms(net.minecraft.server.MinecraftServer server) {
+        if (FARMS.isEmpty()) return;
+        var it = FARMS.iterator();
+        while (it.hasNext()) {
+            String k = it.next();
+            int bar = k.lastIndexOf('|');
+            ServerWorld w = server.getWorld(net.minecraft.registry.RegistryKey.of(net.minecraft.registry.RegistryKeys.WORLD,
+                    net.minecraft.util.Identifier.of(k.substring(0, bar))));
+            BlockPos p = BlockPos.fromLong(Long.parseLong(k.substring(bar + 1)));
+            if (w == null) { it.remove(); farmsDirty = true; continue; }
+            if (!w.isChunkLoaded(p.getX() >> 4, p.getZ() >> 4)) continue;
+            if (!w.getBlockState(p).isOf(Blocks.DISPENSER)) { it.remove(); farmsDirty = true; continue; }
+            if (!w.isReceivingRedstonePower(p)) continue;
+            BlockPos cane = caneFor(w, p);
+            if (cane == null || !(w.getBlockEntity(p) instanceof net.minecraft.block.entity.DispenserBlockEntity be)) continue;
+            int slot = -1;
+            for (int i = 0; i < be.size(); i++) if (be.getStack(i).isOf(Items.BONE_MEAL)) { slot = i; break; }
+            if (slot < 0) continue;
+            if (work(w, cane)) { be.getStack(slot).decrement(1); be.markDirty(); }
+        }
+        if (farmsDirty) {
+            farmsDirty = false;
+            try {
+                java.nio.file.Files.createDirectories(farmsFile().getParent());
+                java.nio.file.Files.writeString(farmsFile(), new com.google.gson.Gson().toJson(FARMS));
+            } catch (Exception ignored) {}
         }
     }
 
