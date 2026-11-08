@@ -28,7 +28,10 @@ public final class Pack {
                 String url = o.has("url") ? o.get("url").getAsString() : "";
                 if (url.isEmpty()) return;
                 String sha1 = o.has("sha1") ? o.get("sha1").getAsString() : "";
-                handler.sendPacket(new ResourcePackSendS2CPacket(ID, url, sha1, false,
+                // a new id for every pack version, so the client always swaps to the new textures
+                UUID id = sha1.isEmpty() ? ID : UUID.nameUUIDFromBytes(("dracos_pack_" + sha1).getBytes());
+                handler.sendPacket(new net.minecraft.network.packet.s2c.common.ResourcePackRemoveS2CPacket(Optional.of(ID)));
+                handler.sendPacket(new ResourcePackSendS2CPacket(id, url, sha1, false,
                         Optional.of(Text.literal("Dracos SMP textures for the legendary items").formatted(Formatting.GOLD))));
             } catch (Exception e) {
                 DracosCore.LOGGER.warn("Could not send resource pack", e);
