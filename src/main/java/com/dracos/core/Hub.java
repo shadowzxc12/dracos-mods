@@ -167,6 +167,14 @@ public final class Hub {
             }
         });
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((h, s) -> AFK_TIME.remove(h.player.getUuid()));
+        // brand-new players start at the spawn hub
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((h, sender, server) -> {
+            if (CFG.radius <= 0) return;
+            ServerPlayerEntity p = h.player;
+            int left = p.getStatHandler().getStat(net.minecraft.stat.Stats.CUSTOM.getOrCreateStat(net.minecraft.stat.Stats.LEAVE_GAME));
+            if (left > 0) return;
+            server.execute(() -> p.teleport(world(server), CFG.cx + 0.5, CFG.cy, CFG.cz + 6.5, java.util.Set.of(), 180f, 0f, true));
+        });
     }
 
     private static final Map<UUID, Long> PORTAL_CD = new HashMap<>();
@@ -213,6 +221,7 @@ public final class Hub {
         d.register(CommandManager.literal("buildspawn")
                 .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                 .executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; })
+                .then(CommandManager.literal("clear").executes(ctx -> { clear(ctx.getSource().getServer()); ctx.getSource().sendFeedback(() -> Text.literal("Old spawn removed. Stand somewhere else and use /buildspawn."), false); return 1; }))
                 .then(CommandManager.literal("refresh").executes(ctx -> { Leaderboards.refresh(ctx.getSource().getServer()); labels(ctx.getSource().getServer()); return 1; }))
                 .then(CommandManager.literal("info").executes(ctx -> {
                     ctx.getSource().sendFeedback(() -> Text.literal(CFG.radius <= 0 ? "No spawn yet - stand where you want it and use /buildspawn"
@@ -417,6 +426,25 @@ public final class Hub {
         p.teleport(w, cx + 0.5, cy, cz + 6.5, java.util.Set.of(), 180f, 0f, true);
         try { server.getCommandManager().parseAndExecute(p.getCommandSource(), "setspawn"); } catch (Throwable ignored) {}
         p.sendMessage(Text.literal("Hub built! Crates north, AFK zone south, leaderboards west, duel arena east.").formatted(Formatting.GREEN), false);
+    }
+
+    /** Removes the hub that was built last (blocks, holograms, NPCs) and forgets it. */
+    static void clear(MinecraftServer server) {
+        if (CFG.radius <= 0) return;
+        ServerWorld w = world(server);
+        cmd(server, "execute in " + CFG.world + " run kill @e[tag=dracos_hub]");
+        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz;
+        for (int x = cx - 31; x <= cx + 61; x++) for (int z = cz - 31; z <= cz + 31; z++) {
+            boolean plaza = Math.abs(x - cx) <= 31;
+            boolean arena = Math.abs(x - (cx + 48)) <= 13 && Math.abs(z - cz) <= 13;
+            boolean path = Math.abs(z - cz) <= 2;
+            if (!plaza && !arena && !path) continue;
+            for (int y = cy - 2; y <= cy + 14; y++) set(w, x, y, z, Blocks.AIR.getDefaultState());
+            set(w, x, cy - 2, z, Blocks.DIRT.getDefaultState());
+            set(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
+        }
+        CFG = new Cfg();
+        save();
     }
 
     private static BlockState floor(int x, int z, boolean plaza, boolean arena, boolean path) {
