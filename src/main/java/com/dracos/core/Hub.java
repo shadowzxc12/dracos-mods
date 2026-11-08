@@ -57,6 +57,7 @@ public final class Hub {
         public int[] arena;                          // centre x,y,z
         public int[] arenaA, arenaB;                 // duel spawn points
         public Map<String, double[]> boards = new HashMap<>();
+        public int[] portal;                         // RTP portal x1,y1,z1,x2,y2,z2 (walk in -> /rtp)
     }
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -135,11 +136,25 @@ public final class Hub {
                     || it == Items.END_CRYSTAL || it == Items.TNT_MINECART) return ActionResult.FAIL;
             return ActionResult.PASS;
         });
+        // menu NPCs: right-click runs their command
+        net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (!(player instanceof ServerPlayerEntity sp) || !(world instanceof ServerWorld)) return ActionResult.PASS;
+            for (String tag : entity.getCommandTags()) {
+                if (!tag.startsWith("npc_")) continue;
+                if (hand == net.minecraft.util.Hand.MAIN_HAND) {
+                    String c = tag.substring(4);
+                    sp.getEntityWorld().getServer().getCommandManager().parseAndExecute(sp.getCommandSource(), c);
+                }
+                return ActionResult.FAIL;
+            }
+            return ActionResult.PASS;
+        });
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
             if (entity instanceof HostileEntity && CFG.radius > 0 && inHub(entity)) TO_REMOVE.add(entity);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!TO_REMOVE.isEmpty()) { for (Entity e : TO_REMOVE) if (!e.isRemoved()) e.discard(); TO_REMOVE.clear(); }
+            if (CFG.portal != null && server.getTicks() % 5 == 0) portalTick(server);
             if (server.getTicks() % 20 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 if (!inAfk(p)) { AFK_TIME.remove(p.getUuid()); continue; }
@@ -153,6 +168,26 @@ public final class Hub {
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((h, s) -> AFK_TIME.remove(h.player.getUuid()));
     }
 
+    private static final Map<UUID, Long> PORTAL_CD = new HashMap<>();
+
+    static void portalTick(MinecraftServer server) {
+        int[] a = CFG.portal;
+        ServerWorld w = world(server);
+        double mx = (a[0] + a[3]) / 2.0 + 0.5, my = (a[1] + a[4]) / 2.0 + 0.5, mz = (a[2] + a[5]) / 2.0 + 0.5;
+        if (server.getTicks() % 10 == 0) Effects.p(w, net.minecraft.particle.ParticleTypes.PORTAL, mx, my, mz, 25, 1.2, 0.3);
+        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+            if (p.getEntityWorld() != w) continue;
+            double x = p.getX(), y = p.getY(), z = p.getZ();
+            if (x < Math.min(a[0], a[3]) || x > Math.max(a[0], a[3]) + 1 || z < Math.min(a[2], a[5]) || z > Math.max(a[2], a[5]) + 1
+                    || y < a[1] - 0.5 || y > a[4] + 1) continue;
+            long now = System.currentTimeMillis();
+            if (now - PORTAL_CD.getOrDefault(p.getUuid(), 0L) < 5000) continue;
+            PORTAL_CD.put(p.getUuid(), now);
+            p.teleport(w, x, y, z + 3, java.util.Set.of(), p.getYaw(), p.getPitch(), true);   // step back out of the frame
+            RandomRespawn.rtp(p);
+        }
+    }
+
     static void afkReward(ServerPlayerEntity p) {
         long money = AFK_MONEY;
         Ranks.Rank r = Ranks.of(p);
@@ -161,7 +196,8 @@ public final class Hub {
         String key = null;
         double roll = Math.random();
         if (roll < 0.03) key = "legendary";
-        else if (roll < 0.15) key = "rare";
+        else if (roll < 0.08) key = "spawner";
+        else if (roll < 0.18) key = "rare";
         else if (roll < 0.50) key = "common";
         if (key != null) Crates.giveKey(p, key, 1);
         p.sendMessage(Text.literal("AFK reward: ").formatted(Formatting.LIGHT_PURPLE)
@@ -219,6 +255,12 @@ public final class Hub {
             MutableText t = Text.empty().append(Text.literal("☾ AFK ZONE ☽\n").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD))
                     .append(Text.literal("Stand here: " + Money.fmt(AFK_MONEY) + " every 5 min\n+ chance for crate keys").formatted(Formatting.GRAY));
             hologram(server, (a[0] + a[3]) / 2.0 + 0.5, a[1] + 3.2, (a[2] + a[5]) / 2.0 + 0.5, t, "dracos_label");
+        }
+        if (CFG.portal != null) {
+            int[] a = CFG.portal;
+            MutableText t = Text.empty().append(Text.literal("✦ RANDOM TELEPORT ✦\n").formatted(Formatting.DARK_PURPLE, Formatting.BOLD))
+                    .append(Text.literal("Walk into the portal").formatted(Formatting.GRAY));
+            hologram(server, (a[0] + a[3]) / 2.0 + 0.5, a[4] + 2.6, a[2] + 0.5, t, "dracos_label");
         }
         if (CFG.arena != null) {
             MutableText t = Text.empty().append(Text.literal("⚔ DUEL ARENA ⚔\n").formatted(Formatting.RED, Formatting.BOLD))
@@ -283,11 +325,12 @@ public final class Hub {
 
         // ---- crates (north): pedestals + crate blocks
         CFG.crates.clear();
-        String[] types = {"common", "rare", "legendary"};
-        BlockState[] crateBlock = {Blocks.CHEST.getDefaultState(), Blocks.VAULT.getDefaultState(), Blocks.ENDER_CHEST.getDefaultState()};
-        BlockState[] pedestal = {Blocks.POLISHED_ANDESITE.getDefaultState(), Blocks.PURPUR_BLOCK.getDefaultState(), Blocks.GOLD_BLOCK.getDefaultState()};
-        for (int i = 0; i < 3; i++) {
-            int x = cx - 8 + i * 8, z = cz - 18;
+        String[] types = {"common", "rare", "spawner", "legendary"};
+        BlockState[] crateBlock = {Blocks.CHEST.getDefaultState(), Blocks.VAULT.getDefaultState(), Blocks.SPAWNER.getDefaultState(), Blocks.ENDER_CHEST.getDefaultState()};
+        BlockState[] pedestal = {Blocks.POLISHED_ANDESITE.getDefaultState(), Blocks.PURPUR_BLOCK.getDefaultState(),
+                Blocks.CRYING_OBSIDIAN.getDefaultState(), Blocks.GOLD_BLOCK.getDefaultState()};
+        for (int i = 0; i < 4; i++) {
+            int x = cx - 12 + i * 8, z = cz - 18;
             for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) set(w, x + dx, cy - 1, z + dz, pedestal[i]);
             set(w, x, cy, z, crateBlock[i]);
             CFG.crates.put(types[i], new int[]{x, cy, z});
@@ -333,6 +376,33 @@ public final class Hub {
             set(w, x - 1, cy + 5, z - 2, Blocks.LANTERN.getDefaultState());
             set(w, x - 1, cy + 5, z + 2, Blocks.LANTERN.getDefaultState());
             CFG.boards.put(boards[i], new double[]{x + 0.3, cy + 1.3, z + 0.5});
+        }
+
+        // ---- RTP portal (north edge, behind the crates)
+        int pz = cz - 26;
+        for (int x = -3; x <= 3; x++) for (int y = 0; y <= 5; y++) {
+            boolean frame = Math.abs(x) == 3 || y == 0 || y == 5;
+            set(w, cx + x, cy + y - 1, pz, frame ? Blocks.CRYING_OBSIDIAN.getDefaultState() : Blocks.AIR.getDefaultState());
+        }
+        for (int x = -3; x <= 3; x += 6) set(w, cx + x, cy + 5, pz, Blocks.SOUL_LANTERN.getDefaultState());
+        CFG.portal = new int[]{cx - 2, cy, pz, cx + 2, cy + 3, pz};
+
+        // ---- menu NPCs (both sides of the fountain)
+        cmd(server, "execute in " + w.getRegistryKey().getValue() + " run kill @e[type=minecraft:villager,tag=dracos_npc]");
+        String[][] npcs = {
+                {"shop", "Shop", "minecraft:armorer"}, {"sell", "Sell", "minecraft:farmer"}, {"ah", "Auction House", "minecraft:librarian"},
+                {"orders", "Orders", "minecraft:cartographer"}, {"spawners", "Spawners", "minecraft:cleric"},
+                {"quests", "Daily Quests", "minecraft:fletcher"}, {"rankshop", "Rank Shop", "minecraft:weaponsmith"},
+                {"legendary", "Legendary Shop", "minecraft:toolsmith"}, {"skills", "Skills", "minecraft:mason"}, {"pwarp", "Player Warps", "minecraft:shepherd"}};
+        for (int i = 0; i < npcs.length; i++) {
+            boolean east = i < 5;
+            int nx = cx + (east ? 11 : -11), nz = cz - 8 + (i % 5) * 4;
+            set(w, nx, cy - 1, nz, Blocks.GOLD_BLOCK.getDefaultState());
+            String name = snbt(Text.literal(npcs[i][1]).formatted(Formatting.GOLD, Formatting.BOLD));
+            cmd(server, "execute in " + w.getRegistryKey().getValue() + " run summon minecraft:villager " + (nx + 0.5) + " " + cy + " " + (nz + 0.5)
+                    + " {NoAI:1b,Invulnerable:1b,PersistenceRequired:1b,Silent:1b,CustomNameVisible:1b,Rotation:[" + (east ? 90 : -90) + "f,0f],"
+                    + "Tags:[\"dracos_hub\",\"dracos_npc\",\"npc_" + npcs[i][0] + "\"],CustomName:" + name
+                    + ",VillagerData:{profession:\"" + npcs[i][2] + "\",level:5,type:\"minecraft:plains\"}}");
         }
 
         CFG.world = w.getRegistryKey().getValue().toString();
