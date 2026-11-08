@@ -345,18 +345,36 @@ def paint_face(set_name, layer, part, kind, w, h, rnd):
             plate(shin, 2, 2)
             seam((np.abs(xx - w / 2) < 1.0) & (yy > top + 4) & (yy < h * 0.78))
     if part == "leg" and layer == "humanoid_leggings" and side:
-        seam(np.abs(yy - h * 0.34) < 1.0)
-        kc = h * 0.52
-        if kind == "front":
-            kr = np.hypot((xx - w / 2) * 1.0, (yy - kc) * 1.2)
-            knee = kr < 11
-            plate(knee, 4, 3)
-            mat[(kr > 9.5) & knee] = MD
-            g = kr < 3
-            mat[g] = MA
-            ht[g] += 1.5
+        # real armoured trousers (not a skirt): each leg is its own column of plates - thigh plate,
+        # knee cop, shin guard - with a dark gap on the inner edge so the two legs read separately.
+        # (the right leg's texture is mirrored for the left leg, so "inner" is the same edge on both)
+        inner_x = (xx > w - 1 - K * 0.75) if kind == "front" else (xx < K * 0.75) if kind == "back" else None
+        if kind == "left":                                   # inner side of the leg: mostly hidden, keep it dark
+            mat[:] = MD
+            plate(yy >= 0, 1.0, 3)
         else:
-            seam(np.abs(yy - kc) < 0.9, glow=False)
+            thigh = (yy > h * 0.04) & (yy < h * 0.46)
+            plate(thigh, 2.6, 3)
+            seam(np.abs(yy - h * 0.46) < 0.8, glow=False)
+            shin = yy > h * 0.64
+            plate(shin, 2.2, 3)
+            seam(np.abs(yy - h * 0.64) < 0.8, glow=False)
+            if kind == "front":
+                kc = h * 0.55
+                kr = np.hypot((xx - w * 0.45) * 1.0, (yy - kc) * 1.25)
+                knee = kr < w * 0.36
+                plate(knee, 4.5, 3)
+                mat[(kr > w * 0.29) & knee] = MD
+                g = kr < w * 0.1
+                mat[g] = MA
+                ht[g] += 1.5
+                # vertical ridge down the thigh and shin
+                seam((np.abs(xx - w * 0.45) < 0.8) & (thigh | (yy > h * 0.7)) & (yy < h - 4), glow=False, depth=1.2)
+            if kind == "right":                              # outer side: glowing stripe down the leg
+                seam((np.abs(xx - w / 2) < 0.9) & (yy > h * 0.08) & (yy < h * 0.92))
+            if inner_x is not None:
+                mat[inner_x] = MD
+                ht[inner_x] -= 2.5
     if part == "head" and kind == "front":
         ey = int(h * 0.36)
         eyes = (np.abs(yy - ey) < 2) & (edge >= 5) & (np.abs(xx - w / 2) > 3)
