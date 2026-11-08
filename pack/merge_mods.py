@@ -63,3 +63,51 @@ for jar in sys.argv[2:]:
         except Exception as e:
             print("could not merge", name, e)
     print(f"{os.path.basename(jar)}: {added} files added, {merged} merged")
+
+
+# ---- sanitize: 1.21.4+ rejects an item definition whose "select" has the same case twice (the whole item then
+# shows the purple/black missing texture). Some packs (Vanilla+ armor trims) have such duplicates: keep the first.
+def dedupe(m):
+    if not isinstance(m, dict):
+        return 0
+    n = 0
+    if str(m.get("type", "")).endswith("select") and isinstance(m.get("cases"), list):
+        seen, cases = set(), []
+        for c in m["cases"]:
+            w = c.get("when")
+            ws = [x for x in (w if isinstance(w, list) else [w]) if json.dumps(x, sort_keys=True) not in seen]
+            n += (len(w) if isinstance(w, list) else 1) - len(ws)
+            if not ws:
+                continue
+            for x in ws:
+                seen.add(json.dumps(x, sort_keys=True))
+            c["when"] = ws if isinstance(w, list) else ws[0]
+            cases.append(c)
+        m["cases"] = cases
+        for c in cases:
+            n += dedupe(c.get("model"))
+    for k in ("fallback", "on_true", "on_false", "model"):
+        n += dedupe(m.get(k))
+    for e in m.get("entries", []) if isinstance(m.get("entries"), list) else []:
+        n += dedupe(e.get("model"))
+    for e in m.get("models", []) if isinstance(m.get("models"), list) else []:
+        n += dedupe(e)
+    return n
+
+
+fixed = 0
+for root, _, files in os.walk(os.path.join(PACK, "assets")):
+    if not root.replace("\\", "/").endswith("/items"):
+        continue
+    for fn in files:
+        if not fn.endswith(".json"):
+            continue
+        p = os.path.join(root, fn)
+        try:
+            d = json.load(open(p, encoding="utf-8-sig"))
+            if dedupe(d.get("model")):
+                json.dump(d, open(p, "w"), indent=1)
+                fixed += 1
+        except Exception as e:
+            print("could not check", p, e)
+print(f"sanitize: fixed duplicate select cases in {fixed} item definitions")
