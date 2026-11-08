@@ -113,11 +113,38 @@ public final class Leaderboards {
         for (var e : m.entrySet()) {
             String name = names.get(e.getKey());
             if (name == null || e.getValue() <= 0) continue;
-            if (Ranks.stored(name) == Ranks.Rank.OWNER) continue;   // staff not on the boards
             l.add(e);
         }
         l.sort((x, y) -> Long.compare(y.getValue(), x.getValue()));
         return l.subList(0, Math.min(10, l.size()));
+    }
+
+    /** Player kills and play time from Minecraft's own statistics (all players ever, online ones live). */
+    static void vanillaStats(MinecraftServer server, Map<String, Long> kills, Map<String, Long> minutes) {
+        try {
+            Path dir = server.getSavePath(net.minecraft.util.WorldSavePath.STATS);
+            if (Files.isDirectory(dir)) {
+                try (var files = Files.list(dir)) {
+                    for (Path f : (Iterable<Path>) files::iterator) {
+                        String fn = f.getFileName().toString();
+                        if (!fn.endsWith(".json")) continue;
+                        try {
+                            JsonObject custom = JsonParser.parseString(Files.readString(f)).getAsJsonObject()
+                                    .getAsJsonObject("stats").getAsJsonObject("minecraft:custom");
+                            if (custom == null) continue;
+                            String u = fn.substring(0, fn.length() - 5);
+                            if (custom.has("minecraft:player_kills")) kills.put(u, custom.get("minecraft:player_kills").getAsLong());
+                            if (custom.has("minecraft:play_time")) minutes.put(u, custom.get("minecraft:play_time").getAsLong() / 1200);
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+        } catch (Exception e) { DracosCore.LOGGER.warn("Could not read stats for leaderboard", e); }
+        for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+            var sh = p.getStatHandler();
+            kills.put(p.getUuidAsString(), (long) sh.getStat(net.minecraft.stat.Stats.CUSTOM.getOrCreateStat(net.minecraft.stat.Stats.PLAYER_KILLS)));
+            minutes.put(p.getUuidAsString(), (long) sh.getStat(net.minecraft.stat.Stats.CUSTOM.getOrCreateStat(net.minecraft.stat.Stats.PLAY_TIME)) / 1200);
+        }
     }
 
     static String time(long minutes) {
@@ -130,8 +157,10 @@ public final class Leaderboards {
         Map<String, String> names = names(server);
         Hub.cmd(server, "execute in " + Hub.CFG.world + " run kill @e[type=minecraft:text_display,tag=dracos_lb]");
         board(server, "money", "$ RICHEST PLAYERS", Formatting.GOLD, top(balances(), names), names, Money::fmt);
-        board(server, "kills", "⚔ TOP KILLERS", Formatting.RED, top(DATA.kills, names), names, v -> v + " kills");
-        board(server, "playtime", "✪ MOST PLAYTIME", Formatting.AQUA, top(DATA.minutes, names), names, Leaderboards::time);
+        Map<String, Long> kills = new HashMap<>(), minutes = new HashMap<>();
+        vanillaStats(server, kills, minutes);
+        board(server, "kills", "⚔ TOP KILLERS", Formatting.RED, top(kills, names), names, v -> v + " kills");
+        board(server, "playtime", "✪ MOST PLAYTIME", Formatting.AQUA, top(minutes, names), names, Leaderboards::time);
     }
 
     static void board(MinecraftServer server, String id, String title, Formatting color, List<Map.Entry<String, Long>> rows,

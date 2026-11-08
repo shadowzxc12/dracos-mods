@@ -143,7 +143,8 @@ public final class Hub {
                 if (!tag.startsWith("npc_")) continue;
                 if (hand == net.minecraft.util.Hand.MAIN_HAND) {
                     String c = tag.substring(4);
-                    sp.getEntityWorld().getServer().getCommandManager().parseAndExecute(sp.getCommandSource(), c);
+                    if (c.equals("shop")) Shop.open(sp);      // our new shop (the /shop command is swapped in at packet level)
+                    else sp.getEntityWorld().getServer().getCommandManager().parseAndExecute(sp.getCommandSource(), c);
                 }
                 return ActionResult.FAIL;
             }
