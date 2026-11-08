@@ -25,7 +25,7 @@ public class DracosCore implements ModInitializer {
                 f.setAccessible(true);
                 java.util.Map<String, ?> m = (java.util.Map<String, ?>) f.get(root);
                 m.remove("settings");
-                for (String c : new String[]{"rtp", "wild", "randomteleport"}) m.remove(c); // Essential Commands' own /rtp
+                for (String c : new String[]{"rtp", "wild", "randomteleport", "spawn"}) m.remove(c); // Essential Commands' own /rtp and /spawn
             }
             // our /rtp for everyone (no permission needed)
             for (String c : new String[]{"rtp", "wild", "randomteleport"})
@@ -33,6 +33,15 @@ public class DracosCore implements ModInitializer {
                     RandomRespawn.rtp(ctx.getSource().getPlayerOrThrow());
                     return 1;
                 }));
+            // /spawn -> our spawn hub (Essential Commands' /spawn pointed somewhere else)
+            dispatcher.register(net.minecraft.server.command.CommandManager.literal("spawn").executes(ctx -> {
+                var pl = ctx.getSource().getPlayerOrThrow();
+                if (Combat.inCombat(pl)) { pl.sendMessage(net.minecraft.text.Text.literal("You can't use /spawn in combat!").formatted(net.minecraft.util.Formatting.RED), false); return 0; }
+                var w = Hub.CFG.radius > 0 ? Hub.world(server) : server.getOverworld();
+                if (Hub.CFG.radius > 0) pl.teleport(w, Hub.CFG.cx + 0.5, Hub.CFG.cy, Hub.CFG.cz + 6.5, java.util.Set.of(), 180f, 0f, true);
+                else { var sp = w.getSpawnPoint().getPos(); pl.teleport(w, sp.getX() + 0.5, sp.getY(), sp.getZ() + 0.5, java.util.Set.of(), pl.getYaw(), pl.getPitch(), true); }
+                return 1;
+            }));
             for (var p : server.getPlayerManager().getPlayerList()) server.getCommandManager().sendCommandTree(p);
             LOGGER.info("Removed server /settings; Dracos settings menu is /menu (Minehut proxy owns /settings and /setting)");
         } catch (Exception e) {
