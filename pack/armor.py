@@ -191,8 +191,7 @@ def icon(set_name, piece, st):
     PIECES[piece](c, set_name)
     s0 = st["stops"]
     trim = [s0[0], s0[0], s0[1], s0[2], s0[3]]          # dark metal trims instead of gold
-    return hq.pixel_art(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim, out_res=hq.PIX, want_shade=True), st,
-                        guard_cols=trim, seed=len(set_name + piece), n_frames=12)
+    return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim), st, seed=len(set_name + piece), n_frames=12)
 
 
 # ------------------------------------------------------------------ worn (humanoid) textures
@@ -407,7 +406,9 @@ def worn(set_name, layer, st, vanilla_path):
             out[y0:y1, x0:x1, 3] = 255
             mats[y0:y1, x0:x1] = mat
     out[..., 3] *= cover
-    return Image.fromarray(posterize(out, mats, 4, st).astype(np.uint8), "RGBA")
+    # clean look: smooth shading, downsampled 2x (256x128) for crisp but not blocky detail
+    img = Image.fromarray(out.astype(np.uint8), "RGBA")
+    return img.resize((img.width // 2, img.height // 2), Image.BOX)
 
 
 def posterize(img, mats, f, st):
@@ -483,7 +484,7 @@ def helmet_texture(set_name, st):
     hm[32:48, 16:32] = MA
     hm[32:48, 48:64] = MD
     hm[48:64, 0:32] = 9
-    return Image.fromarray(posterize(out, hm, 2, st).astype(np.uint8), "RGBA")
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
 
 
 UV = {"front": [0, 0, 8, 8], "side": [8, 0, 16, 8], "gold": [0, 8, 4, 12], "acc": [4, 8, 8, 12],

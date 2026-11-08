@@ -31,6 +31,12 @@ def rgb(h):
     return np.array([int(h[i:i + 2], 16) for i in (0, 2, 4)], dtype=np.float64)
 
 
+def mixhex(a, b, k):
+    ca, cb = rgb(a), rgb(b)
+    c = ca * (1 - k) + cb * k
+    return "#%02x%02x%02x" % tuple(int(v) for v in c)
+
+
 def ramp(cols, t):
     """Sample a colour ramp (list of hex) at t (array 0..1)."""
     c = np.stack([rgb(x) for x in cols])
@@ -95,12 +101,15 @@ def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None, out_res=None, want_sh
     along = np.clip((xx + (n - 1 - yy)) / (2 * n), 0, 1)
 
     stops = st["stops"]
-    metal_ramp = [stops[0], stops[1], stops[2], stops[3], "#ffffff"]
+    # "clean" modded-weapon look: real steel with a tint of the set colour (not fully coloured plastic)
+    STEEL = ["#15181e", "#3c434f", "#7d8796", "#c9d0da", "#ffffff"]
+    tint_k = st.get("tint", 0.58)
+    metal_ramp = [mixhex(STEEL[i], [stops[0], stops[1], stops[2], stops[3], "#ffffff"][i], tint_k) for i in range(5)]
     col = np.zeros((n, n, 3))
-    t = 0.24 + diff * 0.66 + along * 0.1
+    t = 0.08 + diff * 0.78 + along * 0.08
     m = g == METAL
     col[m] = ramp(metal_ramp, t[m] * 0.92)
-    col[m] += spec[m, None] * 255 * 0.85
+    col[m] += spec[m, None] * 255 * 0.55
     a = g == ACCENT
     acc = rgb(st["accent"])
     d_a = ndimage.distance_transform_edt(a)
@@ -217,7 +226,7 @@ PIX = 32   # final texture size for the pixel-art look
 
 def frames(name, st, seed=0):
     g, wrap = material(name)
-    return pixel_art(lit_map(g, wrap, st, out_res=PIX, want_shade=True), st, seed)
+    return frames_from(lit_map(g, wrap, st), st, seed)
 
 
 def frames_from(litres, st, seed=0, n_frames=FRAMES):
@@ -250,7 +259,7 @@ def frames_from(litres, st, seed=0, n_frames=FRAMES):
         rgba[..., 3] = alpha * 255
         rgba[outl, :3] = outline_c
         rgba[outl, 3] = 255
-        ak = np.clip(1 - (dist_out - 1) / 1.6, 0, 1) * (0.18 + 0.14 * ph)
+        ak = np.clip(1 - (dist_out - 1) / 1.2, 0, 1) * (0.10 + 0.08 * ph)
         rgba[aura, :3] = acc
         rgba[aura, 3] = ak[aura] * 255
         for sf, (sy, sx) in twinkles:
