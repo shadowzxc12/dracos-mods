@@ -120,7 +120,10 @@ public final class Hub {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
             if (!(entity instanceof ServerPlayerEntity p)) return true;
             if (Duels.inDuel(p)) return true;
-            return !inHub(p);
+            if (!inHub(p)) return true;
+            if (source.getAttacker() instanceof ServerPlayerEntity att && att != p)
+                att.sendMessage(Text.literal("PvP is off at spawn - use /duel or go out with /rtp").formatted(Formatting.RED), true);
+            return false;
         });
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) ->
                 !(world instanceof ServerWorld sw) || bypass(player) || !inHub(sw, pos));
