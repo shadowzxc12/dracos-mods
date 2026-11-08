@@ -191,7 +191,8 @@ def icon(set_name, piece, st):
     PIECES[piece](c, set_name)
     s0 = st["stops"]
     trim = [s0[0], s0[0], s0[1], s0[2], s0[3]]          # dark metal trims instead of gold
-    return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim), st, seed=len(set_name + piece), n_frames=12)
+    return hq.pixel_art(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim, out_res=hq.PIX, want_shade=True), st,
+                        guard_cols=trim, seed=len(set_name + piece), n_frames=12)
 
 
 # ------------------------------------------------------------------ worn (humanoid) textures
@@ -393,6 +394,7 @@ def worn(set_name, layer, st, vanilla_path):
         cover[16 * K:32 * K, 40 * K:56 * K] = True     # full sleeves
         cover[0:16 * K, 0:32 * K] = False              # head is the 3D helmet now
     out = np.zeros((32 * K, 64 * K, 4))
+    mats = np.zeros((32 * K, 64 * K), dtype=np.int8)
     rnd = random.Random(hash((set_name, layer)) & 0xffff)
     for part, (ox, oy, w, h, d) in BOXES.items():
         for kind, box in faces_of(ox, oy, w, h, d).items():
@@ -403,8 +405,44 @@ def worn(set_name, layer, st, vanilla_path):
             along = (0.08 - 0.16 * yy / max(fh - 1, 1)) if kind not in ("top", "bottom") else 0.05
             out[y0:y1, x0:x1, :3] = light(mat, ht, st, along)
             out[y0:y1, x0:x1, 3] = 255
+            mats[y0:y1, x0:x1] = mat
     out[..., 3] *= cover
-    return Image.fromarray(out.astype(np.uint8), "RGBA")
+    return Image.fromarray(posterize(out, mats, 4, st).astype(np.uint8), "RGBA")
+
+
+def posterize(img, mats, f, st):
+    """Downsample by f and snap every pixel to a small palette per material -> crisp pixel-art look."""
+    Hh, Ww = img.shape[0] // f, img.shape[1] // f
+    col = img[..., :3].reshape(Hh, f, Ww, f, 3).mean(axis=(1, 3))
+    alpha = img[..., 3].reshape(Hh, f, Ww, f).mean(axis=(1, 3)) > 127
+    # majority material, but any glow in the block wins (keeps thin glowing seams)
+    m4 = mats.reshape(Hh, f, Ww, f)
+    mat = np.zeros((Hh, Ww), dtype=np.int8)
+    best = np.zeros((Hh, Ww))
+    for k in (MM, MD, MG, 9):
+        c = (m4 == k).mean(axis=(1, 3))
+        mat[c > best] = k
+        best = np.maximum(best, c)
+    mat[(m4 == MA).mean(axis=(1, 3)) >= 0.25] = MA
+    s = [rgb(c) for c in st["stops"]]
+    W = np.array([255.0, 255, 255])
+    acc = rgb(st["accent"])
+    P = {MM: [s[0] * 0.8 + s[1] * 0.2, s[1], (s[1] + s[2]) / 2, s[2], s[3], s[3] * 0.5 + W * 0.5],
+         MD: [s[0] * 0.6, s[0], s[1]],
+         MG: [s[0] * 0.6, s[0], s[1]],
+         MA: [acc * 0.75 + s[1] * 0.25, acc, acc * 0.45 + W * 0.55]}
+    out = np.zeros((Hh, Ww, 4))
+    out[..., :3] = col
+    lum = col @ np.array([0.299, 0.587, 0.114])
+    for k, pal_ in P.items():
+        m = mat == k
+        if not m.any():
+            continue
+        pl = np.array([c @ np.array([0.299, 0.587, 0.114]) for c in pal_])
+        i = np.abs(lum[m][:, None] - pl[None, :]).argmin(axis=1)
+        out[m, :3] = np.array(pal_)[i]
+    out[..., 3] = alpha * 255
+    return np.clip(out, 0, 255)
 
 
 # ------------------------------------------------------------------ 3D helmets (worn on the head)
@@ -413,6 +451,7 @@ def helmet_texture(set_name, st):
     """64x64 atlas for the 3D helmet model. UV units (0..16) -> 4px each.
     front 0,0-8,8 | side 8,0-16,8 | gold 0,8-4,12 | accent 4,8-8,12 | metal 8,8-12,12 | dark 12,8-16,12 | horn 0,12-8,16"""
     out = np.zeros((64, 64, 4))
+    hm = np.full((64, 64), MM, dtype=np.int8)
     rnd = random.Random(len(set_name))
     for (kind, x0) in (("front", 0), ("left", 32)):
         mat, ht = paint_face(set_name, "humanoid", "head", kind, 32, 32, rnd)
@@ -423,6 +462,7 @@ def helmet_texture(set_name, st):
             mat[eyes] = MA
         yy = np.mgrid[0:32, 0:32][0]
         out[0:32, x0:x0 + 32, :3] = light(mat, ht, st, 0.08 - 0.16 * yy / 31)
+        hm[0:32, x0:x0 + 32] = mat
         out[0:32, x0:x0 + 32, 3] = 255
     yy, xx = np.mgrid[0:16, 0:16]
     stops = st["stops"]
@@ -440,7 +480,10 @@ def helmet_texture(set_name, st):
     out[48:64, 0:32, :3] = hq.ramp(horn_cols, 0.3 + 0.55 * (1 - hy / 15) - ridges * 0.25)
     out[32:64, :, 3] = 255
     out[48:64, 32:, 3] = 0
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
+    hm[32:48, 16:32] = MA
+    hm[32:48, 48:64] = MD
+    hm[48:64, 0:32] = 9
+    return Image.fromarray(posterize(out, hm, 2, st).astype(np.uint8), "RGBA")
 
 
 UV = {"front": [0, 0, 8, 8], "side": [8, 0, 16, 8], "gold": [0, 8, 4, 12], "acc": [4, 8, 8, 12],

@@ -63,6 +63,7 @@ jobs:
                   os.makedirs(os.path.dirname(out), exist_ok=True)
                   json.dump({"model": {"type": "minecraft:model", "model": f"{ns}:item/{rel}"}}, open(out, 'w'))
           PY
+          python3 "$GITHUB_WORKSPACE/pack/backpacks.py" /tmp/pack
           ls /tmp/pack/assets
           cd -
           cd /tmp/pack && find . -exec touch -t 202601010000 {} + && zip -qrX9 /tmp/dracos-pack.zip pack.mcmeta pack.png assets

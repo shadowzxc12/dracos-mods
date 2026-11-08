@@ -596,7 +596,7 @@ def main():
                 item_def(name)
 
     # pack icon
-    icon = shape_frames("void_scythe").crop((0, 0, 64, 64)).resize((128, 128), Image.NEAREST)
+    _f = shape_frames("void_scythe"); icon = _f.crop((0, 0, _f.size[0], _f.size[0])).resize((128, 128), Image.NEAREST)
     bg = Image.new("RGBA", (128, 128), hx("#120a1c"))
     bg.alpha_composite(icon)
     bg.save(os.path.join(OUT, "pack.png"))

@@ -67,7 +67,7 @@ def lit(name, st):
     return lit_map(g, wrap, st)
 
 
-def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None):
+def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None, out_res=None, want_shade=False):
     """g: (R*SS)^2 group map, wrap: grooves. Returns (rgb float 64x64x3, alpha bool, group map) at 64."""
     n = g.shape[0]
     solid = g > 0
@@ -118,25 +118,106 @@ def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None):
     col = np.clip(col, 0, 255)
 
     # ---- downsample (box filter, colour averaged over covered samples)
-    cov = solid.reshape(R, SS, R, SS).mean(axis=(1, 3))
-    cs = (col * solid[..., None]).reshape(R, SS, R, SS, 3).sum(axis=(1, 3))
-    cnt = solid.reshape(R, SS, R, SS).sum(axis=(1, 3))
+    O = out_res or R
+    F = n // O
+    cov = solid.reshape(O, F, O, F).mean(axis=(1, 3))
+    cs = (col * solid[..., None]).reshape(O, F, O, F, 3).sum(axis=(1, 3))
+    cnt = solid.reshape(O, F, O, F).sum(axis=(1, 3))
     out = cs / np.maximum(cnt, 1)[..., None]
-    alpha = cov >= 0.4
+    alpha = cov >= 0.45
     # majority group per pixel
-    grp = np.zeros((R, R), dtype=np.int8)
-    best = np.zeros((R, R))
+    grp = np.zeros((O, O), dtype=np.int8)
+    best = np.zeros((O, O))
     for k in (METAL, ACCENT, GUARD, HANDLE):
-        c = (g == k).reshape(R, SS, R, SS).mean(axis=(1, 3))
+        c = (g == k).reshape(O, F, O, F).mean(axis=(1, 3))
         better = c > best
         grp[better] = k
         best[better] = c[better]
     grp[~alpha] = 0
+    if want_shade:
+        sh = np.clip(diff * 0.85 + spec * 0.6 + along * 0.15, 0, 1.4)
+        shs = (sh * solid).reshape(O, F, O, F).sum(axis=(1, 3)) / np.maximum(cnt, 1)
+        return out, alpha, grp, shs
     return out, alpha, grp
 
 
+def mixc(a, b, t):
+    return a * (1 - t) + b * t
+
+
+def pixel_art(litres, st, seed=0, n_frames=8, guard_cols=None):
+    """Crisp hand-pixelled look (like classic server crate items): every part gets a small fixed palette,
+    1px dark outline, light top-left edges, dark bottom-right edges, glowing accent pixels."""
+    _, alpha, grp, shade = litres
+    O = alpha.shape[0]
+    s = [rgb(c) for c in st["stops"]]
+    W = np.array([255.0, 255, 255])
+    acc = rgb(st["accent"])
+    gold = [rgb(c) for c in (guard_cols or tint(GOLD, st["stops"][2], 0.2))]
+    leather = [rgb(c) for c in tint(LEATHER, st["stops"][1], 0.2)]
+    P = {METAL: [mixc(s[0], s[1], 0.6), s[1], s[2], s[3], mixc(s[3], W, 0.6)],
+         GUARD: [gold[1], gold[2], gold[3], gold[-1]],
+         HANDLE: [leather[1], leather[2], leather[3]],
+         ACCENT: [mixc(acc, s[1], 0.45), acc, mixc(acc, W, 0.65)]}
+    outline = s[0] * 0.32
+    inside = lambda y, x: 0 <= y < O and 0 <= x < O and alpha[y, x]
+    idx = np.zeros((O, O), dtype=int)
+    for k, pal in P.items():
+        m = grp == k
+        if not m.any():
+            continue
+        v = shade[m]
+        lo, hi = np.percentile(v, 5), np.percentile(v, 95)
+        idx[m] = np.clip(((v - lo) / max(hi - lo, 1e-6) * (len(pal) - 1) + 0.5).astype(int), 0, len(pal) - 1)
+    # edge lighting: top-left rim bright, bottom-right rim dark (classic pixel-art shading)
+    adj = idx.copy()
+    for y in range(O):
+        for x in range(O):
+            if not alpha[y, x]:
+                continue
+            n = len(P[grp[y, x]])
+            if not inside(y - 1, x) or not inside(y, x - 1):
+                adj[y, x] = min(n - 1, idx[y, x] + 1)
+            elif not inside(y + 1, x) or not inside(y, x + 1):
+                adj[y, x] = max(0, idx[y, x] - 1)
+    idx = adj
+    acc_m = grp == ACCENT
+    acc_core = ndimage.binary_erosion(acc_m)
+    outl = ndimage.binary_dilation(alpha, structure=np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])) & ~alpha
+    rnd = random.Random(seed)
+    shiny = [tuple(p) for p in zip(*np.nonzero((grp == METAL) & (idx >= 3)))]
+    sparks = [(rnd.randrange(n_frames), shiny[rnd.randrange(len(shiny))]) for _ in range(2)] if shiny else []
+    strip = np.zeros((O * n_frames, O, 4), dtype=np.uint8)
+    for f in range(n_frames):
+        ph = 0.5 + 0.5 * math.sin(2 * math.pi * f / n_frames)
+        img = np.zeros((O, O, 4))
+        for k, pal in P.items():
+            m = grp == k
+            for i, c in enumerate(pal):
+                mm = m & (idx == i)
+                img[mm, :3] = c
+        # glowing accents: core pulses brighter
+        img[acc_m, :3] = P[ACCENT][1] * (0.85 + 0.25 * ph)
+        img[acc_core, :3] = mixc(P[ACCENT][1], P[ACCENT][2], 0.4 + 0.6 * ph)
+        img[alpha, 3] = 255
+        img[outl, :3] = outline
+        img[outl, 3] = 255
+        for sf, (sy, sx) in sparks:
+            if (f - sf) % n_frames == 0:
+                img[sy, sx, :3] = W
+                for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                    if inside(sy + dy, sx + dx):
+                        img[sy + dy, sx + dx, :3] = mixc(img[sy + dy, sx + dx, :3], W, 0.5)
+        strip[f * O:(f + 1) * O] = np.clip(img, 0, 255).astype(np.uint8)
+    return Image.fromarray(strip, "RGBA")
+
+
+PIX = 32   # final texture size for the pixel-art look
+
+
 def frames(name, st, seed=0):
-    return frames_from(lit(name, st), st, seed)
+    g, wrap = material(name)
+    return pixel_art(lit_map(g, wrap, st, out_res=PIX, want_shade=True), st, seed)
 
 
 def frames_from(litres, st, seed=0, n_frames=FRAMES):
