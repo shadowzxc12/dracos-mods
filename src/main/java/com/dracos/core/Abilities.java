@@ -44,6 +44,12 @@ import java.util.Set;
 
 /** Schopnosti legendarnych veci. */
 public final class Abilities {
+    static final java.util.Random RND = new java.util.Random();
+    static final net.minecraft.entity.EquipmentSlot[] ARMOR_SLOTS = {net.minecraft.entity.EquipmentSlot.HEAD,
+            net.minecraft.entity.EquipmentSlot.CHEST, net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.FEET};
+    static final java.util.Map<String, Integer> SPARKLE = java.util.Map.of(
+            "void", 0xD46BFF, "bone", 0xFF2A3A, "draco", 0xFF8A1E, "frost", 0x5FF6FF, "inferno", 0xFF5A00, "storm", 0xFFE94A);
+
     private Abilities() {}
 
     private static boolean breaking = false; // ochrana pred rekurziou
@@ -352,6 +358,37 @@ public final class Abilities {
                     for (int k = 0; k < 3; k++) {
                         double a = (t * 0.15) + k * (Math.PI * 2 / 3);
                         w.spawnParticles(aura, x + Math.cos(a) * 0.8, y + 0.1 + (k * 0.6), z + Math.sin(a) * 0.8, 1, 0, 0, 0, 0);
+                    }
+                }
+            }
+            // armor sparkles: every worn legendary piece glitters in its set colour (like the animated icons)
+            for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                if (p.isSpectator() || p.isInvisible()) continue;
+                ServerWorld w = (ServerWorld) p.getEntityWorld();
+                for (var slot : ARMOR_SLOTS) {
+                    String id = LegendaryItems.idOf(p.getEquippedStack(slot));
+                    if (id == null) continue;
+                    String set = id.substring(0, Math.max(0, id.indexOf('_')));
+                    Integer col = SPARKLE.get(set);
+                    if (col == null) continue;
+                    double h = switch (slot) { case HEAD -> 1.75; case CHEST -> 1.15; case LEGS -> 0.7; default -> 0.12; };
+                    double sx = p.getX() + (RND.nextDouble() - 0.5) * 0.7, sz = p.getZ() + (RND.nextDouble() - 0.5) * 0.7;
+                    double sy = p.getY() + h + (RND.nextDouble() - 0.5) * 0.4;
+                    w.spawnParticles(new net.minecraft.particle.DustParticleEffect(col, 0.55f), sx, sy, sz, 1, 0, 0, 0, 0);
+                    if (RND.nextInt(5) == 0)
+                        w.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xFFFFFF, 0.45f),
+                                p.getX() + (RND.nextDouble() - 0.5) * 0.7, sy + 0.1, p.getZ() + (RND.nextDouble() - 0.5) * 0.7, 1, 0, 0, 0, 0);
+                    if (RND.nextInt(6) == 0) {
+                        net.minecraft.particle.ParticleEffect extra = switch (set) {
+                            case "void" -> ParticleTypes.REVERSE_PORTAL;
+                            case "bone" -> ParticleTypes.WHITE_ASH;
+                            case "draco" -> ParticleTypes.SMALL_FLAME;
+                            case "frost" -> ParticleTypes.SNOWFLAKE;
+                            case "inferno" -> ParticleTypes.FLAME;
+                            case "storm" -> ParticleTypes.ELECTRIC_SPARK;
+                            default -> null;
+                        };
+                        if (extra != null) w.spawnParticles(extra, sx, sy, sz, 1, 0.05, 0.05, 0.05, 0.01);
                     }
                 }
             }
