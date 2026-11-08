@@ -171,6 +171,11 @@ public final class PlayerWarps {
                 .then(CommandManager.literal("set").then(CommandManager.argument("name", StringArgumentType.word())
                         .executes(ctx -> set(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "name")))))
                 .then(CommandManager.literal("delete").then(CommandManager.argument("name", StringArgumentType.word())
+                        .suggests((c, b) -> {
+                            var pl = c.getSource().getPlayer();
+                            for (Warp w : WARPS.values()) if (pl != null && (w.owner.equals(pl.getUuidAsString()) || Ranks.of(pl) == Ranks.Rank.OWNER)) b.suggest(w.name);
+                            return b.buildFuture();
+                        })
                         .executes(ctx -> delete(ctx.getSource().getPlayerOrThrow(), StringArgumentType.getString(ctx, "name")))))
                 .then(CommandManager.literal("desc").then(CommandManager.argument("name", StringArgumentType.word())
                         .then(CommandManager.argument("text", StringArgumentType.greedyString())
@@ -286,6 +291,8 @@ public final class PlayerWarps {
             lore.add(Text.literal("By " + w.ownerName).styled(t -> t.withColor(Formatting.GRAY).withItalic(false)));
             lore.add(Text.literal(w.visits + " visits").styled(t -> t.withColor(Formatting.DARK_GRAY).withItalic(false)));
             lore.add(Text.literal("» Click to teleport").styled(t -> t.withColor(Formatting.GREEN).withItalic(false)));
+            if (w.owner.equals(p.getUuidAsString()) || Ranks.of(p) == Ranks.Rank.OWNER)
+                lore.add(Text.literal("» Shift + right-click twice to delete").styled(t -> t.withColor(Formatting.RED).withItalic(false)));
             s.set(DataComponentTypes.LORE, new LoreComponent(lore));
             inv.setStack(i, s);
             map.put(i, w.name);
@@ -306,12 +313,29 @@ public final class PlayerWarps {
                 Text.literal("Player Warps (" + WARPS.size() + ")").formatted(Formatting.DARK_AQUA, Formatting.BOLD)));
     }
 
+    private static final Map<String, Long> CONFIRM = new HashMap<>();
+
     static class Handler extends GenericContainerScreenHandler {
         final Map<Integer, String> map; final int page;
         Handler(int sync, PlayerInventory pi, SimpleInventory inv, Map<Integer, String> map, int page) {
             super(ScreenHandlerType.GENERIC_9X6, sync, pi, inv, 6); this.map = map; this.page = page;
         }
         @Override public void onSlotClick(int slot, int button, SlotActionType type, PlayerEntity player) {
+            if (player instanceof ServerPlayerEntity sp && type == SlotActionType.QUICK_MOVE && button == 1 && map.containsKey(slot)) {
+                String name = map.get(slot);
+                long now = System.currentTimeMillis();
+                String key = sp.getUuidAsString() + ":" + name.toLowerCase(Locale.ROOT);
+                Long first = CONFIRM.get(key);
+                if (first != null && now - first < 5000) {
+                    CONFIRM.remove(key);
+                    if (delete(sp, name) == 1) { open(sp, page); return; }
+                } else {
+                    CONFIRM.put(key, now);
+                    msg(sp, "Shift + right-click " + name + " again within 5s to delete it.", Formatting.YELLOW);
+                }
+                this.syncState();
+                return;
+            }
             if (player instanceof ServerPlayerEntity sp && type == SlotActionType.PICKUP) {
                 if (map.containsKey(slot)) { sp.closeHandledScreen(); tp(sp, map.get(slot)); return; }
                 if (slot == 45 && page > 0) { open(sp, page - 1); return; }
