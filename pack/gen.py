@@ -258,6 +258,12 @@ RECOLORED = {
     "royal_blade": ("golden_sword", "sun", "minecraft:item/handheld"),
     "voidwalker_dagger": ("netherite_sword", "void", "minecraft:item/handheld"),
     "nether_king_axe": ("golden_axe", "bloodmoon", "minecraft:item/handheld"),
+    "dragon_blade": ("netherite_sword", "draco", "minecraft:item/handheld"),
+    "void_scythe": ("netherite_hoe", "void", "minecraft:item/handheld"),
+    "bone_reaper": ("netherite_hoe", "bone", "minecraft:item/handheld"),
+    "thunder_hammer": ("mace", "storm", "minecraft:item/handheld_mace"),
+    "shard_pickaxe": ("netherite_pickaxe", "crystal", "minecraft:item/handheld"),
+    "lava_axe": ("netherite_axe", "inferno", "minecraft:item/handheld"),
     "inferno_staff": ("golden_hoe", "inferno", "minecraft:item/handheld"),
     "frost_staff": ("golden_hoe", "frost", "minecraft:item/handheld"),
     "storm_staff": ("golden_hoe", "storm", "minecraft:item/handheld"),
@@ -431,7 +437,7 @@ def _h(*a):
 
 def hd_frames(base16, accent16, accent, aura=True, n=FRAMES, seed=0, outline=None):
     """base16: 16x16 RGBA, accent16: set of (x,y) accent pixels. Returns 32 x (32*n) strip."""
-    S = 32
+    S = max(32, base16.size[0])
     big = base16.resize((S, S), Image.NEAREST)
     filled = lambda x, y: 0 <= x < S and 0 <= y < S and big.getpixel((x, y))[3] > 0
     if base16.size[0] == S:
@@ -514,18 +520,20 @@ def shape_frames(name):
     """Unique 32x32 silhouette from shapes.py, coloured with the item's palette."""
     import shapes
     st = SETS[RECOLORED[name][1]]
-    pal = {"4": hx(st["stops"][3]), "3": hx(st["stops"][2]), "2": hx(st["stops"][1]), "A": hx(st["accent"]),
+    R = 64
+    pal = {"5": mix(hx(st["stops"][3]), (255, 255, 255, 255), 0.3), "4": hx(st["stops"][3]), "3": hx(st["stops"][2]),
+           "2": mix(hx(st["stops"][2]), hx(st["stops"][1]), 0.55), "1": hx(st["stops"][1]), "A": hx(st["accent"]),
            "g": mix(hx("#e0b040"), hx(st["stops"][3]), 0.35), "G": mix(hx("#8a6420"), hx(st["stops"][1]), 0.35),
            "h": mix(hx("#3a2416"), hx(st["stops"][0]), 0.4), "H": mix(hx("#6e4428"), hx(st["stops"][1]), 0.3)}
-    outline = bright(hx(st["stops"][0]), 0.55)
-    rows = shapes.grid(name)
-    base = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    outline = bright(hx(st["stops"][0]), 0.5)
+    rows = shapes.grid(name, R)
+    base = Image.new("RGBA", (R, R), (0, 0, 0, 0))
     acc = set()
-    for y in range(32):
-        for x in range(32):
+    for y in range(R):
+        for x in range(R):
             ch = rows[y][x]
             if ch == ".":
-                if any(0 <= x + dx < 32 and 0 <= y + dy < 32 and rows[y + dy][x + dx] != "."
+                if any(0 <= x + dx < R and 0 <= y + dy < R and rows[y + dy][x + dx] != "."
                        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                     base.putpixel((x, y), outline)
                 continue
@@ -552,6 +560,8 @@ def main():
                     "min_format": [75, 0], "max_format": [99, 0]}}, "pack.mcmeta")
 
     for name in SPRITES:
+        if name in RECOLORED:
+            continue  # drawn as a smooth shape below
         save(sprite_frames(name), f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         parent = "minecraft:item/handheld_mace" if name == "thunder_hammer" else "minecraft:item/handheld"
@@ -597,7 +607,7 @@ def main():
             item_def(name)
 
     # pack icon
-    icon = sprite_frames("void_scythe").crop((0, 0, 16, 16)).resize((128, 128), Image.NEAREST)
+    icon = shape_frames("void_scythe").crop((0, 0, 64, 64)).resize((128, 128), Image.NEAREST)
     bg = Image.new("RGBA", (128, 128), hx("#120a1c"))
     bg.alpha_composite(icon)
     bg.save(os.path.join(OUT, "pack.png"))

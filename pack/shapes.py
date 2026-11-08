@@ -22,12 +22,17 @@ def uv(x, y):
 
 
 def shade(v, c, w):
+    """5-step lighting across the part: light comes from the top-left edge."""
     k = (v - c) / max(w, 1e-6)
-    if k < -0.45:
+    if k < -0.7:
+        return "5"
+    if k < -0.25:
         return "4"
-    if k > 0.45:
+    if k < 0.25:
+        return "3"
+    if k < 0.7:
         return "2"
-    return "3"
+    return "1"
 
 
 # ------------------------------------------------------------------ parts
@@ -357,6 +362,13 @@ SHAPES = {
     "royal_blade": ("sword", dict(width=W(2.3, 1.7), guard=6.0, gcurve=-2.0, fuller=True, pommel=2.0)),
     "voidwalker_dagger": ("sword", dict(handle=8.5, width=W(2.0, 1.1), center=CURVE(-1.0), guard=3.2, tip=0.5, edge_glow=True)),
     "nether_king_axe": ("axe", dict(kind="crescent", back=True, spike=True)),
+    # the first legendary weapons
+    "dragon_blade": ("sword", dict(handle=5.0, width=W(2.9, 2.2), guard=7.0, gcurve=-2.2, fuller=True, edge_glow=True, tip=0.2, pommel=2.0)),
+    "void_scythe": ("scythe", dict(curve=1.5, double=True)),
+    "bone_reaper": ("scythe", dict(curve=1.1, wrap=False)),
+    "thunder_hammer": ("mace", dict(kind="hammer")),
+    "shard_pickaxe": ("pickaxe", dict(kind="crystal", pgem=True)),
+    "lava_axe": ("axe", dict(kind="double", spike=True, back=True)),
     # staffs + new weapons
     "inferno_staff": ("staff", dict(kind="flame")),
     "frost_staff": ("staff", dict(kind="crystal")),
@@ -379,15 +391,17 @@ SHAPES = {
 }
 
 
-def grid(name):
-    """32x32 list of strings with material chars ('.' = empty)."""
+def grid(name, res=64):
+    """res x res list of strings with material chars ('.' = empty). Shapes are defined on a 32 grid
+    and sampled at a higher resolution for smooth, detailed textures."""
     arch, params = SHAPES[name]
     f = ARCH[arch](params)
+    k = S / res
     rows = []
-    for y in range(S):
+    for y in range(res):
         row = ""
-        for x in range(S):
-            u, v = uv(x, y)
+        for x in range(res):
+            u, v = uv((x + 0.5) * k - 0.5, (y + 0.5) * k - 0.5)
             row += f(u, v) or "."
         rows.append(row)
     return rows
