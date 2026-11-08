@@ -316,7 +316,7 @@ public final class Quests {
         clock.set(DataComponentTypes.LORE, new LoreComponent(List.of(
                 Text.literal("Finish all " + COUNT + " for a " + Money.fmt(ALL_DONE_BONUS) + " bonus!").styled(st -> st.withColor(Formatting.LIGHT_PURPLE).withItalic(false)))));
         inv.setStack(22, clock);
-        if (p.currentScreenHandler instanceof Handler h) { h.inv.setHeldStacks(inv.getHeldStacks()); h.syncState(); return; }
+        if (p.currentScreenHandler instanceof Handler h) { for (int i = 0; i < 27; i++) h.inv.setStack(i, inv.getStack(i)); h.syncState(); return; }
         p.openHandledScreen(new SimpleNamedScreenHandlerFactory((sync, pi, pl) -> new Handler(sync, pi, inv),
                 Text.literal("Daily Quests").formatted(Formatting.DARK_GREEN, Formatting.BOLD)));
     }
