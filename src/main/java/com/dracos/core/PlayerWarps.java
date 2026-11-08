@@ -198,6 +198,11 @@ public final class PlayerWarps {
         if (old != null && !old.owner.equals(p.getUuidAsString())) { msg(p, "That warp name is taken.", Formatting.RED); return 0; }
         if (old == null && owned(p) >= limit(p)) { msg(p, "You can have " + limit(p) + " warp(s). Better ranks get more: /ranks", Formatting.RED); return 0; }
         if (Combat.inCombat(p)) { msg(p, "Not in combat!", Formatting.RED); return 0; }
+        if (Ranks.of(p) != Ranks.Rank.OWNER) {
+            if (Hub.inHub(p)) { msg(p, "You can't make a warp at spawn.", Formatting.RED); return 0; }
+            Warp other = protector(p, p.getEntityWorld(), p.getX(), p.getZ());
+            if (other != null) { msg(p, "This is inside " + other.ownerName + "'s warp area. Move at least " + PROTECT + " blocks away.", Formatting.RED); return 0; }
+        }
         if (old == null) {
             if (!Money.has(p, CREATE_COST)) { msg(p, "A warp costs " + Money.fmt(CREATE_COST) + ".", Formatting.RED); return 0; }
             Money.add(p, -CREATE_COST);
