@@ -157,11 +157,19 @@ public final class Hub {
             return ActionResult.PASS;
         });
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-            if (entity instanceof HostileEntity && CFG.radius > 0 && inHub(entity)) TO_REMOVE.add(entity);
+            if (entity instanceof net.minecraft.entity.mob.Monster && CFG.radius > 0 && inHub(entity)) TO_REMOVE.add(entity);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!TO_REMOVE.isEmpty()) { for (Entity e : TO_REMOVE) if (!e.isRemoved()) e.discard(); TO_REMOVE.clear(); }
             if (CFG.portal != null && server.getTicks() % 5 == 0) portalTick(server);
+            // no monsters at spawn or in the arena: also catch ones that walk / fly / get pushed in
+            if (CFG.radius > 0 && server.getTicks() % 40 == 13) {
+                ServerWorld hw = world(server);
+                net.minecraft.util.math.Box area = new net.minecraft.util.math.Box(CFG.cx - CFG.radius, hw.getBottomY(), CFG.cz - CFG.radius,
+                        CFG.cx + CFG.radius + 1, hw.getTopYInclusive() + 1, CFG.cz + CFG.radius + 1);
+                for (var m : hw.getEntitiesByClass(net.minecraft.entity.mob.MobEntity.class, area,
+                        e -> e instanceof net.minecraft.entity.mob.Monster && !e.getCommandTags().contains("dracos_hub"))) m.discard();
+            }
             if (server.getTicks() % 20 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 if (!inAfk(p)) { AFK_TIME.remove(p.getUuid()); continue; }
