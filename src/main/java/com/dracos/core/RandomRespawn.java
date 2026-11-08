@@ -67,10 +67,15 @@ public final class RandomRespawn {
         var server = world.getServer();
         BlockPos spawn = world.getSpawnPoint().getPos();
         ThreadLocalRandom r = ThreadLocalRandom.current();
-        double angle = r.nextDouble() * Math.PI * 2;
-        int max = (int) Math.max(RTP_MIN + 1000, Math.min(Integer.MAX_VALUE - 1, world.getWorldBorder().getSize() / 2 - 1_000));
-        int dist = r.nextInt(RTP_MIN, max + 1);
-        int x = spawn.getX() + (int) (Math.cos(angle) * dist), z = spawn.getZ() + (int) (Math.sin(angle) * dist);
+        // plain random spot anywhere inside the world border (every place equally likely)
+        var wb = world.getWorldBorder();
+        int half = (int) Math.max(RTP_MIN + 1000, Math.min(Integer.MAX_VALUE / 2 - 1, wb.getSize() / 2 - 1_000));
+        int cx = (int) wb.getCenterX(), cz = (int) wb.getCenterZ();
+        int x, z;
+        do {
+            x = cx + r.nextInt(-half, half + 1);
+            z = cz + r.nextInt(-half, half + 1);
+        } while (Math.abs(x - spawn.getX()) < RTP_MIN && Math.abs(z - spawn.getZ()) < RTP_MIN);
         if (!world.getWorldBorder().contains(x, z) || badBiome(world, x, z)) {
             if (tries < 40) { attempt(p, world, tries + 1); } else retry(p, world, tries);
             return;
