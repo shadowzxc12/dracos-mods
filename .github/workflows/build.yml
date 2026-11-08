@@ -82,6 +82,14 @@ jobs:
                   json.dump({"model": {"type": "minecraft:model", "model": f"{ns}:item/{rel}"}}, open(out, 'w'))
           PY
           python3 "$GITHUB_WORKSPACE/pack/backpacks.py" /tmp/pack
+          # server-side content mods (weapons/armor) that ship their own textures: merge them in
+          mkdir -p /tmp/content && cd /tmp/content
+          curl -sSL -o melee.jar "https://cdn.modrinth.com/data/XZKVuqU3/versions/TWq0r6Ke/melee-weapons-extended-1.4.0.jar"
+          curl -sSL -o weird.jar "https://cdn.modrinth.com/data/Jr3nq9JV/versions/UfdDmxG7/Weird%20and%20strange%20weapon%20-%201.2.0.jar"
+          curl -sSL -o enderite.jar "https://cdn.modrinth.com/data/2unuSMrG/versions/8RZSfm1E/Mod%28V.41%29Enderite_Overhaul.jar"
+          curl -sSL -o nasir.jar "https://cdn.modrinth.com/data/69OxSJNR/versions/lBXK16HT/nasirs-items-and-bosses-pack-1.1.jar"
+          python3 "$GITHUB_WORKSPACE/pack/merge_mods.py" /tmp/pack melee.jar weird.jar enderite.jar nasir.jar
+          cd /tmp/modjars
           ls /tmp/pack/assets
           cd -
           cd /tmp/pack && find . -exec touch -t 202601010000 {} + && zip -qrX9 /tmp/dracos-pack.zip pack.mcmeta pack.png assets
