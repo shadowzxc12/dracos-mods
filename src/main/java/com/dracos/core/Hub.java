@@ -97,6 +97,8 @@ public final class Hub {
         return Math.abs(p.getX() - CFG.cx) <= CFG.radius && Math.abs(p.getZ() - CFG.cz) <= CFG.radius;
     }
 
+    public static boolean inHubPublic(ServerWorld w, BlockPos p) { return inHub(w, p); }
+
     static boolean inAfk(ServerPlayerEntity p) {
         int[] a = CFG.afk;
         if (a == null || !inHub(p)) return false;
@@ -106,7 +108,7 @@ public final class Hub {
     }
 
     static boolean bypass(PlayerEntity p) {
-        return p.isCreative() || (p instanceof ServerPlayerEntity sp && Ranks.of(sp) == Ranks.Rank.OWNER);
+        return p.isCreative();   // even the owner can only change spawn in creative mode
     }
 
     public static ServerWorld world(MinecraftServer server) {
@@ -224,6 +226,7 @@ public final class Hub {
         d.register(CommandManager.literal("buildspawn")
                 .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                 .executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; })
+                .then(CommandManager.literal("border").executes(ctx -> { border(world(ctx.getSource().getServer())); ctx.getSource().sendFeedback(() -> Text.literal("Invisible border placed around spawn."), false); return 1; }))
                 .then(CommandManager.literal("rebuild").executes(ctx -> {
                     ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
                     if (CFG.radius <= 0) { p.sendMessage(Text.literal("No spawn yet - use /buildspawn").formatted(Formatting.RED), false); return 0; }
@@ -455,12 +458,33 @@ public final class Hub {
         CFG.radius = ax + AR + 3 - cx;
         save();
         labels(server);
+        border(w);
         Leaderboards.refresh(server);
         // world spawn + Essential Commands /spawn
         cmd(server, "execute in " + CFG.world + " run setworldspawn " + cx + " " + cy + " " + (cz + 6));
         p.teleport(w, cx + 0.5, cy, cz + 6.5, java.util.Set.of(), 180f, 0f, true);
         try { server.getCommandManager().parseAndExecute(p.getCommandSource(), "setspawn"); } catch (Throwable ignored) {}
         p.sendMessage(Text.literal("Hub built! Crates north, AFK zone south, leaderboards west, duel arena east.").formatted(Formatting.GREEN), false);
+    }
+
+    /** Invisible barrier walls around the plaza, the path and the arena so nobody falls off spawn. */
+    static void border(ServerWorld w) {
+        if (CFG.radius <= 0) return;
+        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz, R = 30, ax = cx + 48, AR = 11;
+        BlockState b = Blocks.BARRIER.getDefaultState();
+        for (int i = -R - 1; i <= R + 1; i++) {
+            for (int y = cy; y <= cy + 4; y++) {
+                set(w, cx + i, y, cz - R - 1, b);
+                set(w, cx + i, y, cz + R + 1, b);
+                set(w, cx - R - 1, y, cz + i, b);
+                if (Math.abs(i) > 2) set(w, cx + R + 1, y, cz + i, b);        // east side stays open to the arena path
+            }
+        }
+        for (int x = cx + R + 1; x <= ax - AR - 1; x++)
+            for (int y = cy; y <= cy + 4; y++) { set(w, x, y, cz - 3, b); set(w, x, y, cz + 3, b); }
+        // arena: walls exist; close the top so you can't climb out
+        for (int x = ax - AR - 1; x <= ax + AR + 1; x++) for (int z = cz - AR - 1; z <= cz + AR + 1; z++)
+            if (Math.abs(x - ax) == AR + 1 || Math.abs(z - cz) == AR + 1) for (int y = cy + 5; y <= cy + 8; y++) set(w, x, y, z, b);
     }
 
     /** Removes the hub that was built last (blocks, holograms, NPCs) and forgets it. */
