@@ -69,14 +69,14 @@ def blade(u, v, u0, u1, width, center=lambda t: 0.0, fuller=False, serr=0, wave=
     w = width(t) * 2.1
     if t > 1 - tip:                                        # taper to a point
         w *= max(0.0, (1 - t) / tip)
-    c = center(t) + (wave * math.sin(t * math.pi * 5) if wave else 0.0)
+    c = abs(center(t)) + (wave * math.sin(t * math.pi * 5) if wave else 0.0)   # curves bow back (spine side, +v)
     if serr and v > c and int(u * 1.2) % serr == 0:        # notches on one edge
         w *= 0.55
     if abs(v - c) > w:
         return None
     if fuller and abs(v - c) < max(0.55, w * 0.18) and t < 0.85:
         return "A"
-    if edge_glow and (v - c) > w - 0.9:
+    if edge_glow and (c - v) > w - 0.9:                    # cutting edge faces forward (-v) when held
         return "A"
     return shade(v, c, w)
 
@@ -112,16 +112,16 @@ def katana(p):
     def f(u, v):
         if b0 <= u <= b1:
             t = (u - b0) / (b1 - b0)
-            c = -sori * math.sin(t * math.pi * 0.5) ** 2          # curve grows towards the tip
-            w = 1.05 - 0.12 * t
-            lo, hi = c - w, c + w                                   # -v = spine (back), +v = cutting edge
+            c = sori * math.sin(t * math.pi * 0.5) ** 2           # tip curves back towards the spine
+            w = 1.35 - 0.15 * t
+            lo, hi = c - w, c + w                                   # -v = cutting edge (forward), +v = spine
             if t > 0.86:                                            # kissaki: the edge sweeps up to the point
                 k = (t - 0.86) / 0.14
-                hi = c + w - 2 * w * k ** 0.8
+                lo = c - w + 2 * w * k ** 0.8
             if lo <= v <= hi:
-                if v > hi - 0.5:
-                    return "A"                                      # glowing hamon / edge
-                if v < lo + 0.45:
+                if v < lo + 0.5:
+                    return "A"                                      # glowing edge
+                if v > hi - 0.45:
                     return "2"                                      # spine
                 return "4" if v < c else "3"
         if hl + 0.3 <= u <= b0 and abs(v) <= 1.5:
@@ -195,7 +195,7 @@ def scythe(p):
                 inner = -1.6 - 10.5 * math.sin(k * math.pi * 0.9) * p.get("curve", 1.0)
                 outer = inner - (4.2 * (1 - k) + 0.9)
                 if outer < v < inner:
-                    if v < outer + 1.1:
+                    if v > inner - 1.1:                             # cutting edge on the inside of the curve
                         return "A"
                     return shade(v, (inner + outer) / 2, (inner - outer) / 2)
         if p.get("double") and top - 9 <= u <= top + 1 and 1.2 < v < 1.2 + 5.5 * (top + 1 - u) / 10:
