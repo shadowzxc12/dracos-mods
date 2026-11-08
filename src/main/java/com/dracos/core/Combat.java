@@ -32,6 +32,10 @@ public final class Combat {
         return until != null && until > System.currentTimeMillis();
     }
 
+    public static void clear(ServerPlayerEntity p) {
+        TAGGED.remove(p.getUuid());
+    }
+
     private static void tag(ServerPlayerEntity p) {
         boolean was = inCombat(p);
         TAGGED.put(p.getUuid(), System.currentTimeMillis() + COMBAT_SECONDS * 1000L);

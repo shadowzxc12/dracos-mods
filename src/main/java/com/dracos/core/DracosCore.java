@@ -45,6 +45,12 @@ public class DracosCore implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        // hub + duels first: their damage rules must run before combat tagging
+        Hub.register();
+        Duels.register();
+        Crates.register();
+        Trade.register();
+        Leaderboards.register();
         Abilities.register();
         Abilities.registerExtras();
         Effects.register();
@@ -90,6 +96,8 @@ public class DracosCore implements ModInitializer {
             Skills.load();
             PlayerWarps.load();
             Bank.load();
+            Hub.load();
+            Leaderboards.load();
             takeOverSettings(server);
         });
 
@@ -182,6 +190,10 @@ public class DracosCore implements ModInitializer {
             Gamble.commands(dispatcher);
             PlayerWarps.commands(dispatcher);
             Bank.commands(dispatcher);
+            Hub.commands(dispatcher);
+            Crates.commands(dispatcher);
+            Duels.commands(dispatcher);
+            Trade.commands(dispatcher);
             dispatcher.register(CommandManager.literal("skills").executes(ctx -> { Skills.open(ctx.getSource().getPlayerOrThrow()); return 1; }));
             dispatcher.register(CommandManager.literal("autosell").executes(ctx -> {
                 AutoSell.open(ctx.getSource().getPlayerOrThrow(), 0);

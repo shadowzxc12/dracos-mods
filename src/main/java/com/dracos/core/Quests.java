@@ -237,8 +237,9 @@ public final class Quests {
         for (boolean b : d.done) all &= b;
         if (all) {
             Money.add(p, ALL_DONE_BONUS);
+            Crates.giveKey(p, "rare", 1);
             p.sendMessage(Text.literal("★ All daily quests done! Bonus ").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD)
-                    .append(Text.literal("+" + Money.fmt(ALL_DONE_BONUS)).formatted(Formatting.GOLD, Formatting.BOLD)), false);
+                    .append(Text.literal("+" + Money.fmt(ALL_DONE_BONUS) + " + Rare Crate Key").formatted(Formatting.GOLD, Formatting.BOLD)), false);
         }
     }
 

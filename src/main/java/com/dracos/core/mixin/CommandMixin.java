@@ -23,6 +23,11 @@ public abstract class CommandMixin {
             ci.cancel();
             return;
         }
+        if (com.dracos.core.Duels.inDuel(player) && !packet.command().trim().toLowerCase().startsWith("duel")) {
+            player.sendMessage(Text.literal("You can't use commands during a duel!").formatted(Formatting.RED), false);
+            ci.cancel();
+            return;
+        }
         String c = packet.command().trim().toLowerCase();
         if (c.equals("menu")) com.dracos.core.DracosCore.LOGGER.info("[Settings] {} sent /{}", player.getName().getString(), c);
         if (c.equals("menu") || c.equals("dracos_core:menu")) {
