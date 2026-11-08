@@ -103,38 +103,50 @@ def sword(p):
 
 
 def axe(p):
-    top = L - 2.0
-    def head(u, v):
-        kind = p.get("kind", "crescent")
-        hu0, hu1 = top - p.get("len", 13.0), top
-        if not (hu0 - 1 <= u <= hu1 + 1):
+    """A real axe: shaft along the diagonal, the head sits at the top and sticks out sideways
+    (to the upper-left like vanilla), narrow at the eye and flaring out to a curved cutting edge."""
+    top = L - 2.5
+    kind = p.get("kind", "crescent")
+    big = p.get("len", 13.0) / 13.0                       # executioner axe etc. get a bigger head
+    R = 10.5 * big                                        # how far the bit sticks out
+    uc = top - 4.2 * big                                  # centre of the head along the shaft
+
+    def bit(u, v, side):
+        d = -v * side                                     # distance out from the shaft on this side
+        if d < 0.8 or d > R + 0.6:
             return None
-        t = (u - hu0) / (hu1 - hu0)
-        if kind == "crescent":            # one big curved bit on the +v side
-            r = 4.0 + 6.5 * math.sin(t * math.pi)
-            if 0 <= t <= 1 and 0.9 < v < r:
-                return "A" if v > r - 1.1 else shade(v, r / 2, r / 2)
-        if kind == "double":              # bits on both sides
-            r = 3.6 + 5.2 * math.sin(t * math.pi)
-            if 0 <= t <= 1 and 0.9 < abs(v) < r:
-                return "A" if abs(v) > r - 1.1 else shade(abs(v), r / 2, r / 2)
-        if kind == "cleaver":             # square heavy blade
-            if 0.1 <= t <= 1 and 0.9 < v < 9.0:
-                return "A" if v > 7.9 else shade(v, 4.8, 4.2)
-        if kind == "bearded":             # long lower beard
-            r = 3.5 + 7.0 * (t ** 1.4)
-            if 0 <= t <= 1 and 0.9 < v < r:
-                return "A" if v > r - 1.1 else shade(v, r / 2, r / 2)
-        return None
+        k = d / R
+        if kind == "cleaver":
+            hw, c = 4.6 * big, uc - 0.6
+        elif kind == "bearded":
+            hw, c = (2.2 + 5.0 * k ** 1.4) * big, uc - 3.2 * k ** 2 * big
+        else:                                             # crescent / double: flaring fan
+            hw, c = (1.9 + 5.2 * k ** 1.4) * big, uc
+        du = u - c
+        if abs(du) > hw:
+            return None
+        edge = R - (0.0 if kind == "cleaver" else 2.2 * (du / hw) ** 2)   # convex cutting edge
+        if d > edge:
+            return None
+        if d > edge - 1.15:
+            return "A"
+        if abs(du) > hw - 0.9:
+            return "3" if du > 0 else "2"                 # rim along the top/bottom of the bit
+        return "4" if du > hw * 0.25 else "3"
+
     def f(u, v):
-        h = head(u, v)
-        if h:
-            return h
-        if p.get("spike") and top - 1 <= u <= top + 2 and abs(v) < (top + 2 - u) * 0.8:
+        for side in ((1, -1) if kind == "double" else (1,)):
+            h = bit(u, v, side)
+            if h:
+                return h
+        # eye / socket wrapping the shaft
+        if uc - 2.6 * big <= u <= uc + 2.6 * big and abs(v) <= 2.0:
+            return "G" if abs(v) > 1.2 else "g"
+        if p.get("spike") and top - 0.5 <= u <= top + 2.4 and abs(v) < (top + 2.4 - u) * 0.6:
             return "3"
-        if p.get("back") and top - 9 <= u <= top - 3 and -5.5 < v < -0.9:
-            return "A" if v < -4.6 else "2"
-        return handle(u, v, 1.2, top, w=1.3, wrap=p.get("wrap", True)) or pommel(u, v, 1.4, 1.7, gem=p.get("pgem", False))
+        if p.get("back") and kind != "double" and abs(u - uc) <= 1.5 - (v - 1.8) * 0.25 and 1.8 < v < 5.0:
+            return "A" if v > 4.0 else "2"                # back spike
+        return handle(u, v, 1.2, top, w=1.25, wrap=p.get("wrap", True)) or pommel(u, v, 1.4, 1.7, gem=p.get("pgem", False))
     return f
 
 
@@ -280,14 +292,28 @@ def pickaxe(p):
 
 
 def shovel(p):
-    top = L - 10
+    """Real shovel: long shaft, collar, then a flat blade slightly wider than tall with a rounded
+    (spade) or pointed tip and a ridge down the middle."""
+    top = L - 12.0
+    kind = p.get("kind", "spade")
+
     def f(u, v):
-        if top <= u <= top + 10:
-            t = (u - top) / 10
-            w = 5.2 * math.sin(math.pi * (0.25 + 0.75 * t)) if p.get("kind", "spade") == "spade" else 4.8 * (1 - t) + 0.8
+        if top <= u <= top + 12.0:
+            t = (u - top) / 12.0
+            w = 4.4 * min(1.0, 0.5 + t * 2.5)                       # quick flare from the collar
+            if kind == "spade" and t > 0.62:
+                w *= math.sqrt(max(0.0, 1 - ((t - 0.62) / 0.38) ** 2))    # rounded end
+            elif kind != "spade" and t > 0.45:
+                w *= max(0.0, (1 - t) / 0.55)                             # pointed end
             if abs(v) <= w:
-                return "A" if t > 0.8 or abs(v) > w - 0.6 else shade(v, 0, w)
-        return handle(u, v, 1.2, top, w=1.3) or guard(u, v, top - 1.8, 3.4, thick=1.6)
+                if abs(v) > w - 0.9 or t > 0.93:
+                    return "A"
+                if abs(v) < 0.45 and t < 0.7:
+                    return "2"                                            # centre ridge
+                return shade(v, 0, w)
+        if top - 1.8 <= u <= top and abs(v) <= 1.9:
+            return "G" if u > top - 0.9 else "g"                          # collar
+        return handle(u, v, 1.2, top - 1.8, w=1.2) or pommel(u, v, 1.4, 1.7, gem=True)
     return f
 
 

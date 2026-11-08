@@ -87,7 +87,10 @@ jobs:
           curl -sSL -o melee.jar "https://cdn.modrinth.com/data/XZKVuqU3/versions/TWq0r6Ke/melee-weapons-extended-1.4.0.jar"
           curl -sSL -o weird.jar "https://cdn.modrinth.com/data/Jr3nq9JV/versions/UfdDmxG7/Weird%20and%20strange%20weapon%20-%201.2.0.jar"
           curl -sSL -o nasir.jar "https://cdn.modrinth.com/data/69OxSJNR/versions/lBXK16HT/nasirs-items-and-bosses-pack-1.1.jar"
-          python3 "$GITHUB_WORKSPACE/pack/merge_mods.py" /tmp/pack melee.jar weird.jar nasir.jar
+          curl -sSL -o vplus.jar "https://cdn.modrinth.com/data/9eokjKUM/versions/kA4OTxAx/vanilla-plus-data-pack-25.0.jar"
+          curl -sSL -o bosssword.jar "https://cdn.modrinth.com/data/PfHjA6mc/versions/ULJw4BHO/just-boss-sword-1.3.1.jar"
+          curl -sSL -o scythe.jar "https://cdn.modrinth.com/data/ehM70vpR/versions/PuITRVgf/just-scythe-2.0.0%2B1.21.5.jar"
+          python3 "$GITHUB_WORKSPACE/pack/merge_mods.py" /tmp/pack melee.jar weird.jar nasir.jar vplus.jar bosssword.jar scythe.jar
           cd /tmp/modjars
           ls /tmp/pack/assets
           cd -
