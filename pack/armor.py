@@ -189,8 +189,8 @@ def icon(set_name, piece, st):
     st = pal(set_name, st)
     c = Canvas()
     PIECES[piece](c, set_name)
-    s0 = st["stops"]
-    trim = [s0[0], s0[0], s0[1], s0[2], s0[3]]          # dark metal trims instead of gold
+    s0 = st.get("dark", st["stops"])
+    trim = [s0[0], s0[1], s0[2], s0[3], s0[3]]          # set-coloured trims
     return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim), st, seed=len(set_name + piece), n_frames=12)
 
 
@@ -234,8 +234,15 @@ PAL = {
 }
 
 
+STEEL4 = ["#262b34", "#8e97a6", "#d6dce5", "#ffffff"]
+
+
 def pal(set_name, st):
-    return PAL.get(set_name, st)
+    """OP-armor look: bright silver plates lightly tinted with the set colour; the set colour itself
+    goes into the dark trims and the glowing details."""
+    base = PAL.get(set_name, st)
+    stops = [hq.mixhex(STEEL4[i], base["stops"][min(3, i + 1)], 0.28 if i else 0.55) for i in range(4)]
+    return dict(stops=stops, dark=base["stops"], accent=base["accent"], spark=base.get("spark", "#ffffff"), tint=0.18)
 
 
 def paint_face(set_name, layer, part, kind, w, h, rnd):
@@ -374,7 +381,8 @@ def light(mat, ht, st, along):
     col[m] = hq.ramp([stops[0], stops[1], stops[2], stops[3]], t[m])
     col[m] += (spec[m, None] * (180 + 0.3 * rgb(stops[3])))
     d = (mat == MD) | (mat == MG)
-    col[d] = hq.ramp([stops[0], stops[0], stops[1], stops[2]], t[d]) + spec[d, None] * 120
+    dk = st.get("dark", stops)
+    col[d] = hq.ramp([dk[0], dk[1], dk[2], dk[3]], t[d] * 0.85) + spec[d, None] * 120
     a = mat == MA
     # glow: bright core, coloured edges; also tint neighbouring metal (light bleed)
     col[a] = acc * 0.95 + (255 - acc) * 0.45

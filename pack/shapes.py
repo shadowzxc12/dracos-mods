@@ -66,7 +66,7 @@ def blade(u, v, u0, u1, width, center=lambda t: 0.0, fuller=False, serr=0, wave=
     if not (u0 <= u <= u1):
         return None
     t = (u - u0) / (u1 - u0)
-    w = width(t) * 1.75
+    w = width(t) * 2.1
     if t > 1 - tip:                                        # taper to a point
         w *= max(0.0, (1 - t) / tip)
     c = center(t) + (wave * math.sin(t * math.pi * 5) if wave else 0.0)
@@ -434,7 +434,7 @@ SHAPES = {
 }
 
 
-ZOOM = 1.2   # draw a little smaller than the canvas so big heads never get cut off
+ZOOM = 1.15   # draw a little smaller than the canvas so big heads never get cut off
 
 
 def grid(name, res=64):

@@ -103,10 +103,10 @@ def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None, out_res=None, want_sh
     stops = st["stops"]
     # "clean" modded-weapon look: real steel with a tint of the set colour (not fully coloured plastic)
     STEEL = ["#15181e", "#3c434f", "#7d8796", "#c9d0da", "#ffffff"]
-    tint_k = st.get("tint", 0.58)
+    tint_k = st.get("tint", 0.66)
     metal_ramp = [mixhex(STEEL[i], [stops[0], stops[1], stops[2], stops[3], "#ffffff"][i], tint_k) for i in range(5)]
     col = np.zeros((n, n, 3))
-    t = 0.08 + diff * 0.78 + along * 0.08
+    t = 0.16 + diff * 0.76 + along * 0.08
     m = g == METAL
     col[m] = ramp(metal_ramp, t[m] * 0.92)
     col[m] += spec[m, None] * 255 * 0.55
