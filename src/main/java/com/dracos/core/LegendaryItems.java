@@ -412,7 +412,8 @@ public final class LegendaryItems {
         if (equip != null) {
             JsonObject json = new JsonObject();
             json.addProperty("slot", equip.slot().asString());
-            json.addProperty("asset_id", DracosCore.MOD_ID + ":" + equip.asset());
+            // helmets have no flat armor layer: the 3D helmet model from the server pack is worn instead
+            if (equip.slot() != EquipmentSlot.HEAD) json.addProperty("asset_id", DracosCore.MOD_ID + ":" + equip.asset());
             json.addProperty("equip_sound", "minecraft:item.armor.equip_netherite");
             EquippableComponent.CODEC.parse(lookup.getOps(JsonOps.INSTANCE), json).result()
                     .ifPresentOrElse(c -> stack.set(DataComponentTypes.EQUIPPABLE, c),
@@ -424,5 +425,19 @@ public final class LegendaryItems {
             reg.getOptional(en.key()).ifPresent(entry -> stack.addEnchantment(entry, en.level()));
         }
         return stack;
+    }
+
+    /** Older legendary helmets still carry the flat armor layer; swap it for the 3D model. */
+    static void fixHelmet(ItemStack stack, RegistryWrapper.WrapperLookup lookup) {
+        if (stack.isEmpty()) return;
+        var eq = stack.get(DataComponentTypes.EQUIPPABLE);
+        if (eq == null || eq.slot() != EquipmentSlot.HEAD || eq.assetId().isEmpty()) return;
+        String id = idOf(stack);
+        if (id == null || !id.endsWith("_helmet")) return;
+        JsonObject json = new JsonObject();
+        json.addProperty("slot", "head");
+        json.addProperty("equip_sound", "minecraft:item.armor.equip_netherite");
+        EquippableComponent.CODEC.parse(lookup.getOps(JsonOps.INSTANCE), json).result()
+                .ifPresent(c -> stack.set(DataComponentTypes.EQUIPPABLE, c));
     }
 }

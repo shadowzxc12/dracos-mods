@@ -585,7 +585,15 @@ def main():
             save(armor.icon(s, piece, SETS[s]), f"assets/{NS}/textures/item/{name}.png")
             wjson(anim_meta(3), f"assets/{NS}/textures/item/{name}.png.mcmeta")
             item_model(name, "minecraft:item/generated")
-            item_def(name)
+            if piece == "helmet":
+                # 3D helmet when worn, flat icon everywhere else
+                save(armor.helmet_texture(s, SETS[s]), f"assets/{NS}/textures/item/{name}_3d.png")
+                wjson(armor.helmet_model(s, f"{NS}:item/{name}_3d"), f"assets/{NS}/models/item/{name}_3d.json")
+                item_def(name, {"type": "minecraft:select", "property": "minecraft:display_context",
+                                "cases": [{"when": "head", "model": {"type": "minecraft:model", "model": f"{NS}:item/{name}_3d"}}],
+                                "fallback": {"type": "minecraft:model", "model": f"{NS}:item/{name}"}})
+            else:
+                item_def(name)
 
     # pack icon
     icon = shape_frames("void_scythe").crop((0, 0, 64, 64)).resize((128, 128), Image.NEAREST)

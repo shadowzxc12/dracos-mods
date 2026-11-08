@@ -315,6 +315,9 @@ public final class Legendary3 {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTicks() % 20 != 0) return;
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+                var inv = p.getInventory();
+                for (int i = 0; i < inv.size(); i++) LegendaryItems.fixHelmet(inv.getStack(i), p.getRegistryManager());
+                LegendaryItems.fixHelmet(p.getEquippedStack(EquipmentSlot.HEAD), p.getRegistryManager());
                 for (ArmorSet a : ARMOR) if (fullSet(p, a)) for (Fx f : a.effects())
                     p.addStatusEffect(new StatusEffectInstance(f.effect(), 50, f.amp(), true, false, true));
                 Spec s = held(p);
