@@ -88,6 +88,10 @@ public final class Trade {
             for (Session s : new ArrayList<>(ACTIVE))
                 if (s.a.equals(h.player.getUuid()) || s.b.equals(h.player.getUuid())) s.cancel(server, h.player);
         });
+        // server stopping/restarting mid-trade: give everyone their own items back so nothing is lost
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            for (Session s : new ArrayList<>(ACTIVE)) s.cancel(server);
+        });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (ACTIVE.isEmpty()) return;
             for (Session s : new ArrayList<>(ACTIVE)) s.tick(server);
