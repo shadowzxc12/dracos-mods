@@ -67,11 +67,7 @@ public final class PlayerWarps {
         String wid = w.getRegistryKey().getValue().toString();
         for (Warp wp : WARPS.values()) {
             if (!wid.equals(wp.world) || Math.abs(wp.x - x) > PROTECT || Math.abs(wp.z - z) > PROTECT) continue;
-            if (wp.owner.equals(actor.getUuidAsString())) return null;
-            try {
-                var mine = Clans.of(actor.getUuid());
-                if (mine != null && mine == Clans.of(java.util.UUID.fromString(wp.owner))) return null;
-            } catch (Exception ignored) {}
+            if (wp.owner.equals(actor.getUuidAsString())) continue;   // only the warp's creator may change things
             return wp;
         }
         return null;
