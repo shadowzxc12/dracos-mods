@@ -152,6 +152,9 @@ public final class Duels {
             Money.addUuid(winner, pot - pot * 5 / 100);
         }
         String wn = winner == null ? null : (winner.equals(d.a) ? name(pa, "?") : name(pb, "?"));
+        // a duel win counts as a player kill (kills leaderboard + /stats)
+        ServerPlayerEntity wp = winner == null ? null : (winner.equals(d.a) ? pa : pb);
+        if (wp != null) wp.incrementStat(net.minecraft.stat.Stats.PLAYER_KILLS);
         for (ServerPlayerEntity x : new ServerPlayerEntity[]{pa, pb}) {
             if (x == null) continue;
             prep(x);
