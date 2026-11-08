@@ -71,11 +71,12 @@ public final class RandomRespawn {
         var wb = world.getWorldBorder();
         int half = (int) Math.max(RTP_MIN + 1000, Math.min(Integer.MAX_VALUE / 2 - 1, wb.getSize() / 2 - 1_000));
         int cx = (int) wb.getCenterX(), cz = (int) wb.getCenterZ();
-        int x, z;
+        int rx, rz;
         do {
-            x = cx + r.nextInt(-half, half + 1);
-            z = cz + r.nextInt(-half, half + 1);
-        } while (Math.abs(x - spawn.getX()) < RTP_MIN && Math.abs(z - spawn.getZ()) < RTP_MIN);
+            rx = cx + r.nextInt(-half, half + 1);
+            rz = cz + r.nextInt(-half, half + 1);
+        } while (Math.abs(rx - spawn.getX()) < RTP_MIN && Math.abs(rz - spawn.getZ()) < RTP_MIN);
+        final int x = rx, z = rz;
         if (!world.getWorldBorder().contains(x, z) || badBiome(world, x, z)) {
             if (tries < 40) { attempt(p, world, tries + 1); } else retry(p, world, tries);
             return;
