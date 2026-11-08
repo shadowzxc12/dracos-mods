@@ -354,10 +354,10 @@ public final class LegendaryItems {
     static ItemStack armorPiece(Item base, String id, String name, int color, RegistryWrapper.WrapperLookup lookup,
                                         List<String> lore, String asset, EquipmentSlot eq, AttributeModifierSlot slot,
                                         double armor, double toughness, double hearts, Ench... extra) {
-        Ench[] ench = new Ench[2 + extra.length];
+        // no Blast Protection: 4 pieces of it cancel ALL explosion knockback, so wind charges stopped working
+        Ench[] ench = new Ench[1 + extra.length];
         ench[0] = e(Enchantments.PROTECTION, 6);
-        ench[1] = e(Enchantments.BLAST_PROTECTION, 4);
-        System.arraycopy(extra, 0, ench, 2, extra.length);
+        System.arraycopy(extra, 0, ench, 1, extra.length);
         String s = slot.asString();
         var b = AttributeModifiersComponent.builder()
                 .add(EntityAttributes.ARMOR, mod("armor_" + s, armor), slot)
@@ -439,5 +439,13 @@ public final class LegendaryItems {
         json.addProperty("equip_sound", "minecraft:item.armor.equip_netherite");
         EquippableComponent.CODEC.parse(lookup.getOps(JsonOps.INSTANCE), json).result()
                 .ifPresent(c -> stack.set(DataComponentTypes.EQUIPPABLE, c));
+    }
+
+    /** Removes Blast Protection from legendary armor made before the wind charge fix. */
+    static void fixBlastProt(ItemStack stack) {
+        if (stack.isEmpty() || idOf(stack) == null) return;
+        var ench = stack.get(DataComponentTypes.ENCHANTMENTS);
+        if (ench == null || ench.getEnchantments().stream().noneMatch(en -> en.matchesKey(Enchantments.BLAST_PROTECTION))) return;
+        net.minecraft.enchantment.EnchantmentHelper.apply(stack, b -> b.remove(en -> en.matchesKey(Enchantments.BLAST_PROTECTION)));
     }
 }
