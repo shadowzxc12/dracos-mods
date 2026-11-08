@@ -417,9 +417,24 @@ def worn(set_name, layer, st, vanilla_path):
             out[y0:y1, x0:x1, 3] = 255
             mats[y0:y1, x0:x1] = mat
     out[..., 3] *= cover
-    # clean look: smooth shading, downsampled 2x (256x128) for crisp but not blocky detail
-    img = Image.fromarray(out.astype(np.uint8), "RGBA")
-    return img.resize((img.width // 2, img.height // 2), Image.BOX)
+    # pixel look: 128x64 (2x vanilla), every pixel snapped to a small hue-shifted palette, plate edges lit
+    px = posterize(out, mats, K // 2, st)
+    pixel_edges(px, 2)
+    return Image.fromarray(px.astype(np.uint8), "RGBA")
+
+
+def pixel_edges(px, f):
+    """Classic pixel-art box shading on every face: light top/left rim, dark bottom/right rim."""
+    for part, (ox, oy, w, h, d) in BOXES.items():
+        for kind, (x0, y0, x1, y1) in faces_of(ox, oy, w, h, d).items():
+            x0, y0, x1, y1 = x0 * f, y0 * f, x1 * f, y1 * f
+            a = px[y0:y1, x0:x1]
+            if not (a[..., 3] > 0).any():
+                continue
+            a[0, :, :3] = np.minimum(a[0, :, :3] * 1.18 + 10, 255)
+            a[:, 0, :3] = np.minimum(a[:, 0, :3] * 1.12 + 6, 255)
+            a[-1, :, :3] *= 0.62
+            a[:, -1, :3] *= 0.72
 
 
 def posterize(img, mats, f, st):
@@ -439,10 +454,12 @@ def posterize(img, mats, f, st):
     s = [rgb(c) for c in st["stops"]]
     W = np.array([255.0, 255, 255])
     acc = rgb(st["accent"])
-    P = {MM: [s[0] * 0.8 + s[1] * 0.2, s[1], (s[1] + s[2]) / 2, s[2], s[3], s[3] * 0.5 + W * 0.5],
-         MD: [s[0] * 0.6, s[0], s[1]],
-         MG: [s[0] * 0.6, s[0], s[1]],
-         MA: [acc * 0.75 + s[1] * 0.25, acc, acc * 0.45 + W * 0.55]}
+    ss = st["stops"]
+    P = {MM: hq.hue_ramp(ss[0], ss[2], ss[3]),
+         MD: [s[0] * 0.55, s[0] * 0.8 + s[1] * 0.2, s[1]],
+         MG: [s[0] * 0.55, s[0] * 0.8 + s[1] * 0.2, s[1]],
+         MA: [acc * 0.7 + s[1] * 0.3, acc, acc * 0.4 + W * 0.6],
+         9: hq.hue_ramp("#2a2018", "#8a7658", "#e8dcbc", n=5)}
     out = np.zeros((Hh, Ww, 4))
     out[..., :3] = col
     lum = col @ np.array([0.299, 0.587, 0.114])
@@ -495,7 +512,7 @@ def helmet_texture(set_name, st):
     hm[32:48, 16:32] = MA
     hm[32:48, 48:64] = MD
     hm[48:64, 0:32] = 9
-    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
+    return Image.fromarray(posterize(np.clip(out, 0, 255), hm, 2, st).astype(np.uint8), "RGBA")
 
 
 UV = {"front": [0, 0, 8, 8], "side": [8, 0, 16, 8], "gold": [0, 8, 4, 12], "acc": [4, 8, 8, 12],
