@@ -357,7 +357,7 @@ public final class Abilities {
                 if (aura != null) {
                     for (int k = 0; k < 3; k++) {
                         double a = (t * 0.15) + k * (Math.PI * 2 / 3);
-                        w.spawnParticles(aura, x + Math.cos(a) * 0.8, y + 0.1 + (k * 0.6), z + Math.sin(a) * 0.8, 1, 0, 0, 0, 0);
+                        w.spawnParticles(aura, false, true, x + Math.cos(a) * 0.8, y + 0.1 + (k * 0.6), z + Math.sin(a) * 0.8, 1, 0, 0, 0, 0);
                     }
                 }
             }
@@ -374,11 +374,12 @@ public final class Abilities {
                     double h = switch (slot) { case HEAD -> 1.75; case CHEST -> 1.15; case LEGS -> 0.7; default -> 0.12; };
                     double sx = p.getX() + (RND.nextDouble() - 0.5) * 0.7, sz = p.getZ() + (RND.nextDouble() - 0.5) * 0.7;
                     double sy = p.getY() + h + (RND.nextDouble() - 0.5) * 0.4;
-                    w.spawnParticles(new net.minecraft.particle.DustParticleEffect(col, 0.55f), sx, sy, sz, 1, 0, 0, 0, 0);
-                    if (RND.nextInt(5) == 0)
-                        w.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xFFFFFF, 0.45f),
+                    // "important" = shown even when the client has particles set to Decreased
+                    w.spawnParticles(new net.minecraft.particle.DustParticleEffect(col, 0.8f), false, true, sx, sy, sz, 2, 0.12, 0.12, 0.12, 0);
+                    if (RND.nextInt(3) == 0)
+                        w.spawnParticles(new net.minecraft.particle.DustParticleEffect(0xFFFFFF, 0.6f), false, true,
                                 p.getX() + (RND.nextDouble() - 0.5) * 0.7, sy + 0.1, p.getZ() + (RND.nextDouble() - 0.5) * 0.7, 1, 0, 0, 0, 0);
-                    if (RND.nextInt(6) == 0) {
+                    if (RND.nextInt(2) == 0) {
                         net.minecraft.particle.ParticleEffect extra = switch (set) {
                             case "void" -> ParticleTypes.REVERSE_PORTAL;
                             case "bone" -> ParticleTypes.WHITE_ASH;
@@ -388,7 +389,7 @@ public final class Abilities {
                             case "storm" -> ParticleTypes.ELECTRIC_SPARK;
                             default -> null;
                         };
-                        if (extra != null) w.spawnParticles(extra, sx, sy, sz, 1, 0.05, 0.05, 0.05, 0.01);
+                        if (extra != null) w.spawnParticles(extra, false, true, sx, sy, sz, set.equals("void") ? 3 : 1, 0.1, 0.1, 0.1, 0.02);
                     }
                 }
             }
