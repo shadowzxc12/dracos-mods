@@ -163,23 +163,25 @@ def leggings(c, s):
 
 
 def boots(c, s):
-    for ox in (0, 98):
-        c.rect((ox + 20, 50, ox + 74, 132), METAL)
-        c.poly([(ox + 20, 128), (ox + 74, 128), (ox + 94, 146), (ox + 94, 172), (ox + 20, 172)], METAL)
-        c.rect((ox + 16, 46, ox + 78, 62), GUARD)                    # cuff
-        c.poly([(ox + 66, 140), (ox + 94, 146), (ox + 94, 172), (ox + 66, 172)], GUARD)   # toe cap
-        c.rect((ox + 20, 164, ox + 94, 174), UNDER)                  # sole
-        c.poly([(ox + 26, 66), (ox + 68, 66), (ox + 64, 118), (ox + 47, 128), (ox + 30, 118)], GUARD)   # shin plate
-        c.poly([(ox + 32, 72), (ox + 62, 72), (ox + 59, 114), (ox + 47, 121), (ox + 35, 114)], METAL)
-        c.ell((ox + 41, 84, ox + 53, 96), ACCENT)                    # gem
-        c.rect((ox + 20, 134, ox + 64, 140), ACCENT)                 # strap
-        c.line([(ox + 30, 146), (ox + 30, 166)], 3, groove=True)
-        c.line([(ox + 46, 146), (ox + 46, 166)], 3, groove=True)
+    """Front view: both boots pointing straight at the viewer."""
+    for bx, side in ((50, -1), (142, 1)):
+        c.poly([(bx - 25, 52), (bx + 25, 52), (bx + 18, 128), (bx - 18, 128)], METAL)   # shaft, narrowing to the ankle
+        c.ell((bx - 34, 122, bx + 34, 178), METAL)                                   # foot seen from the front
+        c.rect((bx - 34, 152, bx + 34, 172), METAL)
+        c.ell((bx - 26, 138, bx + 26, 174), GUARD)                                   # toe cap
+        c.ell((bx - 16, 146, bx + 16, 168), METAL)
+        c.rect((bx - 36, 170, bx + 36, 180), UNDER)                                  # sole
+        c.rect((bx - 29, 46, bx + 29, 62), GUARD)                                    # cuff
+        c.poly([(bx - 18, 66), (bx + 18, 66), (bx + 14, 102), (bx, 112), (bx - 14, 102)], GUARD)   # shin plate
+        c.poly([(bx - 12, 72), (bx + 12, 72), (bx + 9, 98), (bx, 105), (bx - 9, 98)], METAL)
+        c.ell((bx - 6, 80, bx + 6, 92), ACCENT)                                      # gem
+        c.rect((bx - 21, 118, bx + 21, 125), ACCENT)                                 # ankle strap
         if s == "storm":
-            c.poly([(ox + 18, 66), (ox - 4, 50), (ox + 14, 82)], GUARD)
+            ox = bx + side * 26
+            c.poly([(ox, 66), (ox + side * 22, 48), (ox + side * 6, 84)], GUARD)
         if s == "frost":
-            c.poly([(ox + 30, 46), (ox + 40, 46), (ox + 35, 26)], ACCENT)
-            c.poly([(ox + 54, 46), (ox + 64, 46), (ox + 59, 26)], ACCENT)
+            c.poly([(bx - 18, 46), (bx - 8, 46), (bx - 13, 26)], ACCENT)
+            c.poly([(bx + 8, 46), (bx + 18, 46), (bx + 13, 26)], ACCENT)
 
 
 PIECES = {"helmet": helmet, "chestplate": chestplate, "leggings": leggings, "boots": boots}
