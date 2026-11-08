@@ -32,17 +32,34 @@ final class BoneMealCane {
         return true;
     }
 
-    static void register() {
-        // dispensers with bone meal grow cane/cactus in front of them too; everything else keeps the vanilla behaviour
-        net.minecraft.block.dispenser.DispenserBehavior vanilla = net.minecraft.block.DispenserBlock.BEHAVIORS.get(Items.BONE_MEAL);
-        net.minecraft.block.DispenserBlock.registerBehavior(Items.BONE_MEAL, (pointer, stack) -> {
+    record CaneBehavior(net.minecraft.block.dispenser.DispenserBehavior vanilla) implements net.minecraft.block.dispenser.DispenserBehavior {
+        @Override
+        public net.minecraft.item.ItemStack dispense(net.minecraft.util.math.BlockPointer pointer, net.minecraft.item.ItemStack stack) {
             BlockPos target = pointer.pos().offset(pointer.state().get(net.minecraft.block.DispenserBlock.FACING));
-            if (grow(pointer.world(), target)) {
+            // aimed at the cane itself, or at the block it grows on (e.g. dispenser pointing at the sand under it)
+            BlockPos cane = grows(pointer.world(), target) ? target : grows(pointer.world(), target.up()) ? target.up() : null;
+            if (cane != null && grow(pointer.world(), cane)) {
                 stack.decrement(1);
                 pointer.world().syncWorldEvent(1000, pointer.pos(), 0);   // dispenser click
                 return stack;
             }
             return vanilla != null ? vanilla.dispense(pointer, stack) : stack;
+        }
+    }
+
+    static boolean grows(ServerWorld w, BlockPos p) {
+        var s = w.getBlockState(p);
+        return s.isOf(Blocks.SUGAR_CANE) || s.isOf(Blocks.CACTUS);
+    }
+
+    static void register() {
+        // dispensers with bone meal grow cane/cactus in front of them too; everything else keeps the vanilla behaviour
+        // registered once the server is up, so it wraps (and isn't overwritten by) vanilla's bone meal behaviour
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            net.minecraft.block.dispenser.DispenserBehavior vanilla = net.minecraft.block.DispenserBlock.BEHAVIORS.get(Items.BONE_MEAL);
+            if (vanilla instanceof CaneBehavior) return;
+            net.minecraft.block.DispenserBlock.registerBehavior(Items.BONE_MEAL, new CaneBehavior(vanilla));
+            DracosCore.LOGGER.info("[BoneMeal] dispensers grow sugar cane/cactus (wrapping {})", vanilla == null ? "nothing" : vanilla.getClass().getSimpleName());
         });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!(world instanceof ServerWorld w)) return ActionResult.PASS;
