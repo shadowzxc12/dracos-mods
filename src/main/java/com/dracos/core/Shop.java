@@ -86,7 +86,7 @@ public final class Shop {
                 "prismarine_shard", 40, "prismarine_crystals", 60, "armadillo_scute", 200, "turtle_scute", 300, "shulker_shell", 1500)));
         out.add(new Category("Ores & Gems", Items.DIAMOND, Formatting.AQUA, "Ingots, gems and minerals", list(
                 "coal", 30, "charcoal", 30, "copper_ingot", 30, "iron_ingot", 100, "gold_ingot", 150, "redstone", 30,
-                "lapis_lazuli", 40, "quartz", 40, "amethyst_shard", 50, "emerald", 1200, "diamond", 2600, "iron_nugget", 12,
+                "lapis_lazuli", 40, "quartz", 40, "amethyst_shard", 50, "diamond", 2600, "iron_nugget", 12,
                 "gold_nugget", 18, "flint", 20, "clay_ball", 10, "glowstone_dust", 30, "echo_shard", 3000)));
         out.add(new Category("Nether", Items.NETHERRACK, Formatting.RED, "Blocks from the Nether", list(
                 "netherrack", 5, "soul_sand", 20, "soul_soil", 20, "basalt", 10, "smooth_basalt", 15, "blackstone", 10,

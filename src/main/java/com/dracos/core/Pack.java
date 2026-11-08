@@ -31,6 +31,7 @@ public final class Pack {
                 // a new id for every pack version, so the client always swaps to the new textures
                 UUID id = sha1.isEmpty() ? ID : UUID.nameUUIDFromBytes(("dracos_pack_" + sha1).getBytes());
                 handler.sendPacket(new net.minecraft.network.packet.s2c.common.ResourcePackRemoveS2CPacket(Optional.of(ID)));
+                DracosCore.LOGGER.info("[Pack] sending {} to {}", url.substring(url.lastIndexOf('/', url.length() - 20) + 1), handler.player.getName().getString());
                 handler.sendPacket(new ResourcePackSendS2CPacket(id, url, sha1, false,
                         Optional.of(Text.literal("Dracos SMP textures for the legendary items").formatted(Formatting.GOLD))));
             } catch (Exception e) {
