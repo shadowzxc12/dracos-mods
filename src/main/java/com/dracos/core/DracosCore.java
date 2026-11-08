@@ -63,6 +63,7 @@ public class DracosCore implements ModInitializer {
         PlayerWarps.register();
         InfiniteTrades.register();
         BossRewards.register();
+        BoneMealCane.register();
         Abilities.register();
         Abilities.registerExtras();
         Effects.register();
