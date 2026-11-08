@@ -40,7 +40,7 @@ public final class RandomRespawn {
 
     // ---- /rtp for everyone
     // inside the pre-generated area (Chunky did 6000) chunks load from disk almost instantly
-    public static final int RTP_MIN = 1_000, RTP_MAX = 19_500; // whole 40k world (border is 20 000)
+    public static final int RTP_MIN = 1_000; // max = the whole world inside the border
     private static final long RTP_COOLDOWN_MS = 20_000;
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
 
@@ -68,7 +68,8 @@ public final class RandomRespawn {
         BlockPos spawn = world.getSpawnPoint().getPos();
         ThreadLocalRandom r = ThreadLocalRandom.current();
         double angle = r.nextDouble() * Math.PI * 2;
-        int dist = r.nextInt(RTP_MIN, RTP_MAX + 1);
+        int max = (int) Math.max(RTP_MIN + 1000, Math.min(Integer.MAX_VALUE - 1, world.getWorldBorder().getSize() / 2 - 1_000));
+        int dist = r.nextInt(RTP_MIN, max + 1);
         int x = spawn.getX() + (int) (Math.cos(angle) * dist), z = spawn.getZ() + (int) (Math.sin(angle) * dist);
         if (!world.getWorldBorder().contains(x, z) || badBiome(world, x, z)) {
             if (tries < 40) { attempt(p, world, tries + 1); } else retry(p, world, tries);
