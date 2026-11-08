@@ -56,6 +56,92 @@ public final class PlayerWarps {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Map<String, Warp> WARPS = new LinkedHashMap<>();
 
+    // ------------------------------------------------------------------ protection around warps
+    /** Visitors can't hurt animals/villagers, break, place or open anything within this many blocks of a warp. */
+    static final int PROTECT = 30;
+
+    /** The warp protecting this spot from this player, or null if they may act here. */
+    static Warp protector(net.minecraft.entity.player.PlayerEntity actor, net.minecraft.world.World w, double x, double z) {
+        if (actor == null || actor.isCreative()) return null;
+        if (actor instanceof ServerPlayerEntity sp && Ranks.of(sp) == Ranks.Rank.OWNER) return null;
+        String wid = w.getRegistryKey().getValue().toString();
+        for (Warp wp : WARPS.values()) {
+            if (!wid.equals(wp.world) || Math.abs(wp.x - x) > PROTECT || Math.abs(wp.z - z) > PROTECT) continue;
+            if (wp.owner.equals(actor.getUuidAsString())) return null;
+            try {
+                var mine = Clans.of(actor.getUuid());
+                if (mine != null && mine == Clans.of(java.util.UUID.fromString(wp.owner))) return null;
+            } catch (Exception ignored) {}
+            return wp;
+        }
+        return null;
+    }
+
+    static void deny(net.minecraft.entity.player.PlayerEntity p, Warp w) {
+        p.sendMessage(Text.literal("This area is protected by " + w.ownerName + "'s warp.").formatted(Formatting.RED), true);
+    }
+
+    static boolean protectedEntity(net.minecraft.entity.Entity e) {
+        return !(e instanceof net.minecraft.entity.player.PlayerEntity) && !(e instanceof net.minecraft.entity.mob.Monster);
+    }
+
+    public static void register() {
+        // hitting animals, villagers, golems, armor stands, item frames...
+        net.fabricmc.fabric.api.event.player.AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (world.isClient() || !protectedEntity(entity)) return net.minecraft.util.ActionResult.PASS;
+            Warp w = protector(player, world, entity.getX(), entity.getZ());
+            if (w == null) return net.minecraft.util.ActionResult.PASS;
+            deny(player, w);
+            return net.minecraft.util.ActionResult.FAIL;
+        });
+        // arrows, tridents, potions... thrown by a visitor
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (!protectedEntity(entity) || !(source.getAttacker() instanceof net.minecraft.entity.player.PlayerEntity att)) return true;
+            Warp w = protector(att, entity.getEntityWorld(), entity.getX(), entity.getZ());
+            if (w == null) return true;
+            deny(att, w);
+            return false;
+        });
+        net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> {
+            Warp w = protector(player, world, pos.getX() + 0.5, pos.getZ() + 0.5);
+            if (w == null) return true;
+            deny(player, w);
+            return false;
+        });
+        net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (world.isClient()) return net.minecraft.util.ActionResult.PASS;
+            var pos = hit.getBlockPos();
+            Warp w = protector(player, world, pos.getX() + 0.5, pos.getZ() + 0.5);
+            if (w == null) return net.minecraft.util.ActionResult.PASS;
+            var b = world.getBlockState(pos).getBlock();
+            boolean harmless = b instanceof net.minecraft.block.DoorBlock || b instanceof net.minecraft.block.TrapdoorBlock
+                    || b instanceof net.minecraft.block.FenceGateBlock || b instanceof net.minecraft.block.ButtonBlock
+                    || b instanceof net.minecraft.block.CraftingTableBlock || b instanceof net.minecraft.block.EnderChestBlock;
+            if (harmless && !player.isSneaking()) return net.minecraft.util.ActionResult.PASS;
+            deny(player, w);
+            return net.minecraft.util.ActionResult.FAIL;
+        });
+        // trading with villagers is fine, but not taking stuff off armor stands / item frames, leashing, shearing...
+        net.fabricmc.fabric.api.event.player.UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (world.isClient() || !protectedEntity(entity) || entity instanceof net.minecraft.entity.passive.MerchantEntity) return net.minecraft.util.ActionResult.PASS;
+            Warp w = protector(player, world, entity.getX(), entity.getZ());
+            if (w == null) return net.minecraft.util.ActionResult.PASS;
+            deny(player, w);
+            return net.minecraft.util.ActionResult.FAIL;
+        });
+        net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (world.isClient()) return net.minecraft.util.ActionResult.PASS;
+            var it = player.getStackInHand(hand).getItem();
+            boolean griefy = it instanceof net.minecraft.item.BucketItem || it == net.minecraft.item.Items.FLINT_AND_STEEL
+                    || it == net.minecraft.item.Items.FIRE_CHARGE || it == net.minecraft.item.Items.TNT_MINECART || it == net.minecraft.item.Items.END_CRYSTAL;
+            if (!griefy) return net.minecraft.util.ActionResult.PASS;
+            Warp w = protector(player, world, player.getX(), player.getZ());
+            if (w == null) return net.minecraft.util.ActionResult.PASS;
+            deny(player, w);
+            return net.minecraft.util.ActionResult.FAIL;
+        });
+    }
+
     private static Path file() { return FabricLoader.getInstance().getConfigDir().resolve("dracos").resolve("pwarps.json"); }
 
     public static void load() {
