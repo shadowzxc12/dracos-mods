@@ -15,7 +15,35 @@ final class BoneMealCane {
 
     static final int MAX = 3;
 
+    /** Grows the cane/cactus column at pos by one block. */
+    static boolean grow(ServerWorld w, BlockPos pos) {
+        var block = w.getBlockState(pos).getBlock();
+        if (block != Blocks.SUGAR_CANE && block != Blocks.CACTUS) return false;
+        BlockPos bottom = pos;
+        while (w.getBlockState(bottom.down()).isOf(block)) bottom = bottom.down();
+        BlockPos top = pos;
+        while (w.getBlockState(top.up()).isOf(block)) top = top.up();
+        BlockPos up = top.up();
+        if (top.getY() - bottom.getY() + 1 >= MAX || !w.getBlockState(up).isAir() || !block.getDefaultState().canPlaceAt(w, up))
+            return false;
+        w.setBlockState(up, block.getDefaultState());
+        w.syncWorldEvent(1505, pos, 15);                       // bone meal particles
+        w.playSound(null, pos, SoundEvents.ITEM_BONE_MEAL_USE, SoundCategory.BLOCKS, 1f, 1f);
+        return true;
+    }
+
     static void register() {
+        // dispensers with bone meal grow cane/cactus in front of them too; everything else keeps the vanilla behaviour
+        net.minecraft.block.dispenser.DispenserBehavior vanilla = net.minecraft.block.DispenserBlock.BEHAVIORS.get(Items.BONE_MEAL);
+        net.minecraft.block.DispenserBlock.registerBehavior(Items.BONE_MEAL, (pointer, stack) -> {
+            BlockPos target = pointer.pos().offset(pointer.state().get(net.minecraft.block.DispenserBlock.FACING));
+            if (grow(pointer.world(), target)) {
+                stack.decrement(1);
+                pointer.world().syncWorldEvent(1000, pointer.pos(), 0);   // dispenser click
+                return stack;
+            }
+            return vanilla != null ? vanilla.dispense(pointer, stack) : stack;
+        });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!(world instanceof ServerWorld w)) return ActionResult.PASS;
             var stack = player.getStackInHand(hand);
@@ -23,18 +51,8 @@ final class BoneMealCane {
             BlockPos pos = hit.getBlockPos();
             var block = w.getBlockState(pos).getBlock();
             if (block != Blocks.SUGAR_CANE && block != Blocks.CACTUS) return ActionResult.PASS;
-            BlockPos bottom = pos;
-            while (w.getBlockState(bottom.down()).isOf(block)) bottom = bottom.down();
-            BlockPos top = pos;
-            while (w.getBlockState(top.up()).isOf(block)) top = top.up();
-            int height = top.getY() - bottom.getY() + 1;
-            BlockPos grow = top.up();
-            if (height >= MAX || !w.getBlockState(grow).isAir() || !block.getDefaultState().canPlaceAt(w, grow))
-                return ActionResult.PASS;
             if (PlayerWarps.protector(player, w, pos.getX() + 0.5, pos.getZ() + 0.5) != null) return ActionResult.PASS;
-            w.setBlockState(grow, block.getDefaultState());
-            w.syncWorldEvent(1505, pos, 15);                   // bone meal particles
-            w.playSound(null, pos, SoundEvents.ITEM_BONE_MEAL_USE, SoundCategory.BLOCKS, 1f, 1f);
+            if (!grow(w, pos)) return ActionResult.PASS;
             if (!player.isCreative()) stack.decrement(1);
             return ActionResult.SUCCESS;
         });
