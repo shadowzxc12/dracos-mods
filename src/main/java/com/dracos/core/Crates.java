@@ -77,17 +77,22 @@ public final class Crates {
                 }, true);
     }
 
+    static Reward book(int w) {
+        return new Reward(w, p -> named(Items.ENCHANTED_BOOK, "Custom Enchant Book", Formatting.LIGHT_PURPLE),
+                p -> p.getInventory().offerOrDrop(Enchants.randomBook((ServerWorld) p.getEntityWorld())), false);
+    }
+
     static final Map<String, List<Reward>> LOOT = Map.of(
             "common", List.of(
                     money(30, 15_000), money(20, 40_000), money(8, 100_000),
                     item(14, Items.DIAMOND, 8, false), item(10, Items.IRON_BLOCK, 8, false), item(10, Items.GOLDEN_APPLE, 4, false),
                     item(8, Items.EXPERIENCE_BOTTLE, 32, false), item(6, Items.ENDER_PEARL, 16, false),
-                    spawner(3, "minecraft:zombie"), key(4, "rare", 1)),
+                    spawner(3, "minecraft:zombie"), key(4, "rare", 1), book(6)),
             "rare", List.of(
                     money(25, 100_000), money(14, 250_000), money(5, 750_000),
                     item(12, Items.DIAMOND_BLOCK, 4, false), item(8, Items.NETHERITE_INGOT, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 2, true),
                     item(6, Items.TOTEM_OF_UNDYING, 1, false), item(5, Items.SHULKER_BOX, 1, false),
-                    spawner(6, "minecraft:skeleton"), spawner(4, "minecraft:blaze"), legendary(2), key(5, "legendary", 1)),
+                    spawner(6, "minecraft:skeleton"), spawner(4, "minecraft:blaze"), legendary(2), key(5, "legendary", 1), book(14)),
             "spawner", List.of(
                     spawner(20, "minecraft:pig"), spawner(18, "minecraft:cow"), spawner(16, "minecraft:zombie"), spawner(14, "minecraft:skeleton"),
                     spawner(10, "minecraft:spider"), spawner(8, "minecraft:creeper"), spawner(6, "minecraft:witch"), spawner(5, "minecraft:blaze"),
@@ -96,7 +101,7 @@ public final class Crates {
                     money(22, 500_000), money(12, 1_500_000), money(4, 5_000_000),
                     item(10, Items.NETHERITE_BLOCK, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 8, true), item(6, Items.ELYTRA, 1, true),
                     item(5, Items.BEACON, 1, true), spawner(8, "minecraft:iron_golem"), spawner(6, "minecraft:creeper"),
-                    legendary(16), key(3, "legendary", 2)));
+                    legendary(16), key(3, "legendary", 2), book(14)));
 
     static String title(String type) {
         return switch (type) { case "rare" -> "Rare"; case "legendary" -> "Legendary"; case "spawner" -> "Spawner"; default -> "Common"; };

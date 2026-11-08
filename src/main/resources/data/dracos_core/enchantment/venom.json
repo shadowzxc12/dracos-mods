@@ -1,0 +1,56 @@
+{
+ "description": {
+  "text": "Venom",
+  "color": "dark_green"
+ },
+ "supported_items": "#minecraft:enchantable/sharp_weapon",
+ "weight": 2,
+ "max_level": 3,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ],
+ "effects": {
+  "minecraft:post_attack": [
+   {
+    "enchanted": "attacker",
+    "affected": "victim",
+    "effect": {
+     "type": "minecraft:apply_mob_effect",
+     "to_apply": "minecraft:poison",
+     "min_duration": 3,
+     "max_duration": 3,
+     "min_amplifier": {
+      "type": "minecraft:linear",
+      "base": 0,
+      "per_level_above_first": 1
+     },
+     "max_amplifier": {
+      "type": "minecraft:linear",
+      "base": 0,
+      "per_level_above_first": 1
+     }
+    },
+    "requirements": {
+     "condition": "minecraft:random_chance",
+     "chance": {
+      "type": "minecraft:enchantment_level",
+      "amount": {
+       "type": "minecraft:linear",
+       "base": 0.2,
+       "per_level_above_first": 0.1
+      }
+     }
+    }
+   }
+  ]
+ }
+}

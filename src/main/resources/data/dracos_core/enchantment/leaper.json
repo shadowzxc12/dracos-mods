@@ -1,0 +1,45 @@
+{
+ "description": {
+  "text": "Leaper",
+  "color": "green"
+ },
+ "supported_items": "#minecraft:enchantable/foot_armor",
+ "weight": 2,
+ "max_level": 2,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "feet"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.leaper",
+    "attribute": "minecraft:jump_strength",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.08,
+     "per_level_above_first": 0.08
+    },
+    "operation": "add_value"
+   },
+   {
+    "id": "dracos_core:enchantment.leaper_fall",
+    "attribute": "minecraft:safe_fall_distance",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 2.0,
+     "per_level_above_first": 2.0
+    },
+    "operation": "add_value"
+   }
+  ]
+ }
+}

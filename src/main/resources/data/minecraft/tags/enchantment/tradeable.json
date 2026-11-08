@@ -1,0 +1,22 @@
+{
+ "replace": false,
+ "values": [
+  "dracos_core:lifesteal",
+  "dracos_core:venom",
+  "dracos_core:thunderlord",
+  "dracos_core:frostbite",
+  "dracos_core:blinding",
+  "dracos_core:withering",
+  "dracos_core:thunder_arrows",
+  "dracos_core:hunter",
+  "dracos_core:swift",
+  "dracos_core:leaper",
+  "dracos_core:vitality",
+  "dracos_core:molten",
+  "dracos_core:clarity",
+  "dracos_core:nourish",
+  "dracos_core:telekinesis",
+  "dracos_core:autosmelt",
+  "dracos_core:wisdom"
+ ]
+}

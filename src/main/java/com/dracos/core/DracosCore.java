@@ -86,6 +86,7 @@ public class DracosCore implements ModInitializer {
         Skills.register();
         Legendary3.register();
         AutoSell.register();
+        Enchants.register();   // last: its block-break hook must run after all protection checks
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polymer-core")) {
             try { SellTooltips.register(); } catch (Throwable t) { LOGGER.warn("Sell tooltips disabled", t); }
         }

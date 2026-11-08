@@ -1,0 +1,48 @@
+{
+ "description": {
+  "text": "Molten",
+  "color": "gold"
+ },
+ "supported_items": "#minecraft:enchantable/chest_armor",
+ "weight": 2,
+ "max_level": 2,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "chest"
+ ],
+ "effects": {
+  "minecraft:post_attack": [
+   {
+    "enchanted": "victim",
+    "affected": "attacker",
+    "effect": {
+     "type": "minecraft:ignite",
+     "duration": {
+      "type": "minecraft:linear",
+      "base": 3.0,
+      "per_level_above_first": 3.0
+     }
+    },
+    "requirements": {
+     "condition": "minecraft:random_chance",
+     "chance": {
+      "type": "minecraft:enchantment_level",
+      "amount": {
+       "type": "minecraft:linear",
+       "base": 0.2,
+       "per_level_above_first": 0.15
+      }
+     }
+    }
+   }
+  ]
+ }
+}

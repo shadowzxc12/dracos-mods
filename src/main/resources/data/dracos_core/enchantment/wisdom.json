@@ -1,0 +1,21 @@
+{
+ "description": {
+  "text": "Wisdom",
+  "color": "green"
+ },
+ "supported_items": "#minecraft:enchantable/mining",
+ "weight": 2,
+ "max_level": 3,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ]
+}

@@ -22,6 +22,21 @@ jobs:
           curl -sSL -o libs/burger-economy-1.0.0.jar https://cdn.modrinth.com/data/kRqHzKDJ/versions/QuySk81K/burger-economy-1.0.0.jar
       - name: Build
         run: gradle build --no-daemon --stacktrace
+      - name: Check custom enchantments load on a real 1.21.11 server
+        run: |
+          V=$(curl -s https://piston-meta.mojang.com/mc/game/version_manifest_v2.json | jq -r '.versions[]|select(.id=="1.21.11")|.url')
+          S=$(curl -s "$V" | jq -r .downloads.server.url)
+          mkdir -p /tmp/vs/world/datapacks/dracos && cd /tmp/vs
+          curl -sSL -o server.jar "$S"
+          cp -r "$GITHUB_WORKSPACE/src/main/resources/data" world/datapacks/dracos/
+          echo '{"pack":{"description":"dracos test","min_format":[80,0],"max_format":[999,0]}}' > world/datapacks/dracos/pack.mcmeta
+          echo eula=true > eula.txt
+          printf 'online-mode=false\nlevel-type=minecraft\\:flat\nspawn-protection=0\n' > server.properties
+          (sleep 100; echo stop) | timeout 180 java -Xmx2G -jar server.jar nogui > log.txt 2>&1 || true
+          grep -iE "error|exception|failed|warn.*(enchant|datapack|pack)" log.txt | grep -v "Failed to save" | head -40 || true
+          grep -q "Done (" log.txt || { echo "SERVER DID NOT START"; tail -60 log.txt; exit 1; }
+          if grep -qiE "Failed to load|Errors in registry|Couldn't parse|Error loading registry" log.txt; then tail -80 log.txt; exit 1; fi
+          echo "enchantments OK"
       - uses: actions/upload-artifact@v4
         with:
           name: dracos-core

@@ -1,0 +1,21 @@
+{
+ "description": {
+  "text": "Telekinesis",
+  "color": "light_purple"
+ },
+ "supported_items": "#minecraft:enchantable/mining",
+ "weight": 1,
+ "max_level": 1,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "mainhand"
+ ]
+}

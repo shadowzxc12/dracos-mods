@@ -1,0 +1,35 @@
+{
+ "description": {
+  "text": "Swift",
+  "color": "aqua"
+ },
+ "supported_items": "#minecraft:enchantable/foot_armor",
+ "weight": 2,
+ "max_level": 3,
+ "min_cost": {
+  "base": 12,
+  "per_level_above_first": 10
+ },
+ "max_cost": {
+  "base": 45,
+  "per_level_above_first": 10
+ },
+ "anvil_cost": 4,
+ "slots": [
+  "feet"
+ ],
+ "effects": {
+  "minecraft:attributes": [
+   {
+    "id": "dracos_core:enchantment.swift",
+    "attribute": "minecraft:movement_speed",
+    "amount": {
+     "type": "minecraft:linear",
+     "base": 0.05,
+     "per_level_above_first": 0.05
+    },
+    "operation": "add_multiplied_base"
+   }
+  ]
+ }
+}
