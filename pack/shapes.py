@@ -180,10 +180,35 @@ def mace(p):
                 for k in range(-2, 3):
                     if abs(v - k * 2.7) < 1.1 and abs(u - top) < 6 - abs(k) * 1.2:
                         return "A" if k == 0 else "3"
+        if kind == "warhammer":           # block head + top spike + back pick
+            if top - 4 <= u <= top + 4 and -2 <= v <= 7.5:
+                if v > 6.5:
+                    return "A"
+                return shade(u, top, 4)
+            if abs(u - top) <= 2.5 * max(0, (-2 - v) / -8.0 + 1) and -10 <= v < -2:
+                return "A" if v < -8.5 else "3"
+            if top + 4 <= u <= top + 9 and abs(v - 2.5) <= 1.6 * (top + 9 - u) / 5:
+                return "4"
+        if kind == "maul":                # huge rounded maul with banded rings
+            if ((u - top) / 5.0) ** 2 + (v / 7.8) ** 2 <= 1:
+                if abs(v) % 4 < 0.9:
+                    return "g"
+                return shade(u, top, 5)
+        if kind == "meteor":              # rough rock with glowing craters
+            ang = math.atan2(v, u - top)
+            r = math.hypot(u - top, v)
+            rr = 5.6 + 0.9 * math.sin(ang * 5) + 0.6 * math.sin(ang * 9 + 1)
+            if r <= rr:
+                for (cu, cv, cr) in ((1.5, 1.8, 1.4), (-2, -1.5, 1.1), (0.5, -3, 0.9), (-2.6, 2.4, 0.8)):
+                    if math.hypot(u - top - cu, v - cv) < cr:
+                        return "A"
+                return shade(v, 0, rr)
+            if rr < r < rr + 3.5 and abs(ang - 0.6) < 0.35 * (rr + 3.5 - r) / 3.5:   # fiery tail
+                return "A"
         if kind == "star":
             ang = math.atan2(v, u - top)
             r = math.hypot(u - top, v)
-            rr = 4.6 + 4.0 * abs(math.cos(ang * 2.5))
+            rr = 4.6 + 4.0 * abs(math.cos(ang * p.get("points", 2.5)))
             if r <= rr:
                 return "A" if r < 2.2 else shade(v, 0, rr)
         return handle(u, v, 1.2, top - 3, w=1.4) or pommel(u, v, 1.4, 2.0, gem=True)
@@ -227,6 +252,24 @@ def pickaxe(p):
                         if kind == "crystal" and k > 0.55:
                             return "A"
                         return "A" if k > 0.85 else shade(u, hu, w)
+        if kind == "shard":               # jagged crystal shards sticking out on both sides
+            for side in (-1, 1):
+                for (a, b, ln, wd) in ((0.0, 0.0, 10.5, 2.6), (2.2, 0.8, 8.0, 1.8), (-2.2, -0.6, 7.0, 1.6)):
+                    # each shard: a thin diamond along the side direction, slightly angled
+                    ax, ay = side * 1.0, 0.35 * a / 2.2 - 0.15
+                    n = math.hypot(ax, ay); ax, ay = ax / n, ay / n
+                    rv, ru = v - side * 1.2, u - (top + 1.5 + b)
+                    along = rv * ax + ru * ay
+                    across = -rv * ay + ru * ax
+                    if 0 <= along <= ln and abs(across) <= wd * (1 - abs(along - ln * 0.35) / (ln * 0.65 + 0.01)):
+                        return "A" if abs(across) < 0.5 or along > ln * 0.8 else shade(across, 0, wd)
+            if abs(u - top - 1.5) < 2.4 and abs(v) < 2.4:
+                return "g"
+        if kind == "war":                 # heavy war pick: long spike one side, hammer face the other
+            if top - 1.5 <= u <= top + 3.5 and -6.5 <= v <= 0:
+                return "A" if v < -5.5 else shade(u, top + 1, 2.5)
+            if 0 <= v <= 13 and abs(u - (top + 1) + v * 0.18) <= 2.6 * (1 - v / 14) + 0.3:
+                return "A" if v > 11 else shade(u, top + 1 - v * 0.18, 2.6)
         if kind == "drill":
             if top - 9 <= u <= top + 5.5:
                 w = 5.2 * (top + 5.5 - u) / 14.5
@@ -321,7 +364,7 @@ SHAPES = {
     "glacier_axe": ("axe", dict(kind="double")),
     "soul_reaper": ("scythe", dict(curve=1.0)),
     "storm_axe": ("axe", dict(kind="crescent", spike=True)),
-    "earthshaker": ("mace", dict(kind="hammer")),
+    "earthshaker": ("mace", dict(kind="maul")),
     "celestial_blade": ("sword", dict(width=W(2.2, 1.4), guard=5.5, gcurve=-1.6, fuller=True, pommel=1.8)),
     "night_stalker": ("sword", dict(width=W(1.5), center=CURVE(-2.2), guard=2.2, tip=0.15, edge_glow=True)),
     "ender_blade": ("sword", dict(width=W(2.0), wave=0.7, guard=4.2, fuller=True)),
@@ -343,7 +386,7 @@ SHAPES = {
     "frostbite_dagger": ("sword", dict(handle=9, width=W(1.8, 1.0), guard=3.0, tip=0.5, edge_glow=True)),
     "dragonbone_axe": ("axe", dict(kind="bearded", spike=True, back=True)),
     "warlord_mace": ("mace", dict(kind="flanged")),
-    "skybreaker_mace": ("mace", dict(kind="star")),
+    "skybreaker_mace": ("mace", dict(kind="star", points=4)),
     "kraken_trident": ("trident", dict(prongs=3, hooks=True, wrap=True)),
     "starfall_trident": ("trident", dict(prongs=1)),
     "vampire_fang": ("sword", dict(width=W(1.4, 0.8), center=CURVE(1.6), serr=2, guard=3.0, gcurve=1.8, tip=0.4)),
@@ -352,7 +395,7 @@ SHAPES = {
     "phantom_blade": ("sword", dict(width=W(1.6), wave=0.5, guard=3.4, gcurve=-1.0, tip=0.3)),
     "thunderclap_hammer": ("mace", dict(kind="hammer")),
     "molten_pickaxe": ("pickaxe", dict(kind="pick", pgem=True)),
-    "titan_pickaxe": ("pickaxe", dict(kind="drill")),
+    "titan_pickaxe": ("pickaxe", dict(kind="war")),
     "lumberjack_axe": ("axe", dict(kind="double", wrap=False)),
     "gaia_hoe": ("hoe", dict()),
     "quake_shovel": ("shovel", dict(kind="point")),
@@ -366,8 +409,8 @@ SHAPES = {
     "dragon_blade": ("sword", dict(handle=5.0, width=W(2.9, 2.2), guard=7.0, gcurve=-2.2, fuller=True, edge_glow=True, tip=0.2, pommel=2.0)),
     "void_scythe": ("scythe", dict(curve=1.5, double=True)),
     "bone_reaper": ("scythe", dict(curve=1.1, wrap=False)),
-    "thunder_hammer": ("mace", dict(kind="hammer")),
-    "shard_pickaxe": ("pickaxe", dict(kind="crystal", pgem=True)),
+    "thunder_hammer": ("mace", dict(kind="warhammer")),
+    "shard_pickaxe": ("pickaxe", dict(kind="shard", pgem=True)),
     "lava_axe": ("axe", dict(kind="double", spike=True, back=True)),
     # staffs + new weapons
     "inferno_staff": ("staff", dict(kind="flame")),
@@ -378,7 +421,7 @@ SHAPES = {
     "wither_staff": ("staff", dict(kind="skull")),
     "nature_staff": ("staff", dict(kind="leaf", wrap=False)),
     "wind_blade": ("sword", dict(width=W(1.4, 2.0), center=CURVE(1.4), guard=3.6, gcurve=-1.4, tip=0.3, edge_glow=True)),
-    "meteor_hammer": ("mace", dict(kind="spiked")),
+    "meteor_hammer": ("mace", dict(kind="meteor")),
     "eclipse_scythe": ("scythe", dict(curve=1.4, double=True)),
     "jumper_blade": ("sword", dict(width=W(1.9, 1.3), guard=5.2, gcurve=1.8, fuller=True, tip=0.28)),
     "solar_greatsword": ("sword", dict(handle=4.5, width=W(3.2, 2.6), guard=6.8, gcurve=-1.5, fuller=True, edge_glow=True, tip=0.18)),

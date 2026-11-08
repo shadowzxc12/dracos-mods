@@ -186,9 +186,12 @@ PIECES = {"helmet": helmet, "chestplate": chestplate, "leggings": leggings, "boo
 
 
 def icon(set_name, piece, st):
+    st = pal(set_name, st)
     c = Canvas()
     PIECES[piece](c, set_name)
-    return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0), st, seed=len(set_name + piece), n_frames=12)
+    s0 = st["stops"]
+    trim = [s0[0], s0[0], s0[1], s0[2], s0[3]]          # dark metal trims instead of gold
+    return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim), st, seed=len(set_name + piece), n_frames=12)
 
 
 # ------------------------------------------------------------------ worn (humanoid) textures
@@ -220,158 +223,168 @@ def bump(h, mask, height, bevel):
     h += np.minimum(d / bevel, 1.0) * height * mask
 
 
+# Dark, sleek fantasy palettes for the armor (separate from the weapon palettes): dark metal + neon glow.
+PAL = {
+    "draco":   dict(stops=["#0c0304", "#360b09", "#741a10", "#c33a1c"], accent="#ff8a1e", spark="#ffe0a0"),
+    "inferno": dict(stops=["#0a0505", "#24100a", "#43190d", "#7f3214"], accent="#ff5a00", spark="#ffd080"),
+    "frost":   dict(stops=["#040b16", "#0f2c48", "#27628c", "#8ccbec"], accent="#5ff6ff", spark="#ffffff"),
+    "storm":   dict(stops=["#06080e", "#192131", "#38465f", "#8597ba"], accent="#ffe94a", spark="#ffffff"),
+    "void":    dict(stops=["#050309", "#140924", "#2c154c", "#57309a"], accent="#d46bff", spark="#f6dcff"),
+    "bone":    dict(stops=["#2e2a26", "#7e776a", "#c7beaa", "#f2ede0"], accent="#ff2a3a", spark="#ffd0d0"),
+}
+
+
+def pal(set_name, st):
+    return PAL.get(set_name, st)
+
+
 def paint_face(set_name, layer, part, kind, w, h, rnd):
+    """Returns (material, height) for one box face. Smooth armour plates; the seams between plates glow."""
     mat = np.full((h, w), MM, dtype=np.int8)
     ht = np.zeros((h, w))
     yy, xx = np.mgrid[0:h, 0:w]
     edge = np.minimum.reduce([xx, yy, w - 1 - xx, h - 1 - yy])
     side = kind in ("front", "back", "left", "right")
-    # base plate with bevelled rim and a gold trim
-    bump(ht, edge >= 0, 3.0, 3)
-    if side:
-        trim = (yy < 4) | (yy > h - 5)          # gold bands top and bottom only
-        mat[trim] = MG
-        bump(ht, trim, 1.5, 2)
-        bump(ht, edge >= 6, 1.2, 2)          # inner plate sits a bit higher
-    inner = edge >= 7
+    bump(ht, edge >= 0, 4.0, 4)                 # rounded plate edges
 
-    def groove(m, depth=2.0):
+    def seam(m, glow=True, depth=2.5):
         ht[m] -= depth
+        if glow:
+            mat[m] = MA
 
-    # ---------------- set motif on the inner plate
-    if set_name == "draco":                    # overlapping dragon scales
-        r = 10
+    def plate(m, height=2.5, bevel=3):
+        bump(ht, m, height, bevel)
+
+    inner = edge >= 5
+    # ---------------- subtle set texture on the plates (engraved, not glowing)
+    if set_name == "draco" and part in ("arm", "leg"):
+        r = 9
         cy = yy % r
         cx = (xx + ((yy // r) % 2) * r // 2) % r - r / 2
         dd = np.hypot(cx, cy)
-        sc = np.clip(1 - dd / (r * 0.75), 0, 1)
-        ht += sc * 2.2 * inner
-        groove(inner & (np.abs(dd - r * 0.72) < 0.8), 1.4)
-    elif set_name == "frost":                  # raised ice crystal lattice
-        lat = ((np.abs((xx + yy) % 16 - 8) < 1) | (np.abs((xx - yy) % 16 - 8) < 1)) & inner
-        mat[lat] = MA
-        bump(ht, lat, 1.5, 1)
-    elif set_name == "inferno":                # glowing lava cracks
-        n = np.sin(xx * 0.31 + np.sin(yy * 0.17) * 3) + np.sin(yy * 0.23 + xx * 0.07)
-        crack = (np.abs(n) < 0.12) & inner
-        mat[crack] = MA
-        groove(crack, 2.5)
-    elif set_name == "storm":                  # lightning bolt
-        zig = np.abs(xx - w / 2 - ((yy // 8) % 2 * 2 - 1) * ((yy % 8) - 4) * 1.2) < 1.6
-        bolt = zig & inner & (kind in ("front", "back"))
-        mat[bolt] = MA
-        bump(ht, bolt, 1.2, 1)
-        groove(inner & (yy % 12 == 0))
-    elif set_name == "void":                   # engraved runes + stars
-        rune = inner & (((xx // 4 + yy // 6) % 5 == 0) & ((xx % 4 == 0) | (yy % 6 == 0)))
-        mat[rune] = MA
-        groove(rune, 1.5)
-        stars = inner & (np.array([[rnd.random() < 0.006 for _ in range(w)] for _ in range(h)]))
+        ht += np.clip(1 - dd / (r * 0.75), 0, 1) * 1.6 * inner
+    elif set_name == "inferno":
+        n = np.sin(xx * 0.29 + np.sin(yy * 0.15) * 3) + np.sin(yy * 0.21 + xx * 0.06)
+        crack = (np.abs(n) < 0.06) & inner & ((part != "body") | (kind != "front"))
+        seam(crack, True, 1.5)
+    elif set_name == "frost":
+        lat = ((np.abs((xx + yy) % 22 - 11) < 0.6) | (np.abs((xx - yy) % 22 - 11) < 0.6)) & inner
+        ht[lat] += 1.0
+    elif set_name == "void":
+        stars = inner & np.array([[rnd.random() < 0.004 for _ in range(w)] for _ in range(h)])
         mat[stars] = MA
-    elif set_name == "bone":                   # ribs + cracks
-        rib = inner & ((yy % 10) < 4)
-        bump(ht, rib, 1.6, 2)
-        crack = inner & (((xx + 2 * yy) % 29 == 0) | ((3 * xx - yy) % 41 == 0))
-        mat[crack] = MD
-        groove(crack, 1.2)
+    elif set_name == "bone":
+        rib = inner & ((yy % 12) < 5) & (part != "body" or kind != "front")
+        plate(rib, 1.4, 2)
+    elif set_name == "storm" and side and kind in ("left", "right"):
+        zig = np.abs(xx - w / 2 - ((yy // 8) % 2 * 2 - 1) * ((yy % 8) - 4) * 0.9) < 1.1
+        seam(zig & inner, True, 1.0)
 
-    # ---------------- rivets
-    if side and w >= 24 and h >= 24:
-        for rx, ry in ((7, 7), (w - 8, 7), (7, h - 8), (w - 8, h - 8)):
-            m = np.hypot(xx - rx, yy - ry) < 2.6
-            mat[m] = MG
-            ht += np.clip(1 - np.hypot(xx - rx, yy - ry) / 2.6, 0, 1) * 3 * m
-
-    # ---------------- part details
+    # ---------------- plate layouts
     if part == "body" and layer == "humanoid":
-        if kind == "front":                    # big gem in a gold setting + abs plates
-            cx, cy = w / 2, h * 0.33
-            dmd = np.abs(xx - cx) + np.abs(yy - cy) * 0.9
-            setting = dmd < 15
-            mat[setting] = MG
-            ht[setting] = 6 + np.clip(15 - dmd[setting], 0, 3) * 0.6
-            gem = dmd < 10
-            mat[gem] = MA
-            ht[gem] = 8 + (10 - dmd[gem]) * 0.55
-            for k in (0.6, 0.74, 0.88):
-                groove(inner & (np.abs(yy - h * k) < 1), 2.5)
-            groove(inner & (np.abs(xx - w / 2) < 1) & (yy > h * 0.52), 2.5)
-        if kind == "back":
-            groove(inner & (np.abs(xx - w / 2) < 1.2), 2.5)
-        if kind in ("left", "right"):
-            groove(inner & (yy % 16 == 8), 2)
-    if part == "body" and layer == "humanoid_leggings" and side:   # belt + buckle
-        belt = yy < h * 0.3
-        mat[belt] = MG
-        ht[belt] = 4 + np.minimum(np.minimum(yy, h * 0.3 - yy)[belt], 2)
         if kind == "front":
-            buckle = belt & (np.abs(xx - w / 2) < 7) & (yy > 3) & (yy < h * 0.3 - 3)
-            mat[buckle] = MA
-            ht[buckle] = 7
+            collar = yy < 7
+            plate(collar, 3, 2)
+            v = np.abs(yy - (h * 0.40 + np.abs(xx - w / 2) * -0.22)) < 1.1      # pec line (V)
+            seam(v & (edge >= 3))
+            seam((np.abs(xx - w / 2) < 1.1) & (yy > h * 0.40) & (edge >= 3))
+            for k in (0.62, 0.8):
+                seam((np.abs(yy - h * k) < 1.0) & (np.abs(xx - w / 2) < w * 0.32))
+            plate((yy > h * 0.40) & (np.abs(xx - w / 2) < w * 0.34) & (yy < h * 0.95), 1.5, 2)   # abs
+            # core reactor
+            cx, cy = w / 2, h * 0.27
+            r = np.hypot(xx - cx, yy - cy)
+            ring = r < 9
+            mat[ring] = MD
+            ht[ring] = 7 - r[ring] * 0.1
+            core = r < 6
+            mat[core] = MA
+            ht[core] = 9 - r[core] * 0.6
+        elif kind == "back":
+            seam((np.abs(xx - w / 2) < 1.1) & (edge >= 3))
+            seam((np.abs(yy - (h * 0.30 + np.abs(xx - w / 2) * 0.45)) < 1.0) & (edge >= 3))
+            plate(np.abs(xx - w / 2) < 5, 2, 2)
+        elif kind in ("left", "right"):
+            seam((np.abs(yy - h * 0.5) < 1.0) & (edge >= 3))
+    if part == "body" and layer == "humanoid_leggings" and side:
+        belt = yy < h * 0.28
+        mat[belt] = MD
+        plate(belt, 3, 2)
+        if kind == "front":
+            b = (np.abs(xx - w / 2) < 6) & (yy > 4) & (yy < h * 0.28 - 4)
+            mat[b] = MA
+            ht[b] += 2
     if part == "arm":
-        band = yy < 14                          # pauldron rim
-        mat[band & side] = MG
-        bump(ht, band, 3.5, 3)
+        # layered pauldron: three overlapping curved plates
+        for k, y0 in enumerate((0, 10, 20)):
+            arc = yy < y0 + 12 - np.abs(xx - w / 2) * 0.25
+            plate(arc & (yy >= y0 - 2), 3.5 - k * 0.6, 3)
+            seam(np.abs(yy - (y0 + 12 - np.abs(xx - w / 2) * 0.25)) < 0.9, glow=(k == 2))
+        brace = yy > h * 0.62
+        plate(brace, 2.5, 3)
+        seam(np.abs(yy - h * 0.62) < 1.0)
         if kind in ("left", "right"):
-            rs = inner & (np.abs(xx - w / 2) < 1.5) & (yy > 22) & (yy < h - 18)
-            mat[rs] = MA
-            ht[rs] += 1
-    if part == "leg" and layer == "humanoid" and side:           # boots
-        toe = yy > h * 0.84
-        mat[toe] = MG
-        bump(ht, toe, 4.5, 3)
-        strap = np.abs(yy - h * 0.66) < 2.5
-        mat[strap] = MA if kind == "front" else MG
-        ht[strap] += 2.5
+            seam((np.abs(xx - w / 2) < 1.0) & (yy > h * 0.66) & (yy < h - 6))
+    if part == "leg" and layer == "humanoid" and side:            # boots
+        top = h * 0.55
+        seam(np.abs(yy - top) < 1.0)
+        plate(yy > h * 0.82, 3.5, 3)                                # toe cap
+        seam(np.abs(yy - h * 0.82) < 0.9, glow=False)
         if kind == "front":
-            shin = inner & (yy > h * 0.38) & (yy < h * 0.6)
-            bump(ht, shin, 2, 3)
-    if part == "leg" and layer == "humanoid_leggings" and side:  # knee guards
-        kc = h * 0.5
-        knee = (np.abs(yy - kc) < 9) & (edge >= 3)
-        mat[knee] = MG
-        bump(ht, knee, 4, 3)
+            shin = (yy > top + 3) & (yy < h * 0.8) & (np.abs(xx - w / 2) < w * 0.32)
+            plate(shin, 2, 2)
+            seam((np.abs(xx - w / 2) < 1.0) & (yy > top + 4) & (yy < h * 0.78))
+    if part == "leg" and layer == "humanoid_leggings" and side:
+        seam(np.abs(yy - h * 0.34) < 1.0)
+        kc = h * 0.52
         if kind == "front":
-            g = np.hypot(xx - w / 2, yy - kc) < 4
+            kr = np.hypot((xx - w / 2) * 1.0, (yy - kc) * 1.2)
+            knee = kr < 11
+            plate(knee, 4, 3)
+            mat[(kr > 9.5) & knee] = MD
+            g = kr < 3
             mat[g] = MA
-            ht[g] += 2
+            ht[g] += 1.5
+        else:
+            seam(np.abs(yy - kc) < 0.9, glow=False)
     if part == "head" and kind == "front":
-        ey = int(h * 0.22)
-        eyes = (np.abs(yy - ey - 2) < 2.5) & (edge >= 4) & (np.abs(xx - w / 2) > 3)
+        ey = int(h * 0.36)
+        eyes = (np.abs(yy - ey) < 2) & (edge >= 5) & (np.abs(xx - w / 2) > 3)
         mat[eyes] = MA
+        ht[eyes] -= 1
+        seam((np.abs(xx - w / 2) < 1.0) & (yy > ey + 3) & (edge >= 4), glow=False)
     return mat, ht
 
 
 def light(mat, ht, st, along):
     stops = st["stops"]
-    gold = hq.tint(hq.GOLD, stops[2], 0.25)
     acc = rgb(st["accent"])
-    hs = ndimage.gaussian_filter(ht, 0.8)
+    hs = ndimage.gaussian_filter(ht, 0.9)
     gy, gx = np.gradient(hs)
-    nx, ny, nz = -gx * 0.9, -gy * 0.9, np.ones_like(hs)
+    nx, ny, nz = -gx * 1.1, -gy * 1.1, np.ones_like(hs)
     ln = np.sqrt(nx ** 2 + ny ** 2 + nz ** 2)
     nx, ny, nz = nx / ln, ny / ln, nz / ln
     L = np.array([-0.35, -0.7, 0.62]); L /= np.linalg.norm(L)
     H = L + np.array([0, 0, 1.0]); H /= np.linalg.norm(H)
     diff = np.clip(nx * L[0] + ny * L[1] + nz * L[2], 0, 1)
-    spec = np.clip(nx * H[0] + ny * H[1] + nz * H[2], 0, 1) ** 24
-    ao = np.clip(0.75 + (ht - ndimage.uniform_filter(ht, 7)) * 0.12, 0.55, 1.1)
+    spec = np.clip(nx * H[0] + ny * H[1] + nz * H[2], 0, 1) ** 30
     col = np.zeros(mat.shape + (3,))
-    t = (diff - 0.35) * 1.25 + 0.42 + along
+    t = (diff - 0.45) * 1.5 + 0.40 + along
     m = mat == MM
-    col[m] = hq.ramp([stops[0], stops[1], stops[2], stops[3]], t[m] * 0.95)
-    col[m] += spec[m, None] * 150
-    g = mat == MG
-    col[g] = hq.ramp(gold, t[g]) + spec[g, None] * 230
+    col[m] = hq.ramp([stops[0], stops[1], stops[2], stops[3]], t[m])
+    col[m] += (spec[m, None] * (180 + 0.3 * rgb(stops[3])))
+    d = (mat == MD) | (mat == MG)
+    col[d] = hq.ramp([stops[0], stops[0], stops[1], stops[2]], t[d]) + spec[d, None] * 120
     a = mat == MA
-    col[a] = acc * (0.85 + 0.25 * diff[a, None]) + (255 - acc) * 0.25 * diff[a, None]
-    d = mat == MD
-    col[d] = rgb(stops[0]) * 0.8
-    col[~a] *= ao[~a, None]
+    # glow: bright core, coloured edges; also tint neighbouring metal (light bleed)
+    col[a] = acc * 0.95 + (255 - acc) * 0.45
+    bleed = ndimage.gaussian_filter(a.astype(float), 3.0) * (~a)
+    col += bleed[..., None] * acc[None, None] * 1.4
     return np.clip(col, 0, 255)
 
 
 def worn(set_name, layer, st, vanilla_path):
+    st = pal(set_name, st)
     src = Image.open(vanilla_path).convert("RGBA")
     W, H = src.size
     cover = np.array(src)[..., 3] > 0
@@ -396,6 +409,7 @@ def worn(set_name, layer, st, vanilla_path):
 
 # ------------------------------------------------------------------ 3D helmets (worn on the head)
 def helmet_texture(set_name, st):
+    st = pal(set_name, st)
     """64x64 atlas for the 3D helmet model. UV units (0..16) -> 4px each.
     front 0,0-8,8 | side 8,0-16,8 | gold 0,8-4,12 | accent 4,8-8,12 | metal 8,8-12,12 | dark 12,8-16,12 | horn 0,12-8,16"""
     out = np.zeros((64, 64, 4))
@@ -414,7 +428,7 @@ def helmet_texture(set_name, st):
     stops = st["stops"]
     gold = hq.tint(hq.GOLD, stops[2], 0.25)
     sw = lambda cols, lo, hi: hq.ramp(cols, lo + (hi - lo) * (1 - yy / 15) * 0.7 + (1 - xx / 15) * (hi - lo) * 0.3)
-    out[32:48, 0:16, :3] = sw(gold, 0.25, 0.95)
+    out[32:48, 0:16, :3] = sw([stops[0], stops[1], stops[2], stops[3]], 0.15, 0.75)
     acc = rgb(st["accent"])
     out[32:48, 16:32, :3] = np.clip(acc[None, None] * (0.8 + 0.3 * (1 - yy / 15))[..., None] + 40 * (1 - yy / 15)[..., None], 0, 255)
     met = [stops[0], stops[1], stops[2], stops[3], "#ffffff"]
@@ -469,18 +483,19 @@ def helmet_model(set_name, tex):
     # shell: sides/back/top use the plated side face, the front face has the visor
     shell = box([0, 3, 0], [16, 16, 16], "side", front_uv="front")
     E.append(shell)
-    E.append(box([-0.5, 3, -0.5], [16.5, 5, 16.5], "gold"))                 # lower rim
-    E.append(box([7, 15.5, -0.5], [9, 17.5, 16.5], "gold"))                  # crest ridge
+    E.append(box([-0.5, 3, -0.5], [16.5, 5, 16.5], "dark"))                 # lower rim
+    E.append(box([-0.3, 5, -0.3], [16.3, 5.4, 16.3], "acc"))                # glowing seam
+    E.append(box([7, 15.5, -0.5], [9, 17.5, 16.5], "dark"))                  # crest ridge
     side_guard = box([-0.6, 0, -0.6], [3, 9, 6], "metal")                     # cheek guards
     E += [side_guard, mirror(side_guard)]
     E.append(box([1.5, 8.5, -0.8], [14.5, 10, -0.2], "acc"))                   # visor glow bar
-    E.append(box([7.2, 2, -0.9], [8.8, 10.5, -0.2], "gold"))                   # nose guard
+    E.append(box([7.2, 2, -0.9], [8.8, 10.5, -0.2], "dark"))                   # nose guard
     if set_name == "draco":                                                   # swept-back dragon horns
         for k, (x, y, z, s) in enumerate([(-1.5, 10, 6, 3.6), (-3.2, 12.2, 8, 3.0), (-4.3, 14.5, 10.2, 2.4), (-4.9, 16.6, 12.4, 1.8), (-5.1, 18.4, 14.3, 1.2)]):
             h = box([x, y, z], [x + s, y + s, z + s], "horn")
             E += [h, mirror(h)]
         for k in range(4):                                                    # spine plates
-            E.append(box([7.4, 17, 2 + k * 3.5], [8.6, 19.5 - k * 0.4, 4 + k * 3.5], "gold"))
+            E.append(box([7.4, 17, 2 + k * 3.5], [8.6, 19.5 - k * 0.4, 4 + k * 3.5], "acc"))
     elif set_name == "bone":                                                  # big ram horns curling down
         pts = [(-1.5, 11, 5), (-3.5, 12.5, 7), (-4.8, 11.5, 9.5), (-4.6, 9, 11.5), (-3.4, 7, 12)]
         for k, (x, y, z) in enumerate(pts):
@@ -495,10 +510,10 @@ def helmet_model(set_name, tex):
         for k in range(6):
             hh = [3, 5, 7.5, 9, 7, 4][k]
             E.append(box([6.5, 16, 1 + k * 2.5], [9.5, 16 + hh, 3.5 + k * 2.5], "acc"))
-            E.append(box([7, 16, 1.5 + k * 2.5], [9, 16 + hh * 0.6, 3 + k * 2.5], "gold"))
+            E.append(box([7, 16, 1.5 + k * 2.5], [9, 16 + hh * 0.6, 3 + k * 2.5], "dark"))
     elif set_name == "storm":                                                 # winged helm
         for k in range(4):
-            wv = box([-1.2, 9 + k * 1.8, 5 + k * 1.2], [-0.4, 11 + k * 1.8, 14 + k * 1.5], "gold",
+            wv = box([-1.2, 9 + k * 1.8, 5 + k * 1.2], [-0.4, 11 + k * 1.8, 14 + k * 1.5], "metal" if k % 2 else "acc",
                      rot=rot(-22.5, "z", [-0.4, 9 + k * 1.8, 6]))
             E += [wv, mirror(wv)]
     elif set_name == "void":                                                  # tall fin + side spikes

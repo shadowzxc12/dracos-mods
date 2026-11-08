@@ -67,7 +67,7 @@ def lit(name, st):
     return lit_map(g, wrap, st)
 
 
-def lit_map(g, wrap, st, metal_bevel=9.0):
+def lit_map(g, wrap, st, metal_bevel=9.0, guard_cols=None):
     """g: (R*SS)^2 group map, wrap: grooves. Returns (rgb float 64x64x3, alpha bool, group map) at 64."""
     n = g.shape[0]
     solid = g > 0
@@ -107,7 +107,7 @@ def lit_map(g, wrap, st, metal_bevel=9.0):
     core = np.clip(d_a / 3.0, 0, 1)
     col[a] = acc * (0.72 + 0.3 * diff[a, None]) + (255 - acc) * (0.45 * core[a, None]) + spec[a, None] * 120
     gd = g == GUARD
-    col[gd] = ramp(tint(GOLD, stops[2], 0.22), 0.1 + diff[gd] * 0.85) + spec[gd, None] * 200
+    col[gd] = ramp(guard_cols or tint(GOLD, stops[2], 0.22), 0.1 + diff[gd] * 0.85) + spec[gd, None] * 200
     hd = g == HANDLE
     col[hd] = ramp(tint(LEATHER, stops[1], 0.25), 0.08 + diff[hd] * 0.8) + spec[hd, None] * 40
     # ambient occlusion where parts meet (handle under the guard etc.)
