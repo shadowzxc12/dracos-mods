@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Spawn hub: "/hub build" (owner/OP) builds it where you stand - fountain plaza, crates, AFK zone,
+ * Spawn hub: "/buildspawn" (owner/OP) builds it where you stand - fountain plaza, crates, AFK zone,
  * duel arena and leaderboards - and remembers all positions. Inside the hub nobody (except the owner or
  * creative players) can break/place blocks, players take no damage (except in a duel) and hostile mobs
  * don't stay. Standing in the AFK zone pays money and sometimes crate keys.
@@ -172,12 +172,13 @@ public final class Hub {
 
     // ------------------------------------------------------------------ commands
     public static void commands(CommandDispatcher<ServerCommandSource> d) {
-        d.register(CommandManager.literal("hub")
+        // NOTE: Minehut's proxy owns /hub and /lobby, so this is /buildspawn
+        d.register(CommandManager.literal("buildspawn")
                 .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
-                .then(CommandManager.literal("build").executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; }))
+                .executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; })
                 .then(CommandManager.literal("refresh").executes(ctx -> { Leaderboards.refresh(ctx.getSource().getServer()); labels(ctx.getSource().getServer()); return 1; }))
                 .then(CommandManager.literal("info").executes(ctx -> {
-                    ctx.getSource().sendFeedback(() -> Text.literal(CFG.radius <= 0 ? "No hub yet - stand where you want it and use /hub build"
+                    ctx.getSource().sendFeedback(() -> Text.literal(CFG.radius <= 0 ? "No spawn yet - stand where you want it and use /buildspawn"
                             : "Hub at " + CFG.cx + " " + CFG.cy + " " + CFG.cz + " radius " + CFG.radius), false);
                     return 1;
                 })));
