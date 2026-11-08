@@ -224,6 +224,13 @@ public final class Hub {
         d.register(CommandManager.literal("buildspawn")
                 .requires(CommandManager.requirePermissionLevel(CommandManager.GAMEMASTERS_CHECK))
                 .executes(ctx -> { build(ctx.getSource().getPlayerOrThrow()); return 1; })
+                .then(CommandManager.literal("rebuild").executes(ctx -> {
+                    ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                    if (CFG.radius <= 0) { p.sendMessage(Text.literal("No spawn yet - use /buildspawn").formatted(Formatting.RED), false); return 0; }
+                    p.teleport(world(ctx.getSource().getServer()), CFG.cx + 0.5, CFG.cy, CFG.cz + 0.5, java.util.Set.of(), p.getYaw(), p.getPitch(), true);
+                    build(p);
+                    return 1;
+                }))
                 .then(CommandManager.literal("clear").executes(ctx -> { clear(ctx.getSource().getServer()); ctx.getSource().sendFeedback(() -> Text.literal("Old spawn removed. Stand somewhere else and use /buildspawn."), false); return 1; }))
                 .then(CommandManager.literal("refresh").executes(ctx -> { Leaderboards.refresh(ctx.getSource().getServer()); labels(ctx.getSource().getServer()); return 1; }))
                 .then(CommandManager.literal("info").executes(ctx -> {
@@ -345,8 +352,13 @@ public final class Hub {
         for (int i = 0; i < 4; i++) {
             int x = cx - 12 + i * 8, z = cz - 18;
             for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) set(w, x + dx, cy - 1, z + dz, pedestal[i]);
-            set(w, x, cy, z, crateBlock[i]);
-            CFG.crates.put(types[i], new int[]{x, cy, z});
+            set(w, x, cy, z, pedestal[i]);                              // crate sits on a raised block
+            set(w, x, cy + 1, z, crateBlock[i]);
+            for (int dx : new int[]{-2, 2}) {
+                set(w, x + dx, cy, z, Blocks.POLISHED_BLACKSTONE_WALL.getDefaultState());
+                set(w, x + dx, cy + 1, z, Blocks.LANTERN.getDefaultState());
+            }
+            CFG.crates.put(types[i], new int[]{x, cy + 1, z});
         }
         // ---- AFK zone (south): glowing pad with glass edge
         int az = cz + 20;
@@ -418,6 +430,26 @@ public final class Hub {
                     + ",VillagerData:{profession:\"" + npcs[i][2] + "\",level:5,type:\"minecraft:plains\"}}");
         }
 
+        // ---- decorations: cherry trees, flower ring around the fountain, arches over the 4 entrances
+        for (int[] t : new int[][]{{-20, -22}, {20, -22}, {-20, 21}, {20, 21}, {-26, -26}, {26, -26}, {-26, 26}, {26, 26}})
+            tree(w, cx + t[0], cy, cz + t[1]);
+        BlockState[] flowers = {Blocks.POPPY.getDefaultState(), Blocks.CORNFLOWER.getDefaultState(), Blocks.ALLIUM.getDefaultState(),
+                Blocks.OXEYE_DAISY.getDefaultState(), Blocks.AZURE_BLUET.getDefaultState(), Blocks.LILY_OF_THE_VALLEY.getDefaultState()};
+        for (int x = -5; x <= 5; x++) for (int z = -5; z <= 5; z++) {
+            if (Math.max(Math.abs(x), Math.abs(z)) != 5 || Math.abs(x) <= 2 || Math.abs(z) <= 2) continue;
+            set(w, cx + x, cy - 1, cz + z, Blocks.GRASS_BLOCK.getDefaultState());
+            set(w, cx + x, cy, cz + z, flowers[Math.floorMod(x * 7 + z * 3, flowers.length)]);
+        }
+        for (int[] d : new int[][]{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}) {
+            int ex = cx + d[0] * R, ez = cz + d[1] * R;
+            for (int k = -3; k <= 3; k++) {
+                int x = ex + (d[1] != 0 ? k : 0), z = ez + (d[0] != 0 ? k : 0);
+                if (Math.abs(k) == 3) for (int y = cy; y <= cy + 4; y++) set(w, x, y, z, Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+                set(w, x, cy + 5, z, Math.abs(k) == 3 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+            }
+            set(w, ex, cy + 4, ez, Blocks.LANTERN.getDefaultState().with(net.minecraft.block.LanternBlock.HANGING, true));
+        }
+
         CFG.world = w.getRegistryKey().getValue().toString();
         CFG.cx = cx; CFG.cy = cy; CFG.cz = cz;
         CFG.radius = ax + AR + 3 - cx;
@@ -448,6 +480,19 @@ public final class Hub {
         }
         CFG = new Cfg();
         save();
+    }
+
+    /** Small decorative cherry tree on a patch of grass (leaves never decay). */
+    static void tree(ServerWorld w, int x, int cy, int z) {
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) set(w, x + dx, cy - 1, z + dz, Blocks.MOSS_BLOCK.getDefaultState());
+        BlockState leaves = Blocks.CHERRY_LEAVES.getDefaultState().with(net.minecraft.block.LeavesBlock.PERSISTENT, true);
+        for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) for (int dy = 3; dy <= 6; dy++) {
+            double d = dx * dx + dz * dz + (dy - 4.5) * (dy - 4.5) * 2.2;
+            if (d <= 9.5 && Math.floorMod(dx * 5 + dz * 3 + dy, 7) != 0) set(w, x + dx, cy + dy, z + dz, leaves);
+        }
+        for (int y = cy; y <= cy + 4; y++) set(w, x, y, z, Blocks.CHERRY_LOG.getDefaultState());
+        set(w, x + 1, cy, z, Blocks.PINK_PETALS.getDefaultState());
+        set(w, x - 1, cy, z + 1, Blocks.PINK_PETALS.getDefaultState());
     }
 
     private static BlockState floor(int x, int z, boolean plaza, boolean arena, boolean path) {

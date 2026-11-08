@@ -155,7 +155,6 @@ public final class Leaderboards {
     public static void refresh(MinecraftServer server) {
         if (Hub.CFG.radius <= 0 || Hub.CFG.boards.isEmpty()) return;
         Map<String, String> names = names(server);
-        Hub.cmd(server, "execute in " + Hub.CFG.world + " run kill @e[type=minecraft:text_display,tag=dracos_lb]");
         board(server, "money", "$ RICHEST PLAYERS", Formatting.GOLD, top(balances(), names), names, Money::fmt);
         Map<String, Long> kills = new HashMap<>(), minutes = new HashMap<>();
         vanillaStats(server, kills, minutes);
@@ -177,6 +176,18 @@ public final class Leaderboards {
                     .append(Text.literal(fmt.apply(e.getValue())).formatted(Formatting.YELLOW))
                     .append(Text.literal(i < rows.size() - 1 ? "\n" : ""));
         }
-        Hub.hologram(server, pos[0], pos[1], pos[2], t, "dracos_lb");
+        // update the existing board in place (no flicker); only spawn a new one if it isn't there
+        var w = Hub.world(server);
+        var box = new net.minecraft.util.math.Box(pos[0] - 1, pos[1] - 1, pos[2] - 1, pos[0] + 1, pos[1] + 1, pos[2] + 1);
+        if (!w.isChunkLoaded(((int) Math.floor(pos[0])) >> 4, ((int) Math.floor(pos[2])) >> 4)) return;
+        var found = w.getEntitiesByType(net.minecraft.entity.EntityType.TEXT_DISPLAY, box, e -> e.getCommandTags().contains("dracos_lb_" + id));
+        for (int i = 1; i < found.size(); i++) found.get(i).discard();
+        if (!found.isEmpty()) {
+            Hub.cmd(server, "data merge entity " + found.get(0).getUuidAsString() + " {text:" + Hub.snbt(t) + "}");
+        } else {
+            // old boards from before had only the dracos_lb tag
+            for (var e : w.getEntitiesByType(net.minecraft.entity.EntityType.TEXT_DISPLAY, box, e -> e.getCommandTags().contains("dracos_lb"))) e.discard();
+            Hub.hologram(server, pos[0], pos[1], pos[2], t, "dracos_lb_" + id);
+        }
     }
 }

@@ -19,13 +19,14 @@ public final class Tutorial {
     private Tutorial() {}
 
     private static final String[][] PAGES = {
-            {"#Dracos SMP", "", "Welcome!", "This book explains", "the server.", "", "2 Money", "3 Homes", "4 Travel", "5 Legendary items", "6 Ranks", "7 Commands", "8 Rules"},
-            {"#Money", "", "Sell what you farm", "and mine:", "", "/sell", " open sell window", "/sell hand", " sell held item", "/shop  buy items", "/ah  auction house", "/daily  free money"},
-            {"#Homes", "", "/sethome <name>", "/home <name>", "/delhome <name>", "/homelimit", "", "Members get 5", "homes. Ranks get", "up to 50."},
-            {"#Travel", "", "/spawn", "/tpa <player>", "/rtp", " random teleport", "", "!No teleporting", "!in combat!"},
-            {"#Legendary", "", "/legendary", "", "100 weapons, tools,", "staffs and armor.", "They never break", "and have powers.", "Right-click swords", "for abilities.", "Full armor sets", "give bonus effects."},
-            {"#Ranks", "", "Monthly ranks:", "VIP  MVP", "LEGEND  DRACO", "", "More homes, more", "sell money, /kit", "and more.", "", "/ranks  all perks", "/store  buy a rank"},
-            {"#Commands", "", "/menu", " effects on/off", "/rankshop", "/kit  free kit (1h)", "/backpack  storage", "/hat  wear a block", "/bounty <player> <$>", "/clan  make a clan", "/quests  daily", "/spawners", "/tutorial", " this book again"},
+            {"#Dracos SMP", "", "Welcome!", "This book explains", "the server.", "", "2 Money", "3 Spawn & Crates", "4 Homes & Travel", "5 Legendary items", "6 Fun & PvP", "7 Ranks", "8 Commands", "9 Rules"},
+            {"#Money", "", "/sell  sell window", "/sell hand", "/autosell", "/shop  buy items", "/ah  auction house", "/orders  buy orders", "/bank  1% a day", "/quests  5 daily", "/daily  free money", "/skills  level up"},
+            {"#Spawn", "", "/spawn", "", "Crates: right-click", "with a key, left-", "click to preview.", "", "AFK zone: money", "every 5 min + keys", "", "Talk to the NPCs", "for every menu."},
+            {"#Homes & Travel", "", "/sethome <name>", "/home <name>", "/rtp  or the portal", " at spawn", "/tpa <player>", "/pwarp  warps", "/pwarp set <name>", " your own warp", "", "!No teleporting", "!in combat!"},
+            {"#Legendary", "", "/legendary", "", "100 weapons, tools,", "staffs and armor.", "They never break", "and have powers.", "Right-click", "for abilities.", "Full armor sets", "give bonus effects."},
+            {"#Fun & PvP", "", "/duel <player> [$]", " 1v1, no item loss", "/trade <player>", " safe trading", "/coinflip  /jackpot", "/clan  make a clan", "/bounty <player> <$>", "", "Kill players for", "their heads ($)."},
+            {"#Ranks", "", "Monthly ranks:", "VIP  MVP", "LEGEND  DRACO", "", "More homes, more", "sell money, /kit", "more warps.", "", "/ranks  all perks", "/store  buy a rank"},
+            {"#Commands", "", "/menu  settings", "/rankshop", "/kit  free kit (1h)", "/backpack  storage", "/hat  wear a block", "/spawners", "/duel  /trade", "/tutorial", " this book again"},
             {"#Rules", "", "1. No cheats", "2. No griefing", "3. No stealing", "4. Be respectful", "5. No spam or ads", "6. Combat logging", "   = death", "", "Have fun!", "- Dracos team"}
     };
 
