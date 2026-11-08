@@ -114,6 +114,7 @@ public final class Duels {
         CURRENT = d;
         ServerWorld w = Hub.world(server);
         int[] A = Hub.CFG.arenaA, B = Hub.CFG.arenaB;
+        p.stopRiding(); t.stopRiding();
         p.teleport(w, A[0] + 0.5, A[1], A[2] + 0.5, Set.of(), -90f, 0f, true);
         t.teleport(w, B[0] + 0.5, B[1], B[2] + 0.5, Set.of(), 90f, 0f, true);
         for (ServerPlayerEntity x : new ServerPlayerEntity[]{p, t}) prep(x);
@@ -142,6 +143,7 @@ public final class Duels {
         Duel d = CURRENT;
         if (d == null || d.over) return;
         d.over = true;
+        DracosCore.LOGGER.info("[Duel] ended: {}", reason);
         ServerPlayerEntity pa = server.getPlayerManager().getPlayer(d.a), pb = server.getPlayerManager().getPlayer(d.b);
         long pot = d.bet * 2;
         if (winner == null) {
@@ -160,8 +162,32 @@ public final class Duels {
         }
         if (wn != null) server.getPlayerManager().broadcast(Text.literal("⚔ ").formatted(Formatting.RED)
                 .append(Text.literal(wn).formatted(Formatting.GOLD, Formatting.BOLD))
-                .append(Text.literal(" won the duel" + (pot > 0 ? " and " + Money.fmt(pot - pot * 5 / 100) : "") + "!").formatted(Formatting.YELLOW)), false);
+                .append(Text.literal(" won the duel" + (pot > 0 ? " and " + Money.fmt(pot - pot * 5 / 100) : "") + "! ").formatted(Formatting.YELLOW))
+                .append(Text.literal("(" + reason + ")").formatted(Formatting.GRAY)), false);
         d.tick = -60; // send them back 3 seconds later (handled in tick)
+    }
+
+    /** Nobody loses just because of their position: anyone outside the arena (pearl, lag, anticheat setback,
+     *  vehicle...) is put back on their spawn point instead. During the countdown both stay on their spots. */
+    static void keepInArena(MinecraftServer server, Duel d, ServerPlayerEntity pa, ServerPlayerEntity pb) {
+        ServerWorld w = Hub.world(server);
+        var box = Hub.arenaBox();
+        int[][] spots = {Hub.CFG.arenaA, Hub.CFG.arenaB};
+        ServerPlayerEntity[] ps = {pa, pb};
+        for (int i = 0; i < 2; i++) {
+            ServerPlayerEntity x = ps[i];
+            if (x == null || spots[i] == null) continue;
+            int[] s = spots[i];
+            boolean outside = x.getEntityWorld() != w || !box.contains(x.getX(), x.getY(), x.getZ());
+            boolean moved = !d.fighting && x.squaredDistanceTo(s[0] + 0.5, s[1], s[2] + 0.5) > 2.25;
+            if (outside || moved) {
+                if (outside) DracosCore.LOGGER.info("[Duel] {} was outside the arena at {} {} {} in {} - moved back",
+                        x.getName().getString(), (int) x.getX(), (int) x.getY(), (int) x.getZ(), x.getEntityWorld().getRegistryKey().getValue());
+                if (x.hasVehicle()) x.stopRiding();
+                x.teleport(w, s[0] + 0.5, s[1], s[2] + 0.5, Set.of(), i == 0 ? -90f : 90f, 0f, true);
+                x.fallDistance = 0;
+            }
+        }
     }
 
     static String name(ServerPlayerEntity p, String def) { return p != null ? p.getName().getString() : def; }
@@ -215,6 +241,7 @@ public final class Duels {
                 return;
             }
             if (!d.fighting) {
+                if (d.tick % 5 == 0) keepInArena(server, d, pa, pb);
                 if (d.tick % 20 == 0) {
                     int n = 5 - d.tick / 20;
                     for (ServerPlayerEntity x : new ServerPlayerEntity[]{pa, pb}) if (x != null) {
@@ -226,16 +253,7 @@ public final class Duels {
                 return;
             }
             if (d.tick > MAX_TICKS) { end(server, null, "Time is up"); return; }
-            if (d.tick % 10 == 0) {
-                var box = Hub.arenaBox();
-                for (ServerPlayerEntity x : new ServerPlayerEntity[]{pa, pb}) {
-                    if (x != null && (!box.contains(x.getX(), x.getY(), x.getZ()) || x.getEntityWorld() != Hub.world(server))) {
-                        UUID other = d.a.equals(x.getUuid()) ? d.b : d.a;
-                        end(server, other, x.getName().getString() + " left the arena");
-                        return;
-                    }
-                }
-            }
+            if (d.tick % 10 == 0) keepInArena(server, d, pa, pb);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             if (CURRENT != null && !CURRENT.over) end(server, null, "Server restart");
