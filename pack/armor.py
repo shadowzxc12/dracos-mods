@@ -191,7 +191,8 @@ def icon(set_name, piece, st):
     PIECES[piece](c, set_name)
     s0 = st.get("dark", st["stops"])
     trim = [s0[0], s0[1], s0[2], s0[3], s0[3]]          # set-coloured trims
-    return hq.frames_from(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim), st, seed=len(set_name + piece), n_frames=12)
+    return hq.pixel_art2(hq.lit_map(c.g, c.wrap, st, metal_bevel=7.0, guard_cols=trim, out_res=hq.PIX, want_shade=True), st,
+                         guard_cols=trim, seed=len(set_name + piece), n_frames=16)
 
 
 # ------------------------------------------------------------------ worn (humanoid) textures

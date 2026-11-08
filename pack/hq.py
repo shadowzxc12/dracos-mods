@@ -273,3 +273,107 @@ def frames_from(litres, st, seed=0, n_frames=FRAMES):
                         rgba[y, x, :3] = rgba[y, x, :3] * (1 - w) + spark * w
         strip[f * R:(f + 1) * R] = np.clip(rgba, 0, 255).astype(np.uint8)
     return Image.fromarray(strip, "RGBA")
+
+
+def hue_ramp(dark, mid, light, accent_shadow="#160c2c", warm="#fff1cf", n=6):
+    """Pixel-art ramp with hue shifting: shadows lean cold/purple, highlights lean warm."""
+    d = mixc(rgb(dark), rgb(accent_shadow), 0.35)
+    l = mixc(rgb(light), rgb(warm), 0.45)
+    keys = [d * 0.75, d, rgb(mid), mixc(rgb(mid), rgb(light), 0.6), l, mixc(l, np.array([255.0, 255, 255]), 0.7)]
+    return keys[:n]
+
+
+def pixel_art2(litres, st, seed=0, n_frames=16, guard_cols=None):
+    """Vivid hand-pixelled legendary (crate/server style): hue-shifted ramps, coloured selective outline,
+    spine highlight, shimmer band, glowing accent with a coloured halo and sparkle stars around the item."""
+    _, alpha, grp, shade = litres
+    O = alpha.shape[0]
+    s = st["stops"]
+    W = np.array([255.0, 255, 255])
+    acc = rgb(st["accent"])
+    gold = guard_cols or tint(GOLD, s[2], 0.25)
+    leather = tint(LEATHER, s[1], 0.3)
+    P = {METAL: hue_ramp(s[0], s[2], s[3]),
+         GUARD: hue_ramp(gold[1], gold[2], gold[3], warm="#fff6c0", n=5),
+         HANDLE: [rgb(leather[0]), rgb(leather[1]), rgb(leather[2]), rgb(leather[3])],
+         ACCENT: [mixc(acc, rgb(s[0]), 0.45), acc, mixc(acc, W, 0.45), mixc(acc, W, 0.8)]}
+    inside = lambda y, x: 0 <= y < O and 0 <= x < O and alpha[y, x]
+    idx = np.zeros((O, O), dtype=int)
+    for k, pal in P.items():
+        m = grp == k
+        if not m.any():
+            continue
+        v = shade[m]
+        lo, hi = np.percentile(v, 4), np.percentile(v, 96)
+        n = len(pal) - (1 if k == METAL else 0)          # keep the top metal colour for the spine glint
+        idx[m] = np.clip(((v - lo) / max(hi - lo, 1e-6) * (n - 1) + 0.5).astype(int), 0, n - 1)
+    adj = idx.copy()
+    for y in range(O):
+        for x in range(O):
+            if not alpha[y, x]:
+                continue
+            n = len(P[grp[y, x]])
+            if not inside(y - 1, x) or not inside(y, x - 1):
+                adj[y, x] = min(n - 2 if grp[y, x] == METAL else n - 1, idx[y, x] + 1)
+            elif not inside(y + 1, x) or not inside(y, x + 1):
+                adj[y, x] = max(0, idx[y, x] - 1)
+    idx = adj
+    # spine glint: the brightest interior metal pixels get the top colour
+    met = (grp == METAL) & ndimage.binary_erosion(alpha)
+    if met.any():
+        thr = np.percentile(shade[met], 90)
+        idx[met & (shade >= thr)] = len(P[METAL]) - 1
+    acc_m = grp == ACCENT
+    acc_core = ndimage.binary_erosion(acc_m)
+    cross = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+    outl = ndimage.binary_dilation(alpha, structure=cross) & ~alpha
+    # selective outline: dark version of the part it touches; next to glowing parts it glows too
+    out_col = np.zeros((O, O, 3))
+    near_acc = ndimage.binary_dilation(acc_m, structure=np.ones((3, 3))) & outl
+    for k, pal in P.items():
+        m = ndimage.binary_dilation(grp == k, structure=cross) & outl
+        out_col[m] = pal[0] * 0.45
+    halo = ndimage.binary_dilation(outl, structure=cross) & ~alpha & ~outl
+    halo_acc = halo & ndimage.binary_dilation(acc_m, structure=np.ones((5, 5)))
+    rnd = random.Random(seed)
+    empty = [(y, x) for y in range(2, O - 2) for x in range(2, O - 2)
+             if not ndimage.binary_dilation(alpha | outl, iterations=2)[y, x]] if False else None
+    occ = ndimage.binary_dilation(alpha | outl, iterations=2)
+    near = ndimage.binary_dilation(alpha, iterations=6) & ~occ
+    spots = [tuple(p) for p in zip(*np.nonzero(near)) if 2 <= p[0] < O - 2 and 2 <= p[1] < O - 2]
+    stars = []
+    for i in range(3):
+        if spots:
+            stars.append((i * n_frames // 3 + rnd.randrange(2), spots[rnd.randrange(len(spots))]))
+    yy, xx = np.mgrid[0:O, 0:O]
+    diag = xx + (O - 1 - yy)
+    strip = np.zeros((O * n_frames, O, 4), dtype=np.uint8)
+    for f in range(n_frames):
+        ph = 0.5 + 0.5 * math.sin(2 * math.pi * f / n_frames)
+        band = (f * 2 * O) // n_frames * 2 - O // 2           # shimmer sweeps once per loop
+        sh = (np.abs(diag - band) <= 1) & ((grp == METAL) | (grp == GUARD))
+        img = np.zeros((O, O, 4))
+        for k, pal in P.items():
+            m = grp == k
+            ii = np.where(sh & m, np.minimum(idx + 1, len(pal) - 1), idx)
+            for i, c in enumerate(pal):
+                img[m & (ii == i), :3] = c
+        img[acc_m, :3] = mixc(P[ACCENT][1], P[ACCENT][2], ph * 0.6)
+        img[acc_core, :3] = mixc(P[ACCENT][2], P[ACCENT][3], ph)
+        img[alpha, 3] = 255
+        img[outl, :3] = out_col[outl]
+        img[near_acc, :3] = mixc(P[ACCENT][0], P[ACCENT][1], 0.3 + 0.5 * ph)
+        img[outl, 3] = 255
+        if ph > 0.55:
+            img[halo_acc, :3] = P[ACCENT][0]
+            img[halo_acc, 3] = 255
+        for sf, (sy, sx) in stars:
+            age = (f - sf) % n_frames
+            if age == 0 or age == 2:
+                img[sy, sx, :3] = P[ACCENT][2]; img[sy, sx, 3] = 255
+            elif age == 1:
+                img[sy, sx, :3] = W; img[sy, sx, 3] = 255
+                for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                    img[sy + dy, sx + dx, :3] = P[ACCENT][2]; img[sy + dy, sx + dx, 3] = 255
+        strip[f * O:(f + 1) * O] = np.clip(img, 0, 255).astype(np.uint8)
+    return Image.fromarray(strip, "RGBA")

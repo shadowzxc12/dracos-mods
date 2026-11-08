@@ -434,7 +434,7 @@ SHAPES = {
 }
 
 
-ZOOM = 1.15   # draw a little smaller than the canvas so big heads never get cut off
+ZOOM = 1.27   # draw smaller than the canvas so big heads never get cut off
 
 
 def grid(name, res=64):

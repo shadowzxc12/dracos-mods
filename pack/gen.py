@@ -519,7 +519,9 @@ def sprite_frames(name):
 def shape_frames(name):
     """Unique lit, bevelled 64x64 legendary from shapes.py + hq.py."""
     import hq
-    return hq.frames(name, SETS[RECOLORED[name][1]], seed=len(name))
+    st = SETS[RECOLORED[name][1]]
+    g, wrap = hq.material(name)
+    return hq.pixel_art2(hq.lit_map(g, wrap, st, out_res=hq.PIX, want_shade=True), st, seed=len(name))
 
 
 # --------------------------------------------------------------------------- 3D model display (same as vanilla handheld)
@@ -575,19 +577,7 @@ def main():
         save(frames, f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         item_model(name, parent)
-        if name in shapes.SHAPES:
-            # real 3D model in hand / on the ground / in frames; the inventory keeps the flat icon
-            import models3d
-            models3d.atlas(SETS[RECOLORED[name][1]]).save(os.path.join(OUT, f"assets/{NS}/textures/item/{name}_3d.png"))
-            m3 = models3d.model(name, f"{NS}:item/{name}_3d", None)
-            m3.pop("parent")
-            m3["display"] = display_for(parent)
-            wjson(m3, f"assets/{NS}/models/item/{name}_3d.json")
-            item_def(name, {"type": "minecraft:select", "property": "minecraft:display_context",
-                            "cases": [{"when": ["gui"], "model": {"type": "minecraft:model", "model": f"{NS}:item/{name}"}}],
-                            "fallback": {"type": "minecraft:model", "model": f"{NS}:item/{name}_3d"}})
-        else:
-            item_def(name)
+        item_def(name)
 
     # void bow (keeps vanilla pulling animation)
     for n, img in bow_textures().items():
@@ -617,7 +607,7 @@ def main():
         for piece in ("helmet", "chestplate", "leggings", "boots"):
             name = f"{s}_{piece}"
             save(armor.icon(s, piece, SETS[s]), f"assets/{NS}/textures/item/{name}.png")
-            wjson(anim_meta(3), f"assets/{NS}/textures/item/{name}.png.mcmeta")
+            wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
             item_model(name, "minecraft:item/generated")
             if piece == "helmet":
                 # 3D helmet when worn, flat icon everywhere else
