@@ -106,6 +106,8 @@ public final class Trade {
         final SimpleInventory inv = new SimpleInventory(54);
         boolean readyA, readyB, done, building;
         int countdown = -1;
+        int reopens;
+        final long created = System.currentTimeMillis();
 
         Session(ServerPlayerEntity pa, ServerPlayerEntity pb) {
             a = pa.getUuid(); b = pb.getUuid();
@@ -276,7 +278,17 @@ public final class Trade {
         @Override
         public void onClosed(PlayerEntity player) {
             super.onClosed(player);
-            if (!session.done && player instanceof ServerPlayerEntity sp) session.cancel(sp.getEntityWorld().getServer(), sp);
+            if (session.done || !(player instanceof ServerPlayerEntity sp)) return;
+            var server = sp.getEntityWorld().getServer();
+            // a close right after opening (chat screen closing, anticheat, ...) is not the player's choice: reopen
+            if (System.currentTimeMillis() - session.created < 1500 && session.reopens < 4 && !sp.isDisconnected()) {
+                session.reopens++;
+                DracosCore.LOGGER.info("[Trade] {} closed the trade right after it opened - reopening", sp.getName().getString());
+                server.execute(() -> { if (!session.done && sp.currentScreenHandler == sp.playerScreenHandler) session.open(sp, side); });
+                return;
+            }
+            DracosCore.LOGGER.info("[Trade] {} closed the trade - cancelled", sp.getName().getString());
+            session.cancel(server, sp);
         }
     }
 }
