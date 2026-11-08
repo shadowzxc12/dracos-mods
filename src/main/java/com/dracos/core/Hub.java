@@ -161,6 +161,7 @@ public final class Hub {
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (!TO_REMOVE.isEmpty()) { for (Entity e : TO_REMOVE) if (!e.isRemoved()) e.discard(); TO_REMOVE.clear(); }
+            if (!JOBS.isEmpty()) runJobs();
             if (CFG.portal != null && server.getTicks() % 5 == 0) portalTick(server);
             // no monsters at spawn or in the arena: also catch ones that walk / fly / get pushed in
             if (CFG.radius > 0 && server.getTicks() % 40 == 13) {
@@ -251,7 +252,7 @@ public final class Hub {
                     build(p);
                     return 1;
                 }))
-                .then(CommandManager.literal("clear").executes(ctx -> { clear(ctx.getSource().getServer()); ctx.getSource().sendFeedback(() -> Text.literal("Old spawn removed. Stand somewhere else and use /buildspawn."), false); return 1; }))
+                .then(CommandManager.literal("clear").executes(ctx -> { clear(ctx.getSource().getServer()); ctx.getSource().sendFeedback(() -> Text.literal("Removing the old spawn (takes a few seconds). Then stand somewhere else and use /buildspawn."), false); return 1; }))
                 .then(CommandManager.literal("refresh").executes(ctx -> { Leaderboards.refresh(ctx.getSource().getServer()); labels(ctx.getSource().getServer()); return 1; }))
                 .then(CommandManager.literal("info").executes(ctx -> {
                     ctx.getSource().sendFeedback(() -> Text.literal(CFG.radius <= 0 ? "No spawn yet - stand where you want it and use /buildspawn"
@@ -503,19 +504,43 @@ public final class Hub {
         if (CFG.radius <= 0) return;
         ServerWorld w = world(server);
         cmd(server, "execute in " + CFG.world + " run kill @e[tag=dracos_hub]");
-        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz;
-        int ax = CFG.arena != null ? CFG.arena[0] : cx + 48, ar = arenaR() + 3;
-        for (int x = cx - 31; x <= ax + ar; x++) for (int z = cz - Math.max(31, ar); z <= cz + Math.max(31, ar); z++) {
-            boolean plaza = Math.abs(x - cx) <= 31 && Math.abs(z - cz) <= 31;
-            boolean arena = Math.abs(x - ax) <= ar && Math.abs(z - cz) <= ar;
-            boolean path = Math.abs(z - cz) <= 2;
-            if (!plaza && !arena && !path) continue;
-            for (int y = cy - 2; y <= cy + 14; y++) set(w, x, y, z, Blocks.AIR.getDefaultState());
-            set(w, x, cy - 2, z, Blocks.DIRT.getDefaultState());
-            set(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
-        }
-        CFG = new Cfg();
+        cmd(server, "execute in " + CFG.world + " run kill @e[type=minecraft:text_display,tag=dracos_label]");
+        final int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz;
+        final int ax = CFG.arena != null ? CFG.arena[0] : cx + 48, ar = arenaR() + 3, zr = Math.max(32, ar);
+        final boolean sky = cy > 150;                 // built in the air: remove the foundation too, leave nothing behind
+        CFG = new Cfg();                              // protection off right away
         save();
+        // done a slice at a time (a few ms per tick) - doing it all at once froze the server until it was killed
+        for (int x0 = cx - 32; x0 <= ax + ar; x0++) {
+            final int x = x0;
+            JOBS.add(() -> {
+                for (int z = cz - zr; z <= cz + zr; z++) {
+                    boolean plaza = Math.abs(x - cx) <= 32 && Math.abs(z - cz) <= 32;
+                    boolean arena = Math.abs(x - ax) <= ar && Math.abs(z - cz) <= ar;
+                    boolean path = Math.abs(z - cz) <= 3;
+                    if (!plaza && !arena && !path) continue;
+                    for (int y = cy - (sky ? 4 : 2); y <= cy + 15; y++) fast(w, x, y, z, Blocks.AIR.getDefaultState());
+                    if (!sky) {
+                        fast(w, x, cy - 2, z, Blocks.DIRT.getDefaultState());
+                        fast(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
+                    }
+                }
+            });
+        }
+    }
+
+    /** Block change without neighbour updates / drops (big edits). */
+    private static void fast(ServerWorld w, int x, int y, int z, BlockState s) {
+        w.setBlockState(new BlockPos(x, y, z), s, net.minecraft.block.Block.NOTIFY_LISTENERS | net.minecraft.block.Block.FORCE_STATE
+                | net.minecraft.block.Block.SKIP_DROPS);
+    }
+
+    /** Big world edits queued and run a little every tick so the server never freezes. */
+    static final java.util.ArrayDeque<Runnable> JOBS = new java.util.ArrayDeque<>();
+
+    static void runJobs() {
+        long until = System.nanoTime() + 15_000_000L;
+        while (!JOBS.isEmpty() && System.nanoTime() < until) JOBS.poll().run();
     }
 
     /** Small decorative cherry tree on a patch of grass (leaves never decay). */
