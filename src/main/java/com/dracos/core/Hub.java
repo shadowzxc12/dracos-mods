@@ -597,20 +597,20 @@ public final class Hub {
             int ox = CFG.arena[0], or = arenaR() + 2;
             for (int x = ox - or; x <= ox + or; x++) for (int z = cz - or; z <= cz + or; z++) {
                 if (Math.abs(x - cx) <= R && Math.abs(z - cz) <= R) continue;
-                for (int y = cy; y <= cy + 14; y++) set(w, x, y, z, air);
+                for (int y = cy; y <= cy + 14; y++) fast(w, x, y, z, air);
                 if (!(Math.abs(x - ax) <= AR + 3 && Math.abs(z - cz) <= AR + 3)) {
-                    set(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
+                    fast(w, x, cy - 1, z, Blocks.GRASS_BLOCK.getDefaultState());
                 }
             }
         }
         for (int x = -AR - 3; x <= AR + 3; x++) for (int z = -AR - 3; z <= AR + 3; z++) {
             double d = Math.sqrt(x * x + z * z);
             int X = ax + x, Z = cz + z;
-            for (int y = cy; y <= cy + 14; y++) set(w, X, y, Z, air);
+            for (int y = cy; y <= cy + 14; y++) fast(w, X, y, Z, air);
             if (d > AR + 2.5) continue;
-            for (int y = cy - 4; y <= cy - 2; y++) set(w, X, y, Z, base);
+            for (int y = cy - 4; y <= cy - 2; y++) fast(w, X, y, Z, base);
             BlockState f = d > AR + 0.5 ? Blocks.POLISHED_DEEPSLATE.getDefaultState() : floorAt(x, z);
-            set(w, X, cy - 1, Z, f);
+            fast(w, X, cy - 1, Z, f);
             // wall: 2 thick, 7 high, pillars every 30 degrees, lights on top, barrier above
             if (d > AR + 0.5) {
                 int ang = (int) Math.round(Math.toDegrees(Math.atan2(z, x)) + 360) % 360;
@@ -624,10 +624,10 @@ public final class Hub {
                     else if (y == cy + 6) s = Blocks.STONE_BRICK_WALL.getDefaultState();
                     else if (y == cy + 7) s = b;
                     else s = ((x * 3 + y + z) % 5 == 0) ? Blocks.CRACKED_STONE_BRICKS.getDefaultState() : Blocks.STONE_BRICKS.getDefaultState();
-                    set(w, X, y, Z, s);
+                    fast(w, X, y, Z, s);
                 }
-                if (pillar && d <= AR + 1.5) set(w, X, cy + 8, Z, Blocks.SOUL_LANTERN.getDefaultState());
-                for (int y = cy + 8; y <= cy + 14; y++) if (!(pillar && y == cy + 8 && d <= AR + 1.5)) set(w, X, y, Z, b);
+                if (pillar && d <= AR + 1.5) fast(w, X, cy + 8, Z, Blocks.SOUL_LANTERN.getDefaultState());
+                for (int y = cy + 8; y <= cy + 14; y++) if (!(pillar && y == cy + 8 && d <= AR + 1.5)) fast(w, X, y, Z, b);
             }
         }
         cover(w, ax, cy, cz);
