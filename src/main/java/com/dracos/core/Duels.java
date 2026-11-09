@@ -113,6 +113,7 @@ public final class Duels {
         d.backA = Spot.of(p); d.backB = Spot.of(t);
         CURRENT = d;
         ServerWorld w = Hub.world(server);
+        Hub.resetArena(w);                                  // fresh arena for every duel (blocks from the last one gone)
         int[] A = Hub.CFG.arenaA, B = Hub.CFG.arenaB;
         p.stopRiding(); t.stopRiding();
         p.teleport(w, A[0] + 0.5, A[1], A[2] + 0.5, Set.of(), -90f, 0f, true);

@@ -128,11 +128,19 @@ public final class Hub {
                 att.sendMessage(Text.literal("PvP is off at spawn - use /duel or go out with /rtp").formatted(Formatting.RED), true);
             return false;
         });
-        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) ->
-                !(world instanceof ServerWorld sw) || bypass(player) || !inHub(sw, pos));
+        PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> {
+            if (!(world instanceof ServerWorld sw) || bypass(player) || !inHub(sw, pos)) return true;
+            if (player instanceof ServerPlayerEntity sp && duelBuildable(sp, pos)) {
+                sw.breakBlock(pos, false, player);           // no drops - the arena resets after every duel anyway
+                return false;
+            }
+            return false;
+        });
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (!(world instanceof ServerWorld sw) || bypass(player)) return ActionResult.PASS;
             if (!inHub(sw, hit.getBlockPos()) && !inHub(sw, hit.getBlockPos().offset(hit.getSide()))) return ActionResult.PASS;
+            if (player instanceof ServerPlayerEntity sp && duelBuildable(sp, hit.getBlockPos().offset(hit.getSide()))
+                    && player.getStackInHand(hand).getItem() instanceof net.minecraft.item.BlockItem) return ActionResult.PASS;
             return Crates.at(hit.getBlockPos()) != null ? ActionResult.PASS : ActionResult.FAIL;
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -242,6 +250,7 @@ public final class Hub {
                     if (Duels.CURRENT != null) { ctx.getSource().sendError(Text.literal("A duel is running, try again after it.")); return 0; }
                     ServerWorld w = world(ctx.getSource().getServer());
                     arena(w); save(); border(w); labels(ctx.getSource().getServer());
+                    resetArena(w);
                     ctx.getSource().sendFeedback(() -> Text.literal("New duel arena built."), false);
                     return 1;
                 }))
@@ -486,7 +495,7 @@ public final class Hub {
             }
         }
         for (int x = cx + R + 1; x <= ax - AR - 1; x++)
-            for (int y = cy; y <= cy + 4; y++) { set(w, x, y, cz - 3, b); set(w, x, y, cz + 3, b); }
+            for (int y = cy + 1; y <= cy + 4; y++) { set(w, x, y, cz - 3, b); set(w, x, y, cz + 3, b); }
         // arena: walls exist; make them high enough that nobody climbs or jumps out
         if (CFG.arenaR > 0) {
             for (int x = -AR - 3; x <= AR + 3; x++) for (int z = -AR - 3; z <= AR + 3; z++) {
@@ -594,28 +603,13 @@ public final class Hub {
                 }
             }
         }
-        // path from the plaza to the arena gate
-        for (int x = cx + R + 1; x < ax - AR - 1; x++) for (int z = -3; z <= 3; z++) {
-            for (int y = cy; y <= cy + 14; y++) set(w, x, y, cz + z, air);
-            for (int y = cy - 4; y <= cy - 2; y++) set(w, x, y, cz + z, base);
-            if (Math.abs(z) <= 2) set(w, x, cy - 1, cz + z, Math.abs(z) == 2 ? Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState());
-        }
         for (int x = -AR - 3; x <= AR + 3; x++) for (int z = -AR - 3; z <= AR + 3; z++) {
             double d = Math.sqrt(x * x + z * z);
             int X = ax + x, Z = cz + z;
             for (int y = cy; y <= cy + 14; y++) set(w, X, y, Z, air);
             if (d > AR + 2.5) continue;
             for (int y = cy - 4; y <= cy - 2; y++) set(w, X, y, Z, base);
-            // floor
-            BlockState f;
-            int ring = (int) Math.round(d);
-            if (d <= 2.5) f = (x == 0 && z == 0) ? Blocks.CHISELED_RED_SANDSTONE.getDefaultState() : Blocks.RED_NETHER_BRICKS.getDefaultState();
-            else if (d <= 3.5) f = Blocks.GILDED_BLACKSTONE.getDefaultState();
-            else if (ring % 7 == 0) f = Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
-            else if (Math.abs(x) <= 0 && d < AR) f = Blocks.QUARTZ_BRICKS.getDefaultState();                       // centre line
-            else f = ((x + z) & 1) == 0 ? Blocks.POLISHED_DEEPSLATE.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState();
-            if (ring % 7 == 0 && Math.floorMod((int) Math.round(Math.toDegrees(Math.atan2(z, x))), 30) < 4 && d > 4) f = Blocks.SEA_LANTERN.getDefaultState();
-            if (d > AR + 0.5) f = Blocks.POLISHED_DEEPSLATE.getDefaultState();
+            BlockState f = d > AR + 0.5 ? Blocks.POLISHED_DEEPSLATE.getDefaultState() : floorAt(x, z);
             set(w, X, cy - 1, Z, f);
             // wall: 2 thick, 7 high, pillars every 30 degrees, lights on top, barrier above
             if (d > AR + 0.5) {
@@ -624,7 +618,7 @@ public final class Hub {
                 boolean pillar = ang % 30 <= 3;
                 for (int y = cy; y <= cy + 7; y++) {
                     BlockState s;
-                    if (gate && y <= cy + 3) s = d > AR + 1.5 ? air : Blocks.IRON_BARS.getDefaultState();
+                    if (gate && y <= cy + 3) s = air;                                   // open entrance from the path
                     else if (pillar) s = y == cy + 7 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
                     else if (y == cy + 5) s = Blocks.CHISELED_STONE_BRICKS.getDefaultState();
                     else if (y == cy + 6) s = Blocks.STONE_BRICK_WALL.getDefaultState();
@@ -636,28 +630,95 @@ public final class Hub {
                 for (int y = cy + 8; y <= cy + 14; y++) if (!(pillar && y == cy + 8 && d <= AR + 1.5)) set(w, X, y, Z, b);
             }
         }
-        // cover: 4 broken pillars and 4 low walls
-        int[][] cover = {{8, 8}, {-8, 8}, {8, -8}, {-8, -8}};
-        for (int[] c : cover) for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) {
-            int h = 3 + ((c[0] + c[1] + dx * 2 + dz) & 1);
-            for (int y = cy; y < cy + h; y++) set(w, ax + c[0] + dx, y, cz + c[1] + dz,
-                    y == cy + h - 1 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
-        }
-        int[][] walls = {{0, 13}, {0, -13}, {13, 0}, {-13, 0}};
-        for (int[] c : walls) for (int i = -2; i <= 2; i++) {
-            int x = c[0] == 0 ? i : c[0], z = c[0] == 0 ? c[1] : i;
-            set(w, ax + x, cy, cz + z, Blocks.DEEPSLATE_BRICK_WALL.getDefaultState());
-        }
+        cover(w, ax, cy, cz);
+        path(w, ax, AR);
         // spawn pads
         int pd = 16;
-        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
-            set(w, ax - pd + dx, cy - 1, cz + dz, (dx == 0 && dz == 0) ? Blocks.REDSTONE_BLOCK.getDefaultState() : Blocks.RED_CONCRETE.getDefaultState());
-            set(w, ax + pd + dx, cy - 1, cz + dz, (dx == 0 && dz == 0) ? Blocks.LAPIS_BLOCK.getDefaultState() : Blocks.BLUE_CONCRETE.getDefaultState());
-        }
         CFG.arena = new int[]{ax, cy, cz};
         CFG.arenaA = new int[]{ax - pd, cy, cz};
         CFG.arenaB = new int[]{ax + pd, cy, cz};
         CFG.arenaR = AR;
         CFG.radius = Math.max(CFG.radius, ax + AR + 3 - cx);
+    }
+
+    /** Arena floor block at (x, z) relative to the centre. */
+    static BlockState floorAt(int x, int z) {
+        double d = Math.sqrt(x * x + z * z);
+        int ring = (int) Math.round(d);
+        int pd = 16;
+        if (Math.abs(z) <= 1 && (Math.abs(x + pd) <= 1 || Math.abs(x - pd) <= 1)) {         // spawn pads
+            boolean red = x < 0, mid = z == 0 && (x == -pd || x == pd);
+            return red ? (mid ? Blocks.REDSTONE_BLOCK : Blocks.RED_CONCRETE).getDefaultState()
+                    : (mid ? Blocks.LAPIS_BLOCK : Blocks.BLUE_CONCRETE).getDefaultState();
+        }
+        if (ring % 7 == 0 && Math.floorMod((int) Math.round(Math.toDegrees(Math.atan2(z, x))), 30) < 4 && d > 4)
+            return Blocks.SEA_LANTERN.getDefaultState();
+        if (d <= 2.5) return (x == 0 && z == 0 ? Blocks.CHISELED_RED_SANDSTONE : Blocks.RED_NETHER_BRICKS).getDefaultState();
+        if (d <= 3.5) return Blocks.GILDED_BLACKSTONE.getDefaultState();
+        if (ring % 7 == 0) return Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
+        if (x == 0) return Blocks.QUARTZ_BRICKS.getDefaultState();                              // centre line
+        return (((x + z) & 1) == 0 ? Blocks.POLISHED_DEEPSLATE : Blocks.DEEPSLATE_TILES).getDefaultState();
+    }
+
+    /** Cover inside the arena: 4 broken pillars and 4 low walls. */
+    static void cover(ServerWorld w, int ax, int cy, int cz) {
+        int[][] cover = {{8, 8}, {-8, 8}, {8, -8}, {-8, -8}};
+        for (int[] c : cover) for (int dx = 0; dx <= 1; dx++) for (int dz = 0; dz <= 1; dz++) {
+            int h = 3 + ((c[0] + c[1] + dx * 2 + dz) & 1);
+            for (int y = cy; y < cy + h; y++) fast(w, ax + c[0] + dx, y, cz + c[1] + dz,
+                    y == cy + h - 1 ? Blocks.CHISELED_POLISHED_BLACKSTONE.getDefaultState() : Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+        }
+        int[][] walls = {{0, 13}, {0, -13}, {13, 0}, {-13, 0}};
+        for (int[] c : walls) for (int i = -2; i <= 2; i++) {
+            int x = c[0] == 0 ? i : c[0], z = c[0] == 0 ? c[1] : i;
+            fast(w, ax + x, cy, cz + z, Blocks.DEEPSLATE_BRICK_WALL.getDefaultState());
+        }
+    }
+
+    /** Solid walkway from the plaza into the arena gate: 5 wide floor, low walls with lanterns on the sides,
+     *  and any gaps at the plaza edge filled in. */
+    static void path(ServerWorld w, int ax, int AR) {
+        int cx = CFG.cx, cy = CFG.cy, cz = CFG.cz, R = 30;
+        BlockState air = Blocks.AIR.getDefaultState(), base = Blocks.STONE_BRICKS.getDefaultState();
+        int x1 = ax - AR;                                                    // up to the inside of the wall
+        for (int x = cx + R - 4; x <= x1; x++) for (int z = -3; z <= 3; z++) {
+            boolean inPlaza = x <= cx + R && Math.sqrt((x - cx) * (x - cx) + z * z) <= R;
+            double dArena = Math.sqrt((x - ax) * (x - ax) + z * z);
+            if (inPlaza && !w.getBlockState(new BlockPos(x, cy - 1, cz + z)).isAir()) continue;   // keep the plaza
+            if (dArena <= AR + 0.5) continue;                                                     // arena floor already there
+            boolean edge = Math.abs(z) == 3;
+            boolean inWall = dArena <= AR + 2.5;
+            if (edge && inWall) continue;                                                         // the arena wall itself
+            for (int y = cy - 4; y <= cy - 2; y++) fast(w, x, y, cz + z, base);
+            fast(w, x, cy - 1, cz + z, edge || Math.abs(z) == 2 ? Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState()
+                    : z == 0 ? Blocks.QUARTZ_BRICKS.getDefaultState() : Blocks.DEEPSLATE_TILES.getDefaultState());
+            for (int y = cy; y <= cy + 4; y++) if (!inWall || Math.abs(z) <= 2) fast(w, x, y, cz + z, air);
+            if (edge && x > cx + R) {
+                fast(w, x, cy, cz + z, Blocks.POLISHED_BLACKSTONE_BRICK_WALL.getDefaultState());
+                if (Math.floorMod(x - cx, 3) == 0) fast(w, x, cy + 1, cz + z, Blocks.LANTERN.getDefaultState());
+            }
+        }
+    }
+
+    /** Puts the inside of the arena back the way it was built (blocks players placed or broke in the last duel). */
+    static void resetArena(ServerWorld w) {
+        if (CFG.arena == null || CFG.arenaR <= 0) return;
+        int ax = CFG.arena[0], cy = CFG.arena[1], cz = CFG.arena[2], AR = CFG.arenaR;
+        BlockState air = Blocks.AIR.getDefaultState();
+        for (int x = -AR; x <= AR; x++) for (int z = -AR; z <= AR; z++) {
+            if (Math.sqrt(x * x + z * z) > AR + 0.5) continue;
+            fast(w, ax + x, cy - 1, cz + z, floorAt(x, z));
+            for (int y = cy; y <= cy + 7; y++) fast(w, ax + x, y, cz + z, air);
+        }
+        cover(w, ax, cy, cz);
+        for (var e : w.getEntitiesByClass(net.minecraft.entity.ItemEntity.class,
+                new net.minecraft.util.math.Box(ax - AR, cy - 2, cz - AR, ax + AR + 1, cy + 10, cz + AR + 1), e -> true)) e.discard();
+    }
+
+    /** Duelists may build/break inside the arena, below the top of the wall. */
+    static boolean duelBuildable(ServerPlayerEntity p, BlockPos pos) {
+        if (CFG.arena == null || CFG.arenaR <= 0 || !Duels.inDuel(p)) return false;
+        int dx = pos.getX() - CFG.arena[0], dz = pos.getZ() - CFG.arena[2], dy = pos.getY() - CFG.arena[1];
+        return dy >= 0 && dy <= 5 && Math.sqrt(dx * dx + dz * dz) <= CFG.arenaR - 0.5;
     }
 }
