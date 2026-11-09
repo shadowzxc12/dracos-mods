@@ -64,10 +64,35 @@ final class BoneMealCane {
         BlockPos top = bottom;
         while (w.getBlockState(top.up()).isOf(block)) top = top.up();
         if (top.getY() - bottom.getY() + 1 >= MAX) {
-            w.breakBlock(bottom.up(), true);                     // harvest everything above the base block
+            harvest(w, bottom, top);                             // everything above the base block
             return false;
         }
         return grow(w, cane);
+    }
+
+    /** Cuts the plant above its base and puts the drops straight into a hopper/chest under the farm
+     *  (up to 3 blocks below the base, or next to that); whatever doesn't fit drops as items. */
+    static void harvest(ServerWorld w, BlockPos bottom, BlockPos top) {
+        java.util.List<net.minecraft.item.ItemStack> drops = new java.util.ArrayList<>();
+        for (BlockPos p = top; p.getY() > bottom.getY(); p = p.down()) {
+            var st = w.getBlockState(p);
+            drops.addAll(net.minecraft.block.Block.getDroppedStacks(st, w, p, null));
+            w.setBlockState(p, Blocks.AIR.getDefaultState(), net.minecraft.block.Block.NOTIFY_ALL);
+        }
+        w.syncWorldEvent(2001, bottom.up(), net.minecraft.block.Block.getRawIdFromState(w.getBlockState(bottom)));
+        net.minecraft.inventory.Inventory inv = null;
+        outer:
+        for (int dy = 1; dy <= 3; dy++) {
+            BlockPos c = bottom.down(dy);
+            for (BlockPos q : new BlockPos[]{c, c.north(), c.south(), c.east(), c.west()}) {
+                inv = net.minecraft.block.entity.HopperBlockEntity.getInventoryAt(w, q);
+                if (inv != null) break outer;
+            }
+        }
+        for (var stack : drops) {
+            if (inv != null) stack = net.minecraft.block.entity.HopperBlockEntity.transfer(null, inv, stack, net.minecraft.util.math.Direction.UP);
+            if (!stack.isEmpty()) net.minecraft.block.Block.dropStack(w, bottom.up(), stack);
+        }
     }
 
     /** Every powered dispenser with bone meal that faces cane/cactus near a player keeps working - no new redstone
