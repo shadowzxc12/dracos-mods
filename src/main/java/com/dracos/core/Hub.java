@@ -130,8 +130,9 @@ public final class Hub {
         });
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, be) -> {
             if (!(world instanceof ServerWorld sw) || bypass(player) || !inHub(sw, pos)) return true;
-            if (player instanceof ServerPlayerEntity sp && duelBuildable(sp, pos)) {
-                sw.breakBlock(pos, false, player);           // no drops - the arena resets after every duel anyway
+            if (player instanceof ServerPlayerEntity sp && duelBuildable(sp, pos) && DUEL_PLACED.contains(pos.asLong())) {
+                sw.breakBlock(pos, false, player);           // only blocks placed in this duel; no drops
+                DUEL_PLACED.remove(pos.asLong());
                 return false;
             }
             return false;
@@ -140,7 +141,10 @@ public final class Hub {
             if (!(world instanceof ServerWorld sw) || bypass(player)) return ActionResult.PASS;
             if (!inHub(sw, hit.getBlockPos()) && !inHub(sw, hit.getBlockPos().offset(hit.getSide()))) return ActionResult.PASS;
             if (player instanceof ServerPlayerEntity sp && duelBuildable(sp, hit.getBlockPos().offset(hit.getSide()))
-                    && player.getStackInHand(hand).getItem() instanceof net.minecraft.item.BlockItem) return ActionResult.PASS;
+                    && player.getStackInHand(hand).getItem() instanceof net.minecraft.item.BlockItem) {
+                DUEL_PLACED.add(hit.getBlockPos().offset(hit.getSide()).asLong());   // these (and only these) may be broken again
+                return ActionResult.PASS;
+            }
             return Crates.at(hit.getBlockPos()) != null ? ActionResult.PASS : ActionResult.FAIL;
         });
         UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -700,8 +704,12 @@ public final class Hub {
         }
     }
 
+    /** Blocks placed by duelists in the current duel - the only ones they may break. */
+    static final java.util.Set<Long> DUEL_PLACED = new java.util.HashSet<>();
+
     /** Puts the inside of the arena back the way it was built (blocks players placed or broke in the last duel). */
     static void resetArena(ServerWorld w) {
+        DUEL_PLACED.clear();
         if (CFG.arena == null || CFG.arenaR <= 0) return;
         int ax = CFG.arena[0], cy = CFG.arena[1], cz = CFG.arena[2], AR = CFG.arenaR;
         BlockState air = Blocks.AIR.getDefaultState();
