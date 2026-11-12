@@ -601,7 +601,8 @@ def main():
     for s in ("void", "bone", "draco", "frost", "inferno", "storm"):
         import armor
         for lay in ("humanoid", "humanoid_leggings"):
-            save(armor.worn(s, lay, SETS[s], os.path.join(VT, "entity/equipment", lay, "netherite.png")),
+            import armor_px
+            save(armor_px.worn(s, lay, os.path.join(VT, "entity/equipment", lay, "netherite.png")),
                  f"assets/{NS}/textures/entity/equipment/{lay}/{s}.png")
         wjson({"layers": {"humanoid": [{"texture": f"{NS}:{s}"}],
                           "humanoid_leggings": [{"texture": f"{NS}:{s}"}]}},
