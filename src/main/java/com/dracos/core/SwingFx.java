@@ -28,6 +28,7 @@ public final class SwingFx {
 
     private static final List<Arc> ARCS = new ArrayList<>();
     private static int swingCounter = 0;
+    private static final java.util.Map<java.util.UUID, Long> LAST = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static int colorOf(ItemStack s) {
         TextColor c = s.getName().getStyle().getColor();
@@ -41,12 +42,16 @@ public final class SwingFx {
     }
 
     public static void register() {
+        DracosCore.LOGGER.info("[SwingFx] legendary swing effects enabled");
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
             if (world.isClient() || !(world instanceof ServerWorld sw) || !(entity instanceof LivingEntity target)) return ActionResult.PASS;
             ItemStack st = player.getMainHandStack();
             String id = LegendaryItems.idOf(st);
             if (id == null || st.isEmpty()) return ActionResult.PASS;
-            if (player.getAttackCooldownProgress(0.5f) < 0.7f) return ActionResult.PASS; // only on full-ish swings
+            long now = sw.getTime();
+            Long last = LAST.get(player.getUuid());
+            if (last != null && now - last < 6) return ActionResult.PASS; // anti-spam
+            LAST.put(player.getUuid(), now);
             int color = colorOf(st);
             boolean big = big(id);
             synchronized (ARCS) {
