@@ -99,7 +99,7 @@ public final class Crates {
                     spawner(4, "minecraft:enderman"), spawner(2, "minecraft:iron_golem")),
             "legendary", List.of(
                     money(22, 500_000), money(12, 1_500_000), money(4, 5_000_000),
-                    item(10, Items.NETHERITE_BLOCK, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 8, true), item(6, Items.ELYTRA, 1, true),
+                    item(10, Items.NETHERITE_BLOCK, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 8, true),
                     item(5, Items.BEACON, 1, true), spawner(8, "minecraft:iron_golem"), spawner(6, "minecraft:creeper"),
                     legendary(16), key(3, "legendary", 2), book(14)));
 
