@@ -14,7 +14,7 @@ How it works (see also armor_preview.py to look at the result on a player model)
 * Glow pixels (gems, runes, lava cracks, stars) use their own ramp and bleed a soft halo onto the metal
   around them. Armor is rendered as alpha *cutout*, so alpha is strictly 0 or 255.
 * Each set has its own palette and a motif: void = stars, draco = scales, inferno = lava cracks,
-  frost = crystal facets, storm = lightning, bone = ribs + cracked bone.
+  frost = crystal facets, storm = bolt runes + sparks, bone = ribs + cracked bone.
 """
 import zlib
 
@@ -370,7 +370,11 @@ def motif(cv, pal, amount=1.0):
             if edge[y, x]:
                 cv.E[y, x] = 0.9
     elif kind == "bolts":
-        _walks(cv, edge & pl, int(area / 260 * amount) + 1, 16, 0, 0.72)     # thin electric arcs
+        # clean steel: the lightning lives in the bolt runes; a few sparks + rivets + brushed metal here
+        for _ in range(int(area * 0.004 * amount)):
+            y, x = rs.randint(cv.h), rs.randint(cv.w)
+            if edge[y, x] and pl[y, x]:
+                cv.E[y, x] = 0.8
         riv = (cv.M == TRIM) & (cv.xi % 6 == 2)
         riv &= ndimage.binary_erosion(cv.M == TRIM, structure=np.ones((3, 1)))
         cv.T[riv] -= 0.26
