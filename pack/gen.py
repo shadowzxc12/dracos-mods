@@ -554,6 +554,28 @@ def item_model(name, parent="minecraft:item/handheld", tex=None):
           f"assets/{NS}/models/item/{name}.json")
 
 
+BIG = ("scythe", "reaper", "greatsword", "hammer", "mace", "cleaver", "axe", "trident", "drill", "earthshaker")
+
+
+def big_model(name, parent):
+    """Legendaries are held bigger than vanilla tools (huge for scythes/greatswords/hammers)."""
+    k = 1.7 if any(b in name for b in BIG) else 1.35
+    d = display_for(parent)
+    for slot in ("thirdperson_righthand", "thirdperson_lefthand", "firstperson_righthand", "firstperson_lefthand"):
+        t = d.get(slot)
+        if not t:
+            continue
+        t["scale"] = [round(v * k, 3) for v in t.get("scale", [1, 1, 1])]
+        tr = list(t.get("translation", [0, 0, 0]))
+        if slot.startswith("third"):
+            tr[1] += 3.0 * (k - 1)   # lift so the grip stays in the hand
+        else:
+            tr[1] += 1.5 * (k - 1)
+        t["translation"] = [round(v, 3) for v in tr]
+    wjson({"parent": parent, "textures": {"layer0": f"{NS}:item/{name}"}, "display": d},
+          f"assets/{NS}/models/item/{name}.json")
+
+
 def item_def(name, model=None):
     wjson({"model": model or {"type": "minecraft:model", "model": f"{NS}:item/{name}"}},
           f"assets/{NS}/items/{name}.json")
@@ -570,7 +592,7 @@ def main():
         save(sprite_frames(name), f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
         parent = "minecraft:item/handheld_mace" if name == "thunder_hammer" else "minecraft:item/handheld"
-        item_model(name, parent)
+        big_model(name, parent)
         item_def(name)
 
     import shapes
@@ -578,7 +600,7 @@ def main():
         frames = shape_frames(name) if name in shapes.SHAPES else recolored_frames(name)
         save(frames, f"assets/{NS}/textures/item/{name}.png")
         wjson(anim_meta(), f"assets/{NS}/textures/item/{name}.png.mcmeta")
-        item_model(name, parent)
+        big_model(name, parent)
         item_def(name)
 
     # void bow (keeps vanilla pulling animation)
