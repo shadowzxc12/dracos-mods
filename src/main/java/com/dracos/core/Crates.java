@@ -92,7 +92,7 @@ public final class Crates {
                     money(25, 100_000), money(14, 250_000), money(5, 750_000),
                     item(12, Items.DIAMOND_BLOCK, 4, false), item(8, Items.NETHERITE_INGOT, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 2, true),
                     item(6, Items.TOTEM_OF_UNDYING, 1, false), item(5, Items.SHULKER_BOX, 1, false),
-                    spawner(6, "minecraft:skeleton"), spawner(4, "minecraft:blaze"), legendary(2), key(5, "legendary", 1), book(14)),
+                    spawner(6, "minecraft:skeleton"), spawner(4, "minecraft:blaze"), key(5, "legendary", 1), book(14)),
             "spawner", List.of(
                     spawner(20, "minecraft:pig"), spawner(18, "minecraft:cow"), spawner(16, "minecraft:zombie"), spawner(14, "minecraft:skeleton"),
                     spawner(10, "minecraft:spider"), spawner(8, "minecraft:creeper"), spawner(6, "minecraft:witch"), spawner(5, "minecraft:blaze"),
@@ -101,7 +101,7 @@ public final class Crates {
                     money(22, 500_000), money(12, 1_500_000), money(4, 5_000_000),
                     item(10, Items.NETHERITE_BLOCK, 1, true), item(8, Items.ENCHANTED_GOLDEN_APPLE, 8, true),
                     item(5, Items.BEACON, 1, true), spawner(8, "minecraft:iron_golem"), spawner(6, "minecraft:creeper"),
-                    legendary(16), key(3, "legendary", 2), book(14)));
+                    legendary(1), key(3, "legendary", 2), book(14)));
 
     static String title(String type) {
         return switch (type) { case "rare" -> "Rare"; case "legendary" -> "Legendary"; case "spawner" -> "Spawner"; default -> "Common"; };
