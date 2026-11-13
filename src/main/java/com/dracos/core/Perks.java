@@ -83,10 +83,25 @@ public final class Perks {
         long amount = switch (Ranks.of(p)) {
             case MEMBER -> 10_000; case VIP -> 25_000; case MVP -> 50_000; case LEGEND -> 100_000; case DRACO, OWNER -> 250_000;
         };
+        // login streak: claim again within 48h to keep it; bonus grows up to day 7
+        String sk = p.getUuidAsString() + ":streak", lk = p.getUuidAsString() + ":streakLast";
+        long now = System.currentTimeMillis();
+        long last = data().has(lk) ? data().get(lk).getAsLong() : 0;
+        int streak = (now - last <= 48L * 3_600_000L && data().has(sk)) ? data().get(sk).getAsInt() + 1 : 1;
+        data().addProperty(sk, streak);
+        data().addProperty(lk, now);
+        save();
+        amount = amount * (100 + 25 * (Math.min(streak, 7) - 1)) / 100;
         Money.add(p, amount);
         p.sendMessage(Text.literal("Daily reward: ").formatted(Formatting.GREEN)
                 .append(Text.literal(Money.fmt(amount)).formatted(Formatting.GOLD, Formatting.BOLD))
-                .append(Text.literal(" (better rank = bigger reward)").formatted(Formatting.GRAY)), false);
+                .append(Text.literal("  🔥 Streak: " + streak + (streak == 1 ? " day" : " days")).formatted(Formatting.YELLOW)), false);
+        String key = streak % 30 == 0 ? "legendary" : streak % 7 == 0 ? "rare" : streak % 3 == 0 ? "common" : null;
+        if (key != null) {
+            Crates.giveKey(p, key, 1);
+            p.sendMessage(Text.literal("  + Streak bonus: 1x " + Crates.title(key) + " Crate Key!").formatted(Crates.color(key), Formatting.BOLD), false);
+        }
+        p.sendMessage(Text.literal("  Come back tomorrow to keep the streak (day 3 = common key, 7 = rare key, 30 = legendary key)").formatted(Formatting.GRAY), false);
         p.getEntityWorld().playSound(null, p.getBlockPos(), SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 0.8f, 1.4f);
     }
 
