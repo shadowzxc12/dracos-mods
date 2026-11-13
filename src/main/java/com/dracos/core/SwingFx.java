@@ -41,6 +41,24 @@ public final class SwingFx {
         return false;
     }
 
+    /** Called from SwingMixin on the server thread for every arm swing. */
+    public static void onSwing(net.minecraft.server.network.ServerPlayerEntity player) {
+        if (!(player.getEntityWorld() instanceof ServerWorld sw)) return;
+        ItemStack st = player.getMainHandStack();
+        String id = LegendaryItems.idOf(st);
+        if (id == null) return;
+        long now = sw.getTime();
+        Long last = LAST.get(player.getUuid());
+        if (last != null && now - last < 5) return; // anti-spam
+        LAST.put(player.getUuid(), now);
+        boolean big = big(id);
+        synchronized (ARCS) {
+            if (ARCS.size() < 200)
+                ARCS.add(new Arc(sw, player.getEyePos(), player.getYaw(), player.getPitch(), colorOf(st), big, (swingCounter++ & 1) == 1, new int[]{0}));
+        }
+        sw.playSound(null, player.getBlockPos(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, SoundCategory.PLAYERS, 0.5f, big ? 0.55f : 1.0f);
+    }
+
     public static void register() {
         DracosCore.LOGGER.info("[SwingFx] legendary swing effects enabled");
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
@@ -48,16 +66,8 @@ public final class SwingFx {
             ItemStack st = player.getMainHandStack();
             String id = LegendaryItems.idOf(st);
             if (id == null || st.isEmpty()) return ActionResult.PASS;
-            long now = sw.getTime();
-            Long last = LAST.get(player.getUuid());
-            if (last != null && now - last < 6) return ActionResult.PASS; // anti-spam
-            LAST.put(player.getUuid(), now);
             int color = colorOf(st);
             boolean big = big(id);
-            synchronized (ARCS) {
-                if (ARCS.size() < 200)
-                    ARCS.add(new Arc(sw, player.getEyePos(), player.getYaw(), player.getPitch(), color, big, (swingCounter++ & 1) == 1, new int[]{0}));
-            }
             impact(sw, player, target, color, big);
             return ActionResult.PASS;
         });
