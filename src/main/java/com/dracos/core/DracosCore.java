@@ -91,6 +91,7 @@ public class DracosCore implements ModInitializer {
         AutoSell.register();
         Enchants.register();
         DiscordBridge.register();
+        SwingFx.register();
         if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("polydex")) {
             try { PolydexCompat.register(); } catch (Throwable t) { LOGGER.warn("Polydex compat disabled", t); }
         }   // last: its block-break hook must run after all protection checks
