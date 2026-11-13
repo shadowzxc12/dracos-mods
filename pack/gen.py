@@ -614,7 +614,7 @@ def main():
             item_model(name, "minecraft:item/generated")
             if piece == "helmet":
                 # 3D helmet when worn, flat icon everywhere else
-                save(armor.helmet_texture(s, SETS[s]), f"assets/{NS}/textures/item/{name}_3d.png")
+                save(armor_px.helmet_texture(s), f"assets/{NS}/textures/item/{name}_3d.png")
                 wjson(armor.helmet_model(s, f"{NS}:item/{name}_3d"), f"assets/{NS}/models/item/{name}_3d.json")
                 item_def(name, {"type": "minecraft:select", "property": "minecraft:display_context",
                                 "cases": [{"when": "head", "model": {"type": "minecraft:model", "model": f"{NS}:item/{name}_3d"}}],
