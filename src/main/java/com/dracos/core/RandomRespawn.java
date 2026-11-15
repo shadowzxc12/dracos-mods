@@ -40,7 +40,7 @@ public final class RandomRespawn {
 
     // ---- /rtp for everyone
     // inside the pre-generated area (Chunky did 6000) chunks load from disk almost instantly
-    public static final int RTP_MAX = 1_000_000;
+    public static final int RTP_MAX = 20_000; // small enough to pre-generate with Chunky (no world-gen lag)
     public static final int RTP_MIN = 1_000; // max = the whole world inside the border
     private static final long RTP_COOLDOWN_MS = 20_000;
     private static final java.util.Map<java.util.UUID, Long> LAST_RTP = new java.util.HashMap<>();
@@ -89,15 +89,31 @@ public final class RandomRespawn {
                     if (p.isRemoved() || server.getPlayerManager().getPlayer(p.getUuid()) == null) return;
                     BlockPos pos = check(world, x, z);
                     if (pos == null) { retry(p, world, tries); return; }
-                    p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, Set.of(), p.getYaw(), p.getPitch(), true);
-                    DracosCore.LOGGER.info("[RTP] {} -> {} {} {} (try {})", p.getName().getString(), pos.getX(), pos.getY(), pos.getZ(), tries + 1);
-                    p.sendMessage(Text.literal("Teleported to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "!").formatted(Formatting.GREEN), false);
+                    preloadThenTeleport(p, world, pos, tries);
                 }, server)
                 .exceptionally(ex -> {
                     DracosCore.LOGGER.warn("[RTP] chunk load failed for {}: {}", p.getName().getString(), ex.toString());
                     server.execute(() -> retry(p, world, tries));
                     return null;
                 });
+    }
+
+    /** Generates the 5x5 chunks around the target in the background first, so the teleport itself causes no lag spike. */
+    private static void preloadThenTeleport(net.minecraft.server.network.ServerPlayerEntity p, ServerWorld world, BlockPos pos, int tries) {
+        var server = world.getServer();
+        var cm = world.getChunkManager();
+        java.util.List<java.util.concurrent.CompletableFuture<?>> fs = new java.util.ArrayList<>();
+        for (int dx = -2; dx <= 2; dx++)
+            for (int dz = -2; dz <= 2; dz++)
+                fs.add(cm.getChunkFutureSyncOnMainThread((pos.getX() >> 4) + dx, (pos.getZ() >> 4) + dz, net.minecraft.world.chunk.ChunkStatus.FULL, true));
+        java.util.concurrent.CompletableFuture.allOf(fs.toArray(new java.util.concurrent.CompletableFuture[0]))
+                .handleAsync((v, ex) -> {
+                    if (p.isRemoved() || server.getPlayerManager().getPlayer(p.getUuid()) == null) return null;
+                    p.teleport(world, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, Set.of(), p.getYaw(), p.getPitch(), true);
+                    DracosCore.LOGGER.info("[RTP] {} -> {} {} {} (try {})", p.getName().getString(), pos.getX(), pos.getY(), pos.getZ(), tries + 1);
+                    p.sendMessage(Text.literal("Teleported to " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ() + "!").formatted(Formatting.GREEN), false);
+                    return null;
+                }, server);
     }
 
     /** Checks the biome from the world generator (no chunk load) - skips oceans and rivers before loading anything. */
