@@ -69,7 +69,6 @@ public final class SellAxe {
 
     /** Open Parties and Claims (via reflection): only unclaimed chunks or the player's own claims. Fails closed. */
     private static boolean allowed(ServerPlayerEntity p, ServerWorld sw, BlockPos pos) {
-        if (p.hasPermissionLevel(2)) return true;
         try {
             Class<?> api = Class.forName("xaero.pac.common.server.api.OpenPACServerAPI");
             Object inst = api.getMethod("get", net.minecraft.server.MinecraftServer.class).invoke(null, sw.getServer());
