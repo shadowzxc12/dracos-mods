@@ -238,6 +238,7 @@ RECOLORED = {
     "tempest_blade": ("diamond_sword", "storm", "minecraft:item/handheld"),
     "frostbite_dagger": ("diamond_sword", "frost", "minecraft:item/handheld"),
     "dragonbone_axe": ("netherite_axe", "bone", "minecraft:item/handheld"),
+    "merchant_axe": ("golden_axe", "sun", "minecraft:item/handheld"),
     "warlord_mace": ("mace", "draco", "minecraft:item/handheld_mace"),
     "skybreaker_mace": ("mace", "celestial", "minecraft:item/handheld_mace"),
     "kraken_trident": ("trident", "abyss", "minecraft:item/handheld"),

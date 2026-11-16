@@ -442,6 +442,7 @@ SHAPES = {
     "sunfire_blade": ("sword", dict(width=W(2.0), wave=0.9, guard=5.5, gcurve=-1.2, edge_glow=True)),
     "abyssal_reaper": ("scythe", dict(curve=1.35)),
     "toxic_cleaver": ("axe", dict(kind="cleaver", spike=True)),
+    "merchant_axe": ("axe", dict(kind="cleaver")),
     "tempest_blade": ("sword", dict(width=W(1.8, 2.4), guard=4.6, fuller=True, serr=4)),
     "frostbite_dagger": ("sword", dict(handle=9, width=W(1.8, 1.0), guard=3.0, tip=0.5, edge_glow=True)),
     "dragonbone_axe": ("axe", dict(kind="bearded", spike=True, back=True)),

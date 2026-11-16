@@ -104,6 +104,10 @@ public final class Legendary3 {
         add("frostbite_dagger", Items.DIAMOND_SWORD, "Frostbite Dagger", 0xA8E6FF, 15, 2.5, 40_000_000L,
                 List.of("15 damage, extremely fast", "Freezes targets + Slowness IV"), new LegendaryItems.Ench[]{e(Enchantments.SHARPNESS, 7)},
                 List.of(fx(StatusEffects.SLOWNESS, 2, 3)), List.of(), 0, 0, 0, 200);
+        add("merchant_axe", Items.GOLDEN_AXE, "Merchant's Axe", 0xFFD700, 14, 1.0, 60_000_000L,
+                List.of("Left-click a chest to sell everything in it", "Uses /sell prices + your rank bonus"),
+                new LegendaryItems.Ench[]{e(Enchantments.EFFICIENCY, 6), e(Enchantments.UNBREAKING, 5)},
+                List.of(), List.of(), 0, 0, 0, 0);
         add("dragonbone_axe", Items.NETHERITE_AXE, "Dragonbone Axe", 0xEDE0C8, 26, 0.9, 70_000_000L,
                 List.of("26 damage", "Launches targets up"), new LegendaryItems.Ench[]{e(Enchantments.SHARPNESS, 8), e(Enchantments.EFFICIENCY, 8)},
                 List.of(fx(StatusEffects.LEVITATION, 1, 3)), List.of(), 0, 0, 0, 0);
