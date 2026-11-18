@@ -53,8 +53,9 @@ public final class RandomRespawn {
         }
         long now = System.currentTimeMillis();
         Long last = LAST_RTP.get(p.getUuid());
-        if (last != null && now - last < RTP_COOLDOWN_MS && Ranks.of(p) != Ranks.Rank.OWNER) {
-            p.sendMessage(Text.literal("Wait " + ((RTP_COOLDOWN_MS - (now - last)) / 1000 + 1) + "s before using /rtp again.").formatted(Formatting.RED), false);
+        long cd = Ranks.of(p) == Ranks.Rank.OWNER ? 5_000 : RTP_COOLDOWN_MS;
+        if (last != null && now - last < cd) {
+            p.sendMessage(Text.literal("Wait " + ((cd - (now - last)) / 1000 + 1) + "s before using /rtp again.").formatted(Formatting.RED), false);
             return;
         }
         LAST_RTP.put(p.getUuid(), now);
